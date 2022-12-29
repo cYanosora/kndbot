@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="./help.css">
+</head>
+<body>
+	<img id="bk" src="../../../resources/image/background/help/simple_help/{{ bk }}">
+        <div id="help">
+            使用说明
+            <div class="usage red">此图仅列出 功能名称 ，请通过以下方式获取对应功能下的指令列表</div>
+            <div class="usage">@bot + 功能名称 + 怎么用/帮助/help 获取对应功能的相关指令 (功能名为空时即发送本图)</div>
+            <div class="usage">@bot + 群管帮助 来获取群管理员可使用的额外功能、或部分功能的额外指令大全</div>
+            <div class="usage">消息以&lt;bot称呼&gt;开头视为@bot，bot能够识别的称呼：奏、小奏、奏宝、宵崎奏、knd、kanade</div>
+            <div class="usage red">master真心建议 bot萌新们 使用任何功能前都先查阅帮助后再使用功能</div>
+            <div class="lastusage">目前支持的功能列表:</div>
+            <div id="tip">注: 功能名红字代表功能默认禁用or群管禁用，红线代表功能维护or超管禁用</div>
+        </div>
+
+        <div class="simpleHelp">
+                {% for key, value in pgs_dic.items() %}
+                <div>{{ key }}:
+                    {% for plugin in value %}
+                    <span class="ban-{{ plugin[0] }}">{{ plugin[1] }}</span>{% endfor %}
+                </div>
+                {% endfor %}
+        </div>
+        <script type="text/javascript">
+            simpleHelp=document.getElementsByClassName("simpleHelp")[0];
+            var h = simpleHelp.offsetHeight;
+            bk = document.getElementById("bk");
+            bk.style.height=h+440+"px";
+        </script>
+</body>
+</html>

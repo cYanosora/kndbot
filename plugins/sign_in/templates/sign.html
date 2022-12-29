@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="./sign.css">
+    </head>
+    <body>
+    <img class="bk" src="./images/background.jpg">
+    <img class="bk" style="opacity:20%;" src="./images/white.png">
+    <img class="color" src="./images/color.png">
+    <img class="ava" src="http://q1.qlogo.cn/g?b=qq&nk={{ qq }}&s=160">
+    <img class="ava-border" src="./images/ava_border.png">
+    <div class="line"></div>
+
+    <div class="nickname">{{nickname}}{{nickname}}{{nickname}}{{nickname}}</div>
+    <div class="uid">{{uid}}</div>
+    <div class="acif">
+        Accumulative check-in for
+        <span class="days">{{days}}</span>
+        days
+    </div>
+
+    <div class="info">
+        当前 <span class="impr">好感度：{{impr}}</span>
+    </div>
+    <div class="bardiv">
+        <img class="bar" src="./images/bar_white.png">
+        <img class="bar" style="position:absolute;left:{{bar_left_pos}}px;" src="./images/bar.png">
+    </div>
+    <div class="des">{{des}}</div>
+    <div class="time">{{time}}</div>
+    <div class="title">{{title}}</div>
+    <div class="total">{{total}}</div>
+    <div class="watermark">{{watermark}}</div>
+
+    {% if isGiftDisplay == 'True'  %}
+        <img class="gift-border" src="./images/gift_border.png">
+	<div class="gift">{{gift}}{{isGiftDisplay}}</div>
+    {% endif %}
+    <script type="text/javascript">
+    var box = document.getElementsByClassName("nickname");
+    console.log(box);
+    box = box[0];
+    var cat = box.innerText;
+
+    if(cat.length >= 16)  //如果box里面字数大于或者等于10
+    {
+        box.style.fontSize=40+'px';
+        box.style.width
+        //如果大于16个字 字体大小为40px
+    }
+    else{
+        //否则为50px大小
+        box.style.fontSize=50+'px';
+    }
+    </script>
+
+    </body>
+</html>

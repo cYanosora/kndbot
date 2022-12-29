@@ -1,0 +1,106 @@
+@font-face{
+    font-family: yuanshen;
+    src:url(../../../resources/font/yuanshen.ttf);
+}
+*{
+    margin:0px;
+    padding:0px;
+    border:0px;
+}
+img#bk{
+    z-index:-1;
+    position:absolute;
+    left:10px;
+    top:10px;
+    width:1640px;
+    filter: blur(8px);
+}
+div#help{
+    position:relative;
+    top:50px;
+    left:50px;
+    width:1230px;
+    font-family:yuanshen;
+    font-size:33px;
+    line-height:45px;
+}
+div.usage{
+    position:relative;
+    left:60px;
+    width:1550px;
+    font-size:33px;
+}
+div.lastusage{
+    position:relative;
+    top:25px;
+    font-size:33px;
+}
+div#tip{
+    position:relative;
+    left:380px;
+    top:-18.5px;
+    font-size:33px;
+    color:RGB(231, 74, 57);
+}
+div.red{
+    color:red;
+}
+
+div.simpleHelp{
+    float:left;
+    position:relative;
+    top:80px;
+    left:60px;
+    width:1560px;
+    font-size:0px;
+    line-height:50px;
+    margin:0px;
+    border:0px;
+    padding:0px;
+}
+div.simpleHelp > div:nth-child(even){
+    font-size:33px;
+    white-space: pre-line;
+
+    float:inherit;
+    background-color:RGBA(0,0,0,.7);
+    color:white;
+    border-radius: 15px;
+    border:15px solid RGBA(0,0,0,0);
+    margin-right:50px;
+    margin-bottom:50px;
+}
+div.simpleHelp > div:nth-child(odd){
+    font-size:33px;
+
+    float:inherit;
+    white-space: pre-line;
+    background-color:RGBA(255,255,255,.7);
+    color:black;
+    border-radius: 15px;
+    border:15px solid RGBA(255,255,255,0);
+    margin-right:50px;
+    margin-bottom:50px;
+
+}
+span{
+float:top;
+}
+span.ban-00{
+    display:inline-block;
+}
+span.ban-01{
+    color:red;
+    display:inline-block;
+}
+span.ban-10{
+    text-decoration-line: line-through;
+    text-decoration-color: red;
+    display:inline-block;
+}
+span.ban-11{
+    text-decoration-line: line-through;
+    text-decoration-color: red;
+    color:red;
+    display:inline-block;
+}

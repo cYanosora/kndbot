@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="./help.css">
+</head>
+<body>
+        <img id="bk" src="../../../resources/image/background/help/admin_help/{{ bk }}">
+        <div id="help">
+            超管功能大全
+            <div class="usage red">发送: @bot + 功能名 + 怎么用/帮助/help 获取功能说明</div>
+        </div>
+
+        <div class="adminHelp">
+                {% for key, value in data.items() %}
+                <div>{{ key }}:
+                    {% for plugin in value %}
+                    <span >{{ plugin }}</span>{% endfor %}
+                </div>
+                {% endfor %}
+        </div>
+        <script type="text/javascript">
+                usage = document.getElementById("help");
+                adminHelp=document.getElementsByClassName("adminHelp")[0];
+                var h = adminHelp.offsetHeight;
+                bk = document.getElementById("bk");
+                bk.style.height=h+150+"px";
+                usage.parentNode.appendChild(bk);
+        </script>
+
+</body>
+</html>

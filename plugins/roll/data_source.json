@@ -1,0 +1,18 @@
+{
+  "quotation":[
+    {"ban_word":"shouchong","ban_reply":"恶心，不想理你"},
+    {"ban_word":"zuoai","ban_reply":"听不懂你在说什么呢(恶"},
+    {"ban_word":"kaidao","ban_reply":"你不许导了！(嫌弃"},
+    {"ban_word":"zisha","ban_reply":"你怎么了...绝对不能说这种话哦？"}
+  ],
+  "replace": [
+    {"bef": " ","aft": ""},
+    {"bef": "你","aft": "咱"},
+    {"bef": "我","aft": "你"},
+    {"bef": "呢","aft": ""},
+    {"bef": "啊","aft": ""},
+    {"bef": "呀","aft": ""},
+    {"bef": "吧","aft": ""},
+    {"bef": "嘛","aft": ""}
+  ]
+}
