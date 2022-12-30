@@ -211,7 +211,7 @@ class PjskBind(db.Model):
         return False
 
     @classmethod
-    async def check_alias_exists(cls, user_qq: int, pjsk_type: int = 0) -> bool:
+    async def check_exists(cls, user_qq: int, pjsk_type: int = 0) -> bool:
         """
         说明：
             检测用户是否已存在绑定信息
@@ -738,7 +738,6 @@ class CardInfo(object):
         生成卡面的详细信息图
         :param save_path:保存路径
         """
-        print('cardid:',self.id)
         _tmpcards = [{
             'id': self.id,
             'cardRarityType': self.cardRarityType,
@@ -913,10 +912,11 @@ class CardInfo(object):
                 type='col',
                 length=left_width,
             )
-            if (  # 卡池是当期卡池、活动是5v5，卡池类型为期间限定
+            if (  # 卡池是当期卡池、活动是5v5，卡池类型为期间限定(除128和大罪联动依然没找到合适方法判别)
                 self.event.id != 0
                 and self.event.eventType == 'cheerful_carnival'
                 and self.gacha.startAt == self.releaseAt
+                and self.gacha.gachaCardRarityRateGroupId != 3
             ):
                 gachatype = "期间限定"
             else:

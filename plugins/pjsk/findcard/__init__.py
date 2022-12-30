@@ -156,13 +156,13 @@ async def _(arg: Message = CommandArg()):
     try:
         card_id = int(card_id)
     except:
-        await card.finish("请输入卡面id")
-    path = data_path / f'infocard/id_{arg}.png'
-    if path.exists():
-        pic = Image.open(data_path / f'infocard/id_{arg}.png')
-    else:
+        return
+    path = data_path / f'infocard'
+    path.mkdir(parents=True, exist_ok=True)
+    file = path / f'id_{arg}.png'
+    if not file.exists():
         cardinfo = CardInfo()
         await cardinfo.getinfo(card_id)
         pic = await cardinfo.toimg()
-        pic.save(data_path / f'infocard/id_{arg}.png')
-    await card.finish(image(pic))
+        pic.save(file)
+    await card.finish(image(file))

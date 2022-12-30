@@ -1,5 +1,6 @@
 from configs.path_config import RESOURCE_PATH
 
+NOT_BIND_ERROR = "出错了，可能是因为没有绑定"
 ID_ERROR = "你这ID有问题啊"
 TIMEOUT_ERROR = "出错了，可能是bot网不好"
 BUG_ERROR = "出错了，可能是バグ捏"

@@ -4,6 +4,7 @@ from typing import Tuple
 from nonebot import on_command
 from nonebot.params import CommandArg, Command
 from nonebot.adapters.onebot.v11 import GROUP, Message, MessageEvent
+from .._config import BUG_ERROR, NOT_BIND_ERROR, REFUSED_ERROR, ID_ERROR
 from .._utils import verifyid, get_userid_preprocess
 from .._models import PjskBind
 try:
@@ -51,7 +52,7 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
         await PjskBind.add_bind(event.user_id, int(arg))
         await pjsk_bind.finish(f"绑定成功", at_sender=True)
     else:
-        await pjsk_bind.finish('你这ID有问题啊', at_sender=True)
+        await pjsk_bind.finish(ID_ERROR, at_sender=True)
 
 
 @pjsk_unbind.handle()
@@ -66,10 +67,12 @@ async def _(event: MessageEvent):
 @pjsk_look.handle()
 async def _(event: MessageEvent, cmd: Tuple[str, ...] = Command()):
     isprivate = False if cmd[0][:2] == '给看' else True
+    if not await PjskBind.check_exists(event.user_id, 0):
+        await pjsk_bind.finish(NOT_BIND_ERROR)
     if await PjskBind.set_look(event.user_id, isprivate, 0):
         await pjsk_bind.finish(f"{'不给看！' if isprivate else '给看！'}")
     else:
-        await pjsk_bind.finish("出错了，可能是バグ捏")
+        await pjsk_bind.finish(BUG_ERROR)
 
 
 @pjsk_ctime.handle()
@@ -80,7 +83,7 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     userid = state['userid']
     isprivate = state['private']
     if isprivate:
-        await pjsk_ctime.finish('查不到捏，可能是不给看')
+        await pjsk_ctime.finish(REFUSED_ERROR)
     passtime = userid / 1000 / 1024 / 4096
     await pjsk_ctime.finish(
         time.strftime(

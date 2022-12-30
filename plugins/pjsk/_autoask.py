@@ -172,20 +172,22 @@ class PjskDataUpdate:
         return False
 
     async def get_asset(self, path: str, raw: str, block: bool = False, download: bool = True) -> Image:
-        if not (self.path / path / raw).exists() and download:
-            logger.warning(f'缺失资源{path}/{raw}，尝试下载此资源中...')
-            await self.update_jp_assets(path, raw, block=block)
-        try:
-            if raw.endswith('.png') or raw.endswith('.jpg') or raw.endswith('.jpeg'):
-                pic = Image.open(self.path / path / raw)
-                return pic
-        except FileNotFoundError:
-            logger.warning(f'找不到资源{path}/{raw}')
-            return None
-        except Exception as e:
-            logger.warning(f'资源调用失败，错误信息：{e}')
-            return None
-
+        pic = None
+        while not pic:
+            if not (self.path / path / raw).exists() and download:
+                logger.warning(f'缺失资源{path}/{raw}，尝试下载此资源中...')
+                await self.update_jp_assets(path, raw, block=block)
+            try:
+                if raw.endswith('.png') or raw.endswith('.jpg') or raw.endswith('.jpeg'):
+                    pic = Image.open(self.path / path / raw)
+                    return pic
+            except FileNotFoundError:
+                logger.warning(f'找不到资源{path}/{raw}')
+                # return None
+            except Exception as e:
+                logger.warning(f'资源调用失败，错误信息：{e}')
+                # return None
+            await asyncio.sleep(2)
 
 pjsk_update_manager = PjskDataUpdate(data_path)
 

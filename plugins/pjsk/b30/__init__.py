@@ -11,7 +11,7 @@ from utils.imageutils import pic2b64, text2image
 from utils.message_builder import image
 from .._autoask import pjsk_update_manager
 from .._utils import generatehonor, get_userid_preprocess
-from .._config import data_path, api_base_url_list, TIMEOUT_ERROR, NOT_IMAGE_ERROR
+from .._config import data_path, api_base_url_list, TIMEOUT_ERROR, NOT_IMAGE_ERROR, BUG_ERROR
 
 __plugin_name__ = "烧烤b30/pjskb30"
 __plugin_type__ = "烧烤相关&uni移植"
@@ -265,7 +265,11 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     # 粘贴b30歌曲图片
     for i in range(0, 30):
         rank = rank + diff[i]['rank']
-        single = await b30single(diff[i], musics)
+        try:
+            single = await b30single(diff[i], musics)
+        except AttributeError:
+            await pjsk_b30.finish(BUG_ERROR)
+            return
         r, g, b, mask = shadow.split()
         pic.paste(shadow, ((int(52 + (i % 3) * 342)), int(307 + int(i / 3) * 142)), mask)
         pic.paste(single, ((int(53 + (i % 3) * 342)), int(309 + int(i / 3) * 142)))

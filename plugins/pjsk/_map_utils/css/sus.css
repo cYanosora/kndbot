@@ -1,0 +1,97 @@
+.bar-line {
+    stroke: #eeeeee;
+    stroke-width: 2;
+}
+
+.bar-count-line {
+    stroke: #606060;
+    stroke-width: 2;
+}
+
+.bar-count-text {
+    font-size: 12px;
+    font-weight: 900;
+    font-family: Avenir;
+    fill: #606060;
+    text-anchor: start;
+}
+
+.beat-line {
+    stroke: #eeeeee;
+    stroke-width: 1;
+}
+
+.lane-line {
+    stroke: #ffffff;
+    stroke-width: 1;
+}
+
+.event-line {
+    stroke: #7f0000;
+    stroke-width: 4;
+}
+
+.event-text {
+    font-size: 12px;
+    font-weight: 900;
+    font-family: Avenir;
+    fill: #808080;
+    text-anchor: start;
+}
+
+.lyric-text {
+    font-size: 12px;
+    font-weight: 900;
+    font-family: FOT-RodinNTLG Pro DB;
+    fill: #808080;
+    text-anchor: start;
+}
+
+.slide {
+    fill: #d9fbeecc
+}
+
+.slide-critical {
+    fill: #fcfacdcc
+}
+
+.tick-text {
+    font-size: 9px;
+    font-family: Avenir;
+    fill: #606060;
+    text-anchor: end;
+}
+
+.tick-line {
+    stroke: #808080;
+    stroke-width: 1;
+}
+
+.meta-line {
+    stroke: #e2e2e2;
+    stroke-width: 2;
+}
+
+.title {
+    font-size: 64px;
+    font-weight: 900;
+    font-family: FOT-RodinNTLG Pro DB;
+    fill: #000000;
+    text-anchor: start;
+}
+
+.subtitle {
+    font-size: 36px;
+    font-weight: 700;
+    font-family: FOT-RodinNTLG Pro DB;
+    fill: #000000;
+    text-anchor: start;
+}
+
+.themehint {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: FOT-RodinNTLG Pro DB;
+    fill: #808080;
+    text-anchor: start;
+}

@@ -9,7 +9,8 @@ from utils.message_builder import image
 from .._autoask import pjsk_update_manager
 from .._utils import get_userid_preprocess
 from .._models import UserProfile
-from .._config import data_path
+from .._config import data_path, NOT_IMAGE_ERROR
+
 try:
     import ujson as json
 except:
@@ -85,7 +86,7 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     except FileNotFoundError:
         pass
     except AttributeError:
-        await pjsk_progress.send("部分资源加载失败，重新发送中...")
+        await pjsk_progress.send(NOT_IMAGE_ERROR)
     draw = ImageDraw.Draw(img)
     font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 31)
     draw.text((216, 55), profile.name, fill=(0, 0, 0), font=font_style)
@@ -116,26 +117,26 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
         text_coordinate = (int(183 + 3 * 78 - text_width[0] / 2), int(295 + 97 * i - text_width[1] / 2))
         draw.text(text_coordinate, str(profile.masterscore[i + levelmin][3]), fill=(108, 237, 226), font=font_style)
 
-    for i in range(0, 5):
+    if diff == 'master':
+        secondRawCount = 6
+    else:
+        secondRawCount = 5
+    for i in range(0, secondRawCount):
         text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 6][0]))
         text_coordinate = (int(683 - text_width[0] / 2), int(300 + 96.4 * i - text_width[1] / 2))
-        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][0]), fill=(228, 159, 251),
-                  font=font_style)
+        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][0]), fill=(228, 159, 251), font=font_style)
 
         text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 6][1]))
         text_coordinate = (int(683 + 78 - text_width[0] / 2), int(300 + 96.4 * i - text_width[1] / 2))
-        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][1]), fill=(254, 143, 249),
-                  font=font_style)
+        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][1]), fill=(254, 143, 249), font=font_style)
 
         text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 6][2]))
         text_coordinate = (int(683 + 2 * 78 - text_width[0] / 2), int(300 + 96.4 * i - text_width[1] / 2))
-        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][2]), fill=(255, 227, 113),
-                  font=font_style)
+        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][2]), fill=(255, 227, 113), font=font_style)
 
         text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 6][3]))
         text_coordinate = (int(683 + 3 * 78 - text_width[0] / 2), int(300 + 96.4 * i - text_width[1] / 2))
-        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][3]), fill=(108, 237, 226),
-                  font=font_style)
+        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][3]), fill=(108, 237, 226), font=font_style)
     buf = BytesIO()
     img.save(buf, format="PNG")
     base64_str = base64.b64encode(buf.getvalue()).decode()
