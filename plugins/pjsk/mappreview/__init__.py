@@ -155,8 +155,7 @@ async def _(event: GroupMessageEvent):
         text = data['title'] + ' ' + diff.upper() + '\n' + '匹配度: ' + str(round(data['match'], 4))
         try:
             dir = await getmoechart(data['musicId'], diff, True)
-        except Exception as e:
-            raise e
+        except:
             await skill_preview.finish(BUG_ERROR)
             return
         else:

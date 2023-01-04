@@ -1,9 +1,10 @@
 import asyncio
 import random
+from typing import Union
 from nonebot import on_regex
 from nonebot.log import logger
 from nonebot import on_notice, on_command, on_message
-from nonebot.adapters.onebot.v11 import GROUP, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import GROUP, GroupMessageEvent, MessageSegment, Message
 from nonebot.matcher import Matcher
 from nonebot.typing import T_Handler, T_State
 from nonebot.adapters.onebot.v11 import Bot
@@ -32,6 +33,18 @@ __plugin_block_limit__ = {}
 
 
 retry = on_message(priority=3, rule=retry_rule(), block=True)
+
+
+async def send_msg(matcher: Matcher, res: Union[Message, MessageSegment, str]):
+    if isinstance(res, str):
+        fin_msg = await ReplyBank.get_final_reply_list(res)
+    else:
+        fin_msg = [res]
+    for index, per in enumerate(fin_msg, 1):
+        if per:
+            await matcher.send(per)
+            if index != len(fin_msg):
+                await asyncio.sleep(random.randint(1, 3))
 
 
 @retry.handle()
@@ -80,20 +93,13 @@ async def _(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
         retry_manager.remove(user.qq, user.group)
         # 新状态值为0，视为对话结束，retry信息彻底消失
         if user.state == 0:
-            fin_msg = await ReplyBank.get_final_reply_list(res, user)
-            for index, per in enumerate(fin_msg, 1):
-                await retry.send(per)
-                if index != len(fin_msg):
-                    await asyncio.sleep(random.randint(1, 3))
+            await send_msg(matcher, res)
+            await retry.finish()
         # 新状态值非0，视为继续对话，重新添加retry信息
         else:
             # 下一个状态
             retry_manager.add(user.qq, user.group, cmd.id, user.state)
-            fin_msg = await ReplyBank.get_final_reply_list(res, user)
-            for index, per in enumerate(fin_msg, 1):
-                await retry.send(per)
-                if index != len(fin_msg):
-                    await asyncio.sleep(random.randint(1, 3))
+            await send_msg(matcher, res)
     # 若明明该有回复却无回复(出bug了)
     else:
         ignore_mute(f"{user.group}_{user.qq}")
@@ -103,7 +109,7 @@ async def _(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
 def create_matchers():
     def execute_handler(cmd: Command) -> [T_Handler]:
         @test.handle()
-        async def _(bot: Bot, state: T_State):
+        async def _(matcher:Matcher, bot: Bot, state: T_State):
             # 补全用户信息
             user: UserInfo = state["users"]
             await get_user_info(bot, user)
@@ -115,20 +121,12 @@ def create_matchers():
             if res:
                 # 状态值为0，对话结束
                 if user.state == 0:
-                    fin_msg = await ReplyBank.get_final_reply_list(res, user)
-                    for index, per in enumerate(fin_msg, 1):
-                        await test.send(per)
-                        if index != len(fin_msg):
-                            await asyncio.sleep(random.randint(1, 3))
+                    await send_msg(matcher, res)
                     await test.finish()
                 # 状态值非0，对话继续，将用户添加进retry名单
                 else:
                     retry_manager.add(user.qq, user.group, cmd.id, user.state)
-                    fin_msg = await ReplyBank.get_final_reply_list(res, user)
-                    for index, per in enumerate(fin_msg, 1):
-                        await test.send(per)
-                        if index != len(fin_msg):
-                            await asyncio.sleep(random.randint(1, 3))
+                    await send_msg(matcher, res)
             else:
                 ignore_mute(f"{user.group}_{user.qq}")
                 logger.warning(f"随机消息模块单轮对话无消息内容!\n用户消息：{user.text}")

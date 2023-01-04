@@ -6,7 +6,7 @@ import random
 import datetime
 from pathlib import Path
 from typing import List, Dict, Union, Optional
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 from services import logger
 from services.db_context import db
 from utils.http_utils import AsyncHttpx
@@ -468,6 +468,35 @@ class GachaInfo(object):
         self.endAt: str = ''
 
 
+def cardskill(skillid, skills, description=None):
+    for skill in skills:
+        if skill['id'] == skillid:
+            if description is None:
+                description = skill['description']
+            count = description.count('{{')
+            for i in range(0, count):
+                para = description[description.find('{{') + 2:description.find('}}')].split(';')
+                for effect in skill['skillEffects']:
+                    if effect['id'] == int(para[0]):
+                        detail = effect['skillEffectDetails']
+                        if para[1] == 'd':
+                            replace = '/'.join(str(i["activateEffectDuration"]) for i in detail)
+                        elif para[1] == 'e':
+                            replace = str(effect['skillEnhance']['activateEffectValue'])
+                        elif para[1] == 'm':
+                            replace = '/'.join(
+                                str(i["activateEffectValue"] + 5*effect['skillEnhance']['activateEffectValue']) for i in detail
+                            )
+                        else:
+                            replace = '/'.join(str(i["activateEffectValue"]) for i in detail)
+                        # 全等级效果相同
+                        if len(set(replace.split('/'))) == 1:
+                            replace = replace.split('/')[0]
+                        description = description.replace('{{' + para[0] + ';' + para[1] + '}}', replace, 1)
+            return description
+    return ''
+
+
 class CardInfo(object):
     def __init__(self, config: Optional[Dict] = None):
         self.config: Dict[str, bool] = (  # 基础配置
@@ -483,7 +512,7 @@ class CardInfo(object):
         self.costume3dId: int = 0  # 衣装id
         self.skillId: int = 0  # 技能id
 
-        self.unit: str = ''  # 所属组合
+        self.unit: str = 'none'  # 所属组合
         self.cardRarityType: str = ''  # 卡面星数
         self.attr: str = ''  # 卡面属性
         self.isLimited: bool = False  # 卡面是否限定
@@ -542,6 +571,7 @@ class CardInfo(object):
                 self.music.arranger = each_music['arranger']
                 self.music.assetbundleName = each_music["assetbundleName"]
                 self.music.publishedAt = each_music['publishedAt']
+                break
 
     def _get_event_info(self):
         """
@@ -557,9 +587,6 @@ class CardInfo(object):
         if self.event.id == 0:
             raise Exception('卡面无对应活动')
         # 获取活动信息
-        for each in event_cards:
-            if each['eventId'] == self.event.id:
-                self.event.cards.append(each['cardId'])
         with open(data_path / 'events.json', 'r', encoding='utf-8') as f:
             events = json.load(f)
         for each_event in events:
@@ -575,30 +602,48 @@ class CardInfo(object):
                     each_event['aggregateAt'] / 1000 + 1, pytz.timezone('Asia/Shanghai')
                 ).strftime('%Y/%m/%d %H:%M:%S')
                 break
-        # 获取参与活动的角色信息
-        with open(data_path / 'cards.json', encoding='utf-8') as f:
-            cards = json.load(f)
-        for cardid in self.event.cards:
-            for card in cards:
-                if cardid == card['id']:
-                    self.event.bonuseattr = card["attr"]
-                    self.event.bonusechara.append(card["characterId"])
-                    break
+        # 获取参与活动的角色信息、活动属性
+        with open(data_path / 'eventDeckBonuses.json', 'r', encoding='utf-8') as f:
+            eventDeckBonuses = json.load(f)
+        for bonuse in eventDeckBonuses:
+            if bonuse['eventId'] == self.event.id:
+                if not self.event.bonuseattr:
+                    try:
+                        self.event.bonuseattr = bonuse['cardAttr']
+                    except:
+                        pass
+                try:
+                    if bonuse['bonusRate'] == 50:
+                        self.event.bonusechara.append(bonuse["gameCharacterUnitId"])
+                except:
+                    pass
+
         with open(data_path / 'gameCharacterUnits.json', 'r', encoding='utf-8') as f:
             game_character_units = json.load(f)
         tmp_bonuse_charas = []
         for unitid in self.event.bonusechara:
             charaid, unit, charapicname = analysisunitid(unitid, game_character_units)
-            tmp_bonuse_charas.append(charapicname)
+            tmp_bonuse_charas.append({
+                'id': charaid,
+                'unit': unit,
+                'asset': charapicname
+            })
+        # 对箱活加成角色作额外处理，只对杏二箱(id:37)后箱活作处理，之前的箱活加成角色不用变
+        if self.event.id >= 37 and len(set(i['unit'] for i in tmp_bonuse_charas)) == 1:
+            for bonuse_chara in tmp_bonuse_charas.copy():
+                if bonuse_chara['id'] > 20:
+                    tmp_bonuse_charas.remove(bonuse_chara)
+            tmp_bonuse_charas.append({
+                'unit': tmp_bonuse_charas[0]['unit'],
+                'asset': 'vs_90.png'
+            })
         self.event.bonusechara = tmp_bonuse_charas
 
     def _get_gacha_info(self):
         with open(data_path / 'gachas.json', 'r', encoding='utf-8') as f:
             gachas = json.load(f)
         for each_gacha in gachas:
-            # 初始卡没有来源卡池
-            # 开服的二三星以及活动报酬卡都是后来才进的卡池，这类卡的来源卡池个人定义为初次登场的卡池
-            if not (
+            if not (  # 开服的二三星以及活动报酬卡都是后来才进的卡池，这类卡的来源卡池个人定义为初次登场的卡池
                 each_gacha["gachaType"] == 'ceil'
                 and each_gacha["name"] != "イベントメンバー出現率UPガチャ"
                 and not each_gacha['name'].startswith('[1回限定]')
@@ -608,7 +653,7 @@ class CardInfo(object):
                 if each_card["cardId"] == self.id:
                     self.gacha.id = each_gacha["id"]
                     # gachaCardRarityRateGroupId：
-                    # 1天井池和常规池(不清楚怎么区分，只能靠活动类型区分)、2一去不复返的3星券池子、3fes限、4生日池
+                    # 1天井池和常规池(不清楚怎么区分，暂时靠卡面是否限定区分)、2一去不复返的3星券池子、3fes限、4生日池
                     self.gacha.gachaCardRarityRateGroupId = each_gacha["gachaCardRarityRateGroupId"]
                     self.gacha.name = each_gacha["name"]
                     self.gacha.assetbundleName = each_gacha["assetbundleName"]
@@ -634,7 +679,8 @@ class CardInfo(object):
 
                 self.cardRarityType = each_card["cardRarityType"]  # 卡面星数
                 self.attr = each_card["attr"]  # 卡面属性
-
+                if each_card.get("supportUnit", "none") != "none":
+                    self.unit = each_card["supportUnit"]
                 self.prefix = each_card["prefix"]  # 卡面名称
                 if each_card["gachaPhrase"] != '-':  # 初始卡无招募语
                     self.gachaPhrase['JP'] = each_card["gachaPhrase"]  # 招募语
@@ -663,8 +709,9 @@ class CardInfo(object):
                 self.charaName = (
                         each_card.get("firstName", "") + " " + each_card.get("givenName", "")
                 ).strip()  # 角色名称
-                self.unit = each_card["unit"]  # 组合名称
+                self.unit = self.unit if self.unit != 'none' else each_card["unit"]  # 组合名称
                 break
+
         # 获取衣装asset名
         with open(data_path / 'cardCostume3ds.json', 'r', encoding='utf-8') as f:
             costume3ds = json.load(f)
@@ -702,16 +749,9 @@ class CardInfo(object):
             self.cardSkillDes['CN'] = trans['skill_desc'][self.skillId]
         except:
             pass
-        # 最后解析技能效果中的数值(很笨，使用到自己搓的skillTrans.json)
-        with open(data_path / 'skillTrans.json') as f:
-            skills = json.load(f)
-        for each_skill in skills:
-            if each_skill["id"] == self.skillId:
-                params = each_skill["params"]
-                for key in self.cardSkillDes.keys():
-                    for k in params.keys():
-                        self.cardSkillDes[key] = self.cardSkillDes[key].replace('{{'+k+'}}', params[k])
-                break
+        # 最后解析技能效果中的数值
+        for key in self.cardSkillDes.keys():
+            self.cardSkillDes[key] = cardskill(self.skillId, skills, self.cardSkillDes[key])
 
         # 获取活动信息
         if self.config.get('event', True):
@@ -733,10 +773,9 @@ class CardInfo(object):
             except:
                 pass
 
-    async def toimg(self):
+    async def toimg(self) -> 'Image':
         """
         生成卡面的详细信息图
-        :param save_path:保存路径
         """
         _tmpcards = [{
             'id': self.id,
@@ -744,9 +783,10 @@ class CardInfo(object):
             'assetbundleName': self.assets['card'],
             'attr': self.attr
         }]
-        left_width = 820  # 左侧图的宽度
+        style_color = "#00CCBB"  # 作图的背景色
+        left_width = 880  # 左侧图的宽度
         left_pad = (30, 30, 40, 40)  # 左侧图的pad
-        right_width = 800   # 右侧图的宽度
+        right_width = 860   # 右侧图的宽度
         right_pad = (65, 75, 50, 50)  # 右侧图的pad
         _l_w = left_width + left_pad[2] + left_pad[3]
         _r_w = right_width + right_pad[2] + right_pad[3]
@@ -766,7 +806,7 @@ class CardInfo(object):
             padding=(20,20,30,30),
             interval=35+(right_width-unit_img.width-charaname_img.width)//2,
             align_type='center',
-            bk_color='#11d3c3',
+            bk_color=style_color,
             border_type='circle',
             border_radius=_r_w//36
         )
@@ -812,7 +852,9 @@ class CardInfo(object):
         # 技能效果
         skilldes_img = union(
             [t2i(
-                f"{self.cardSkillDes[each]}\n({each})", max_width=586, wrap_type='right'
+                f"{self.cardSkillDes[each]}\n({each})",
+                max_width=right_width-right_pad[2]-160,
+                wrap_type='right'
             ) for each in self.cardSkillDes.keys()],
             type='row',
             align_type='right',
@@ -889,15 +931,14 @@ class CardInfo(object):
         )
 
         # 生成卡面大图cardlarge_img
-        _c_w = left_width + left_pad[2] + left_pad[3]
         if self.cardRarityType in ['rarity_3', 'rarity_4']:
             cardlarge_img = union(
                 [
-                    (await cardlarge(self.id, False, _tmpcards)).resize((_c_w, int(_c_w*0.61))),
-                    (await cardlarge(self.id, True, _tmpcards)).resize((_c_w, int(_c_w*0.61))),
+                    (await cardlarge(self.id, False, _tmpcards)).resize((_l_w, int(_l_w*0.61))),
+                    (await cardlarge(self.id, True, _tmpcards)).resize((_l_w, int(_l_w*0.61))),
                 ], type='row', length=0, interval=30)
         else:
-            cardlarge_img = (await cardlarge(self.id, False)).resize((_c_w, int(_c_w*0.61)))
+            cardlarge_img = (await cardlarge(self.id, False, _tmpcards)).resize((_l_w, int(_l_w*0.61)))
 
         # 生成gacha大图gacha_img
         gacha_img = None
@@ -912,9 +953,8 @@ class CardInfo(object):
                 type='col',
                 length=left_width,
             )
-            if (  # 卡池是当期卡池、活动是5v5，卡池类型为期间限定(除128和大罪联动依然没找到合适方法判别)
-                self.event.id != 0
-                and self.event.eventType == 'cheerful_carnival'
+            if (  # 若卡面为限定卡，当卡池也为当期池时，认定池子为限定池
+                self.isLimited
                 and self.gacha.startAt == self.releaseAt
                 and self.gacha.gachaCardRarityRateGroupId != 3
             ):
@@ -959,19 +999,32 @@ class CardInfo(object):
                  t2i('结束时间：'+self.event.aggregateAt, font_size=30)],
                 type='row',
                 length=0,
-                interval=30
+                interval=40
             )
-            charapic = Image.open(data_path / f'chara/{self.event.bonusechara[0]}').resize((60, 60))
-            for chara_pic_name in self.event.bonusechara[1:]:
-                charapic = union(
-                [charapic, Image.open(data_path / f'chara/{chara_pic_name}').resize((60, 60))],
-                type='col',
-                length=0,
-                interval=10
-            )
+            bonusechara_pic = []
+            for bonusechara in self.event.bonusechara:
+                unitcolor = {
+                    'piapro': '#000000',
+                    'light_sound': '#4455dd',
+                    'idol': '#88dd44',
+                    'street': '#ee1166',
+                    'theme_park': '#ff9900',
+                    'school_refusal': '#884499',
+                }
+                # 活动角色边框显示组合色
+                # 这里不是很懂为什么需要经过多次放缩才能让图片锯齿没那么明显，但总之试出来了(ˉ▽ˉ；)...
+                _chr_pic = Image.open(data_path / f'chara/{bonusechara["asset"]}').resize((110, 110))
+                _bk = Image.new('RGBA', (130, 130), color=unitcolor[bonusechara['unit']])
+                _bk.paste(_chr_pic, (10, 10), mask=_chr_pic.split()[-1])
+                mask = Image.new("L", _bk.size, 0)
+                ImageDraw.Draw(mask).ellipse((1, 1, _bk.size[0] - 2, _bk.size[1] - 2), 255)
+                mask = mask.filter(ImageFilter.GaussianBlur(0))
+                _bk.putalpha(mask)
+                bonusechara_pic.append(_bk.resize((65, 65)).copy())
+            charapic = union(bonusechara_pic, type='col', length=0, interval=10)
             attrpic = Image.open(data_path / f'chara/icon_attribute_{self.event.bonuseattr}.png').resize((60, 60))
             _ = union([attrpic, charapic], type='row', interval=10, align_type='right')
-            _ = union([timepic, _], type='col', length=left_width)
+            _ = union([timepic, _], type='col', interval=60, length=left_width)
             event_img = union(
                 [bannerpic, eventnamepic, _],
                 padding=left_pad,
@@ -1035,12 +1088,8 @@ class CardInfo(object):
             _k = '当期卡池' if self.releaseAt == self.gacha.startAt else '初次可得卡池'
             _t = t2i(_k,font_size=50,font_color='white')
             _i = Image.new('RGBA', (_l_w, 70))
-            ImageDraw.Draw(_i).rounded_rectangle(
-                (0, 0, _i.width, _i.height),
-                25,
-                (17, 211, 195)
-            )
-            _i.paste(_t,((_l_w-50*len(_k))//2,10),mask=_t.split()[-1])
+            ImageDraw.Draw(_i).rounded_rectangle((0, 0, _i.width, _i.height), 25, style_color)
+            _i.paste(_t,((_l_w-50*len(_k))//2, 10),mask=_t.split()[-1])
             left_imgs.append(_i.copy())
             left_imgs.append(gacha_img)
         # event图放在左边
@@ -1048,22 +1097,14 @@ class CardInfo(object):
             _t = t2i('活动', font_size=50, font_color='white')
             _i = Image.new('RGBA', (_l_w, 70))
             _d = ImageDraw.Draw(_i)
-            _d.rounded_rectangle(
-                (0, 0, _i.width, _i.height),
-                25,
-                (17, 211, 195)
-            )
+            _d.rounded_rectangle((0, 0, _i.width, _i.height), 25, style_color)
             _i.paste(_t, ((_l_w-100)//2, 10), mask=_t.split()[-1])
             left_imgs.append(_i.copy())
             left_imgs.append(event_img)
         # music图根据左右侧图长度差距决定放在哪边
         if music_img:
             _i = Image.new('RGBA', (_l_w, 70))
-            ImageDraw.Draw(_i).rounded_rectangle(
-                (0, 0, _i.width, _i.height),
-                25,
-                (17,211,195)
-            )
+            ImageDraw.Draw(_i).rounded_rectangle((0, 0, _i.width, _i.height), 25, style_color)
             _t = t2i('歌曲', font_size=50, font_color='white')
             _i.paste(_t, ((_l_w-100)//2, 10), mask=_t.split()[-1])
             if (
@@ -1080,7 +1121,7 @@ class CardInfo(object):
             left_imgs,
             type='row',
             interval=_interval,
-            length=left_width+left_pad[2]+left_pad[3],
+            length=_l_w,
             align_type='left',
         )
         # 合成右侧图
@@ -1097,7 +1138,7 @@ class CardInfo(object):
         badge_img = Image.open(data_path / 'pics/cardinfo_badge.png')
         badge_img = badge_img.resize((right_img.width//2, int(badge_img.height/badge_img.width*right_img.width//2)))
         info_img.paste(badge_img, (info_pad[0], int(info_pad[1]/3*2 - badge_img.height)), mask=badge_img.split()[-1])
-        # watermark_img = t2i('Generated by Unibot', font_size=60, font_color='#11d3c3')
+        # watermark_img = t2i('Code by Yozora&Watagashi_uni\nGenerated by Unibot', font_size=35, font_color=style_color)
         # info_img.paste(
         #     watermark_img,
         #     (info_img.width-watermark_img.width-info_pad[0], info_img.height-watermark_img.height-info_pad[1]//6),

@@ -10,6 +10,7 @@ from PIL import Image
 from zhconv import convert
 from services import logger
 from utils.http_utils import AsyncHttpx
+from utils.user_agent import get_user_agent
 from utils.utils import scheduler
 from ._config import json_url, json_url_bak, db_url, data_path, db_url_bak, lab_headers
 
@@ -110,55 +111,24 @@ class PjskDataUpdate:
         path = path.replace('\\', '/')
         raw = raw.replace('\\', '/')
         url = db_url_bak + rf'/{path}/{raw}'
-        headers = {
-            'referer': 'https://pjsek.ai/',
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-            'accept-encoding': 'gzip, deflate, br',
-            'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6,ja;q=0.5',
-            'cache-control': 'max-age=0',
-            'sec-ch-ua': '"Microsoft Edge";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'none',
-            'sec-fetch-user': '?1',
-            'upgrade-insecure-requests': '1',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 Edg/105.0.1343.42'
-        }
-
         filepath = self.path / path
         if not filepath.exists():
             filepath.mkdir(parents=True, exist_ok=True)
         filepath = filepath / raw
         if not filepath.exists():
-            if await self._download_file(url, path=filepath, headers=headers, block=block):
+            if await self._download_file(url, path=filepath, block=block):
                 logger.info(f'{path}/{raw}下载成功')
             else:
                 url = db_url + rf'/{path}/{raw}'
-                headers = {
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-                    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6,ja;q=0.5',
-                    'Cache-Control': 'max-age=0',
-                    'Connection': 'keep-alive',
-                    'Host': 'api.unipjsk.com',
-                    'sec-ch-ua': '"Microsoft Edge";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-                    'sec-ch-ua-mobile': '?0',
-                    'sec-ch-ua-platform': '"Windows"',
-                    'Sec-Fetch-Dest': 'document',
-                    'Sec-Fetch-Mode': 'navigate',
-                    'Sec-Fetch-Site': 'none',
-                    'Sec-Fetch-User': '?1',
-                    'Upgrade-Insecure-Requests': '1',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36 Edg/105.0.1343.42'
-                }
-                if await self._download_file(url, path=filepath, headers=headers, block=block):
+                if await self._download_file(url, path=filepath, block=block):
                     logger.info(f'{path}/{raw}下载成功')
 
-    async def _download_file(self, url: str, path: Path, headers, block: bool = False):
+    async def _download_file(self, url: str, path: Path, headers=None, block: bool = False):
         try:
+            if headers is None:
+                headers = get_user_agent()
             if block:
-                resp = requests.get(url, timeout=4)
+                resp = requests.get(url, headers=headers)
             else:
                 resp = await AsyncHttpx.get(url, headers=headers)
             if resp.status_code == 200:
@@ -172,22 +142,19 @@ class PjskDataUpdate:
         return False
 
     async def get_asset(self, path: str, raw: str, block: bool = False, download: bool = True) -> Image:
-        pic = None
-        while not pic:
-            if not (self.path / path / raw).exists() and download:
-                logger.warning(f'缺失资源{path}/{raw}，尝试下载此资源中...')
-                await self.update_jp_assets(path, raw, block=block)
-            try:
-                if raw.endswith('.png') or raw.endswith('.jpg') or raw.endswith('.jpeg'):
-                    pic = Image.open(self.path / path / raw)
-                    return pic
-            except FileNotFoundError:
-                logger.warning(f'找不到资源{path}/{raw}')
-                # return None
-            except Exception as e:
-                logger.warning(f'资源调用失败，错误信息：{e}')
-                # return None
-            await asyncio.sleep(2)
+        if not (self.path / path / raw).exists() and download:
+            logger.warning(f'缺失资源{path}/{raw}，尝试下载此资源中...')
+            await self.update_jp_assets(path, raw, block=block)
+        try:
+            if raw.endswith('.png') or raw.endswith('.jpg') or raw.endswith('.jpeg'):
+                pic = Image.open(self.path / path / raw)
+                return pic
+        except FileNotFoundError:
+            logger.warning(f'找不到资源{path}/{raw}')
+            return None
+        except Exception as e:
+            logger.warning(f'资源调用失败，错误信息：{e}')
+            return None
 
 pjsk_update_manager = PjskDataUpdate(data_path)
 

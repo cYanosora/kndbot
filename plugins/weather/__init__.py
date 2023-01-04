@@ -32,9 +32,9 @@ __plugin_count_limit__ = {
 
 __plugin_configs__ = {
     "APIKEY": {
-        "value": "f9d87f5dae7044fe9c97cbe1928c53f0",
+        "value": "",
         "help": "和风天气api的key，需要从官网注册账号自行获取",
-        "default_value": "f9d87f5dae7044fe9c97cbe1928c53f0"
+        "default_value": ""
     },
     "APITYPE": {
         "value": 0,

@@ -1,4 +1,6 @@
 import math
+import typing
+
 import svgwrite
 import svgwrite.text
 import svgwrite.image
@@ -42,7 +44,7 @@ class Meta:
     movie: typing.Optional[str] = None
     movieoffset: typing.Optional[float] = None
     basebpm: typing.Optional[float] = None
-    requests: list = dataclasses.field(default_factory=list)
+    requests: typing.List = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass
@@ -70,7 +72,7 @@ class SUSwithskill:
 
     def __init__(
             self,
-            lines: list[str],
+            lines: typing.List[str],
             note_size=1.0,
             note_host='https://asset3.pjsekai.moe/notes',
             **kwargs,
@@ -82,8 +84,8 @@ class SUSwithskill:
         elif kwargs['playlevel'] > 33:
             self.pixel_per_second = 340
 
-        self.meta_lines: list[Line] = []
-        self.score_lines: list[Line] = []
+        self.meta_lines: typing.List[Line] = []
+        self.score_lines: typing.List[Line] = []
 
         for line in lines:
             line = Line(line)
@@ -111,9 +113,9 @@ class SUSwithskill:
         self.note_size = note_size
         self.note_host = note_host
 
-        self.words: list[Word] = []
+        self.words: typing.List[Word] = []
 
-        self.special_cover_objects: list[CoverObject] = []
+        self.special_cover_objects: typing.List[CoverObject] = []
 
     def __getitem__(self, key: slice) -> svgwrite.Drawing:
         bar_from = key.start or 0
@@ -175,7 +177,7 @@ class SUSwithskill:
                 class_='slide' if not note.head.tap or note.head.tap.type == 1 else 'slide-critical'),
             )
 
-            def binary_solution_for_x(y, curve: list[tuple], s: slice = None, e=0.1):
+            def binary_solution_for_x(y, curve: typing.List[tuple], s: slice = None, e=0.1):
                 if s is None:
                     s = slice(0, 1)
 
@@ -788,7 +790,7 @@ class SUSwithskill:
 
     def export(self, file_name, style_sheet='', display_skill_extra=True):
         n_bars = math.ceil(self.score.notes[-1].bar - 1e-6)
-        drawings: list[svgwrite.Drawing] = []
+        drawings: typing.List[svgwrite.Drawing] = []
 
         width = 0
         height = 0

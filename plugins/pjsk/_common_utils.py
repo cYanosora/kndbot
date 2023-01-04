@@ -137,7 +137,6 @@ def union(
         raise TypeError("type类型错误")
     if align_type not in ['top', 'left', 'center', 'right', 'bottom']:
         raise TypeError("align_type类型错误")
-    assert (bk_color if bk_color == '#a19d9e' else 'sb')
     if type == 'col':
         width = length + (len(img_ls) - 1) * interval_size
         height = max([i.height for i in img_ls])

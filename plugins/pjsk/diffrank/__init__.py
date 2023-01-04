@@ -50,23 +50,24 @@ pjsk_hotrank = on_regex('^(.*)难度排行(.*)', permission=GROUP, priority=5, b
 @pjsk_hotrank.handle()
 async def _(reg_group: Tuple[Any, ...] = RegexGroup()):
     fcap = {'ap': 2, 'fc': 1}.get(reg_group[0].strip(), 0)
-    tmp_arg = reg_group[1].strip().split()
-    if len(tmp_arg) == 2:
-        level = int(tmp_arg[0]) if tmp_arg[0].isdigit() else 0
-        difficulty = tmp_arg[1]
-        difficulty_dict = {
-            'ma': 'master', 'master': 'master',
-            'ex': 'expert', 'expert': 'expert',
-            'hd': 'hard', 'hard': 'hard',
-            'nm': 'normal', 'normal': 'normal',
-            'ez': 'eazy', 'eazy': 'eazy'
-        }
-        difficulty = difficulty_dict.get(difficulty, None)
-    elif len(tmp_arg) == 1:
-        level, difficulty = int(tmp_arg[0]) if tmp_arg[0].strip().isdigit() else 0, 'master'
+    tmp_arg = reg_group[1].strip()
+    difficulty_dict = {
+        'ma': 'master', 'master': 'master',
+        'ex': 'expert', 'expert': 'expert',
+        'hd': 'hard', 'hard': 'hard',
+        'nm': 'normal', 'normal': 'normal',
+        'ez': 'eazy', 'eazy': 'eazy'
+    }
+    for diff in difficulty_dict.keys():
+        if tmp_arg.endswith(diff):
+            difficulty = difficulty_dict[diff]
+            level = tmp_arg.replace(diff, '').strip()
+            break
     else:
-        level, difficulty = 0, None
-    if not level or not difficulty:
+        difficulty = 'master'
+        level = tmp_arg.strip()
+    level = int(level) if level.isdigit() else 0
+    if level == 0:
         await pjsk_hotrank.finish(
             '参数错误，指令：难度排行 定数 难度\n'
             '难度支持的输入: easy/ez, normal/nm, hard/hd, expert/ex, master/ma，如：难度排行 28 expert'

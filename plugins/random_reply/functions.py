@@ -279,7 +279,7 @@ async def jrrp(user: UserInfo, *args, **kwargs):
 
 async def knd_men(user: UserInfo, *args, **kwargs):
     reply = "圣奏宝必爱你，圣奏宝必护佑你，圣奏宝必指引你。"
-    return Message(reply)
+    return reply
 
 
 async def knd_emoji(user: UserInfo, *args, **kwargs):

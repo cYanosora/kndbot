@@ -73,6 +73,7 @@ __plugin_count_limit__ = {
     "limit_type": "user",
     "rst": "你今天已经看了[count]次啦，还请明天再看呢（。＾▽＾）[at]",
 }
+__plugin_block_limit__ = {}
 
 send_img = on_command("来点", aliases={"看", "来丶"},permission=GROUP, rule=rule(), priority=5, block=True)
 _path = IMAGE_PATH / "image_management"

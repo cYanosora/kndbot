@@ -29,10 +29,10 @@ usage：
     若群内已有unibot请勿开启此bot该功能
     限制每个群半分钟只能查询2次
     指令：
-        findcard [角色名]                        : 查看角色名对应卡面概览
-        findcard [角色名] [一星/二星/三星/生日/四星] : 查看角色名对应类型的卡面概览
-        card     [卡面id]                       : 查看卡面id对应的特训前后卡面大图
-        查卡/cardinfo [卡面id]                       : 查看卡面详细信息
+        findcard [角色名]                                : 查看角色名对应卡面概览
+        findcard [角色名] [一星/1/二星/2/三星/3/生日/四星/4] : 查看角色名对应类型的卡面概览
+        查卡/cardinfo [卡面id]                           : 查看卡面详细信息
+        card     [卡面id]                               : 查看卡面id对应的特训前后卡面大图
     数据来源：
         pjsekai.moe
         unipjsk.com
@@ -73,14 +73,18 @@ async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
     alias = arg.extract_plain_text().strip()
     dic = {
         '一星': 'rarity_1',
+        '1':'rarity_1',
         '二星': 'rarity_2',
+        '2':'rarity_2',
         '三星': 'rarity_3',
+        '3':'rarity_3',
         '四星': 'rarity_4',
+        '4':'rarity_4',
         '生日': 'rarity_birthday',
     }
     for _type in dic.keys():
         if alias.endswith(_type):
-            alias = alias[:-len(_type)]
+            alias = alias[:-len(_type)].strip()
             cardRarityType = dic[_type]
             break
     else:
@@ -159,10 +163,11 @@ async def _(arg: Message = CommandArg()):
         return
     path = data_path / f'infocard'
     path.mkdir(parents=True, exist_ok=True)
-    file = path / f'id_{arg}.png'
+    file = path / f'id_{arg}.jpg'
     if not file.exists():
         cardinfo = CardInfo()
         await cardinfo.getinfo(card_id)
         pic = await cardinfo.toimg()
-        pic.save(file)
+        pic = pic.convert('RGB')
+        pic.save(file, quality=85)
     await card.finish(image(file))

@@ -60,13 +60,13 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
             f"master进度:FC {profile.full_combo[4]}/{profile.clear[4]}," \
             f" AP{profile.full_perfect[4]}/{profile.clear[4]}\n"
     ap33plus = profile.masterscore[33][0] + profile.masterscore[34][0] + profile.masterscore[35][0] + \
-               profile.masterscore[36][0]
+               profile.masterscore[36][0] + profile.masterscore[37][0]
     fc33plus = profile.masterscore[33][1] + profile.masterscore[34][1] + profile.masterscore[35][1] + \
-               profile.masterscore[36][1]
+               profile.masterscore[36][1] + profile.masterscore[37][1]
     if ap33plus != 0:
-        text += f"\nLv.33及以上AP进度：{ap33plus}/{profile.masterscore[33][3] + profile.masterscore[34][3] + profile.masterscore[35][3] + profile.masterscore[36][3]}"
+        text += f"\nLv.33及以上AP进度：{ap33plus}/{profile.masterscore[33][3] + profile.masterscore[34][3] + profile.masterscore[35][3] + profile.masterscore[36][3] + profile.masterscore[37][3]}"
     if fc33plus != 0:
-        text += f"\nLv.33及以上FC进度：{fc33plus}/{profile.masterscore[33][3] + profile.masterscore[34][3] + profile.masterscore[35][3] + profile.masterscore[36][3]}"
+        text += f"\nLv.33及以上FC进度：{fc33plus}/{profile.masterscore[33][3] + profile.masterscore[34][3] + profile.masterscore[35][3] + profile.masterscore[36][3] + profile.masterscore[37][3]}"
     if profile.masterscore[32][0] != 0:
         text += f"\nLv.32AP进度：{profile.masterscore[32][0]}/{profile.masterscore[32][3]}"
     if profile.masterscore[32][1] != 0:

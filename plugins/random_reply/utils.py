@@ -6,10 +6,9 @@ from models.group_member_info import GroupInfoUser
 from models.sign_group_user import SignGroupUser
 from .models import UserInfo
 from services.db_context import db
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from utils.message_builder import image, record
 from nonebot.adapters.onebot.v11 import Message, Bot
-from typing import Union
 from functools import wraps
 try:
     import ujson as json
@@ -19,7 +18,6 @@ except ModuleNotFoundError:
 require('sign_in')
 
 from plugins.sign_in.config import lik2level
-
 
 
 class ReplyBank(db.Model):
@@ -37,10 +35,10 @@ class ReplyBank(db.Model):
     reply = db.Column(db.String(), nullable=False)
 
     @classmethod
-    def _format_reply(cls, text: str, user: UserInfo) -> Tuple[Message, int]:
+    async def _format_reply(cls, text: str, user: UserInfo) -> Tuple[str, int]:
         """
         格式化 catagory == text类型 的文本内容
-        返回 Message类型的消息内容(包括文本、图片、语音、at)，消息类型标识符
+        返回 Message类型的消息内容(包括文本、图片、语音、at)，消息类型标识符flag
         flag = 0: 纯文本
         flag = 1: 文本+图片
         flag = 2: 语音+文本
@@ -57,6 +55,12 @@ class ReplyBank(db.Model):
         if r'[at]' in text:
             text = text.replace('[at]', "")
             text = rf"[CQ:at,qq={user.qq}]" + text
+        if "[+]" in text:
+            text = text.replace("[+]", "")
+            await SignGroupUser.add_property(user.qq, user.group, "互动加成", max=5)
+        if "[-]" in text:
+            text = text.replace("[-]", "")
+            await SignGroupUser.sub_property(user.qq, user.group, "互动加成")
         flag = 0
         while True:
             if r'[image' in text:
@@ -76,37 +80,13 @@ class ReplyBank(db.Model):
                     text = text.replace(rf"[record:{res.group(1)}]", rec_str)
             else:
                 break
-        return Message(text), flag
+        return text, flag
 
     @classmethod
-    async def get_final_reply_list(cls, msg: Message, user: UserInfo) -> List[Message]:
+    async def get_final_reply_list(cls, msg: str) -> List[Message]:
         reply_list = []
-        tmp_msg = Message()
-        flag = False
-        for per in msg:
-            if "[CQ:record" in str(per):
-                reply_list.append(per)
-            elif "[CQ:" not in str(per):
-                if "&#91;+&#93;" in str(per):
-                    per = str(per).replace("&#91;+&#93;", "")
-                    await SignGroupUser.add_property(user.qq, user.group, "互动加成", max=5)
-                if "&#91;-&#93;" in str(per):
-                    per = str(per).replace("&#91;-&#93;", "")
-                    await SignGroupUser.sub_property(user.qq, user.group, "互动加成")
-                if flag:
-                    reply_list.append(tmp_msg.copy())
-                    tmp_msg.clear()
-                if '||' in str(per):
-                    tmp_text = str(per).split('||')
-                    for i in tmp_text[:-1]:
-                        reply_list.append(Message(i))
-                    tmp_msg.append(tmp_text[-1])
-                else:
-                    tmp_msg.append(per)
-                flag = True
-            else:
-                tmp_msg.append(per)
-        reply_list.append(tmp_msg.copy())
+        for per in msg.split('||'):
+            reply_list.append(Message(per))
         return reply_list
 
     @classmethod
@@ -116,7 +96,7 @@ class ReplyBank(db.Model):
             catagory: str,
             type: str,
             user: UserInfo,
-    ) -> List[Tuple[Union[Message, str], int]]:
+    ) -> List[Tuple[str, int]]:
         """
         获取用户对应回复内容的所有应答
         :param cid: 命令id
@@ -132,16 +112,7 @@ class ReplyBank(db.Model):
         ).gino.all()
         for each in q:
             if not each.rule or each.rule and re.search(each.rule, user.text):
-                if catagory == "text":
-                    msg = each.reply
-                    # 必须获取纯文本后紧接格式化再转为Message，否则Messgae会转义某些字符
-                    tmp.append((msg, each.new_st))
-                elif catagory == "image":
-                    msg = each.reply
-                    tmp.append((Message(image(msg)), each.new_st))
-                else:
-                    msg = each.reply
-                    tmp.append((Message(record(msg)), each.new_st))
+                tmp.append((each.reply, each.new_st))
         return tmp
 
     @classmethod
@@ -153,7 +124,7 @@ class ReplyBank(db.Model):
             img_rd: float = 1,
             rcd_rd: float = 1,
             isn_level: bool = False
-    ) -> Tuple[Message, int]:
+    ) -> Tuple[str, int]:
         """
         获取用户最终回复的Message内容
         :param cid: 命令id
@@ -164,15 +135,15 @@ class ReplyBank(db.Model):
         :param rcd_rd: 语音概率，默认会发语音
         :param isn_level: 应答类型是否与用户等级无关
         """
-        reply = Message()
-        msg_st = 114514
+        reply = ''
+        msg_st = None
         flag = 0
         user.level = -1 if isn_level else user.level
         # 找文字
         tmp = await cls._get_reply(cid, "text", type, user)
         if tmp:
             text_message = random.choice(tmp)
-            msg, flag = cls._format_reply(text_message[0], user)
+            msg, flag = await cls._format_reply(text_message[0], user)
             msg_st = text_message[1]
             reply += msg
         # 文字回复内无图片，需要图片
@@ -181,9 +152,8 @@ class ReplyBank(db.Model):
             tmp = await cls._get_reply(cid, "image", type, user)
             if tmp:
                 image_message = random.choice(tmp)
-                img = image_message[0]
-                img_st = image_message[1]
-                msg_st = img_st if msg_st == 114514 else msg_st
+                img = str(image(image_message[0]))
+                msg_st = image_message[1] if msg_st is None else msg_st
                 reply += img
         # 文字回复内无语音，需要语音
         if (flag == 0 or flag == 1) and random.random() < rcd_rd:
@@ -191,14 +161,10 @@ class ReplyBank(db.Model):
             tmp = await cls._get_reply(cid, "record", type, user)
             if tmp:
                 record_message = random.choice(tmp)
-                rcd = record_message[0]
-                rcd_st = record_message[1]
-                msg_st = rcd_st if msg_st == 114514 else msg_st
-                if reply:
-                    reply = rcd + reply
-                else:
-                    reply = rcd
-        return reply, msg_st if msg_st != 114514 else 0
+                rcd = str(record(record_message[0]))
+                msg_st = record_message[1] if msg_st is None else msg_st
+                reply = rcd + reply if reply else rcd
+        return reply, msg_st if msg_st is not None else 0
 
     @classmethod
     async def get_user_random_reply(
@@ -208,7 +174,7 @@ class ReplyBank(db.Model):
             type: str,
             user: UserInfo,
             isn_level: bool = False
-    ) -> Tuple[Union[Message, List[Message]], int]:
+    ) -> Tuple[Optional[str], int]:
         """
         获取用户对应回复内容的随机应答
         :param cid: 命令id
@@ -224,24 +190,18 @@ class ReplyBank(db.Model):
             (cls.level == int(user.level))
         ).gino.all()
 
-        reply: List[Tuple[Union[Message, List[Message]], int]] = []
-        # reply = []
+        reply: List[Tuple[str, int]] = []
         for each in q:
             if user.state == 0 or not each.rule or re.search(each.rule, user.text):
-                msg = each.reply
-                if each.catagory == "image":
-                    reply.append((Message(image(msg)), each.new_st))
-                elif each.catagory == "record":
-                    reply.append((Message(record(msg)), each.new_st))
-                else:
-                    msg, flag = cls._format_reply(msg, user)
-                    reply.append((msg, each.new_st))
-
-        if reply:
-            final_reply = random.choice(reply)
-        else:
-            final_reply = None
+                reply.append((each.reply, each.new_st))
+        final_reply = random.choice(reply) if reply else None
         if final_reply:
+            if catagory == "image":
+                final_reply = str(image(final_reply[0])), final_reply[1]
+            elif catagory == "record":
+                final_reply = str(record(final_reply[0])), final_reply[1]
+            else:
+                final_reply = await cls._format_reply(final_reply[0], user)[0], final_reply[1]
             return final_reply[0], final_reply[1]
         return None, -1
 
