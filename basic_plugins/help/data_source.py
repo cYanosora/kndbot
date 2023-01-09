@@ -53,13 +53,16 @@ async def create_help_img(
                 continue
             # 获取插件类型
             plugin_type = "娱乐功能"
-            if plugins2settings_manager.get(
-                matcher.plugin_name
-            ) and plugins2settings_manager[matcher.plugin_name].get("plugin_type"):
-                plugin_type = plugins2settings_manager.get_plugin_data(
-                        matcher.plugin_name
-                    )["plugin_type"]
+            plugin_level = 5
+            if plugins2settings_manager.get(matcher.plugin_name):
+                plugin_level = plugins2settings_manager[matcher.plugin_name].get("level", 5)
+                if plugins2settings_manager[matcher.plugin_name].get("plugin_type"):
+                    plugin_type = plugins2settings_manager.get_plugin_data(matcher.plugin_name)["plugin_type"]
             else:
+                try:
+                    plugin_level = _module.__getattribute__("__plugin_settings__").get('level', 5)
+                except:
+                    pass
                 try:
                     plugin_type = _module.__getattribute__("__plugin_type__")
                 except AttributeError:
@@ -67,12 +70,12 @@ async def create_help_img(
             # 获取完插件信息，保存插件名数据，便于生成帮助图
             if plugin_type not in _plugins_data.keys():
                 _plugins_data[plugin_type] = []
-            _plugins_data[plugin_type].append(plugin_name)
+            _plugins_data[plugin_type].append((plugin_name, plugin_level))
         except AttributeError as e:
             logger.warning(f"获取功能 {matcher.plugin_name}: {plugin_name} 设置失败...e：{e}")
     # 获取完所有的插件帮助信息，开始生成帮助图
     types = list(_plugins_data.keys())
-    types.sort()
+    types.sort(key=lambda x: len(_plugins_data[x]), reverse=True)
     # 开始生成简易帮助
     simple_help_tuple_dic = {}
     for type_ in types:
@@ -80,16 +83,19 @@ async def create_help_img(
         for i, k in enumerate(sorted(_plugins_data[type_])):
             # 超管禁用flag, True表示禁用
             flag = True
-            if plugins_manager.get_plugin_status(k, "all"):
+            if plugins_manager.get_plugin_status(k[0], "all"):
                 flag = False
             if group_id:
-                flag = flag or not plugins_manager.get_plugin_status(k, "group") \
-                       or not group_manager.get_plugin_status(k, group_id, True)
-            _post_num = '1' if flag else '0'
+                flag = (
+                    flag or not plugins_manager.get_plugin_status(k[0], "group")
+                    or not group_manager.get_plugin_status(k[0], group_id, True)
+                    or group_manager.get_group_level(group_id) < k[1]
+                )
+            _pre_num = '1' if flag else '0'
             # 群聊禁用
-            _pre_num = '0' if group_id and group_manager.get_plugin_status(k, group_id) else '1'
+            _post_num = '0' if group_id and group_manager.get_plugin_status(k[0], group_id) else '1'
             # (群功能状态|全局禁用状态, 序号.功能名)
-            simple_help_tuple_dic[type_].append([_pre_num+_post_num, f"{i+1}.{k}"])
+            simple_help_tuple_dic[type_].append([_pre_num+_post_num, f"{i+1}.{k[0]}"])
     # 简易帮助图片合成
     random_bk = random.choice(os.listdir(random_bk_path))
     template_path = str(Path(__file__).parent / "templates")
@@ -127,8 +133,9 @@ def get_plugin_help(msg: str, user_type: int = 0) -> Optional[str]:
             pass
         if user_type == 2:
             try:
-                result += "\n{:=^70s}\n".format('超管额外命令') if result else ""
-                result += _module.__getattribute__("__plugin_superuser_usage__")
+                if _:= _module.__getattribute__("__plugin_superuser_usage__"):
+                    result += "\n{:=^70s}\n".format('超管额外命令') if result else ""
+                    result += _
             except AttributeError:
                 result += ""
                 pass
@@ -145,8 +152,9 @@ def get_plugin_help(msg: str, user_type: int = 0) -> Optional[str]:
                 pass
             if user_type == 2:
                 try:
-                    result += "\n{:=^70s}\n".format('超管额外命令') if result else ""
-                    result += _module.__getattribute__("__plugin_superuser_usage__")
+                    if _ := _module.__getattribute__("__plugin_superuser_usage__"):
+                        result += "\n{:=^70s}\n".format('超管额外命令') if result else ""
+                        result += _
                 except AttributeError:
                     result += ""
                     pass

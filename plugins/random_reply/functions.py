@@ -111,21 +111,25 @@ async def eat_noodles(user: UserInfo, *args, **kwargs):
     async def eat_func(inner_user: UserInfo, cid: int):
         if _noodle_fqlmt.count_check(inner_user.group):
             _noodle_fqlmt.start_cd(inner_user.group)
-            rd = random.random()
-            if rd < 0.95:
+            rst, state = '', 0
+            if random.random() < 0.95:
                 # normal：嗦面表情
-                img, state = await ReplyBank.get_user_random_reply(cid, "image", "normal", inner_user)
-                rst = img
+                if random.random() < 0.25:
+                    # 玩杯面
+                    rst, state = await ReplyBank.get_user_random_reply(cid, "text", "normal", inner_user)
+                if not rst:
+                    # 吃杯面
+                    rst, state = await ReplyBank.get_user_random_reply(cid, "image", "normal", inner_user)
             else:
                 # special： 面洒了
-                text, state = await ReplyBank.get_user_random_reply(cid, "text", "special", inner_user)
-                rst = text + image("s0", "kanade/noodle")
+                rst, state = await ReplyBank.get_user_mutil_reply(cid, "special", inner_user, 0.5, 0.2)
         else:
             # 被多次(3次)请求吃面后的处理
             if random.random() <= 0.5:
+                # bad：拒绝嗦面
                 rst, state = await ReplyBank.get_user_mutil_reply(cid, "bad", inner_user, 0.5, 0.2)
             else:
-                # good：嗦饱了
+                # good：想嗦但是饱了
                 rst, state = await ReplyBank.get_user_mutil_reply(cid, "good", inner_user, 0.5, 0.2)
         return rst, state
     return await eat_func(user, 4)

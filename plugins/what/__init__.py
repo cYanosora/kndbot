@@ -60,7 +60,7 @@ async def _(
     def split_command(msg):
         for command in commands:
             if command in msg:
-                prefix, suffix = re.split(command, msg)
+                prefix, suffix = re.split(command, msg, 1)
                 return prefix, suffix
         return "", ""
 

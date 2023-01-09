@@ -46,6 +46,7 @@
 * 头像表情包 — [MeetWq](https://github.com/noneplugin/nonebot-plugin-petpet)
 * 表情包制作 — [MeetWq](https://github.com/noneplugin/nonebot-plugin-memes)
 * 表情合成 — [MeetWq](https://github.com/noneplugin/nonebot-plugin-emojimix)
+* VITS — [dpm12345](https://github.com/dpm12345/nonebot_plugin_tts_gal) / [Kanade-nya](https://github.com/Kanade-nya/PJSK-Vits-Uni)
 * 疯狂星期四 — [KafCoppelia](https://github.com/MinatoAquaCrews/nonebot_plugin_crazy_thursday)
 * 今天吃什么 — [KafCoppelia](https://github.com/MinatoAquaCrews/nonebot_plugin_what2eat)
 * 语句抽象化 — [CherryCherries](https://github.com/CherryCherries/nonebot-plugin-abstract)
@@ -62,7 +63,7 @@
 但实现了所需的资源在初次使用到时会先调用相关api获取资源并保存到本地的功能(感谢api的提供者们)
 <br><br>
 我自己写的功能如<b>获取烧烤同人图、随机消息回复</b>需要与本地资源配合使用，
-这部分资源同样由于过于庞大，项目内并<b>不包含</b>，因此搭建后没法直接使用，
+这部分资源同样由于过于庞大，项目内并<b>不包含</b>，因此即使搭建也没法使用
 但功能本身没有问题，不需要请直接删除
 <br><br>
 喜欢这只bot提供的服务的各位请一定一定要继续喜欢奏宝，多产点奏宝的粮、多整点奏宝的好活，孩子爱看♥
