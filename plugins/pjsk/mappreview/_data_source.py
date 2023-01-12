@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Optional
 from PIL import Image, ImageFont, ImageDraw
 from utils.http_utils import AsyncHttpx
-from . import chart
-from .._autoask import pjsk_update_manager
-from .._config import data_path
+from plugins.pjsk._map_utils import chart
+from plugins.pjsk._autoask import pjsk_update_manager
+from plugins.pjsk._config import data_path
 
 # 常量定义
 alpha = 125
@@ -33,9 +33,10 @@ note_sizes = {
 
 
 # 获取本地moe谱面预览
-async def getmoechart(musicid, difficulty) -> Optional[Path]:
-    await moe2img(musicid, difficulty)
-    file = data_path / f'charts/moe/{musicid}/{difficulty}.jpg'
+async def getmoechart(musicid, difficulty, withSkill=False) -> Optional[Path]:
+    await moe2img(musicid, difficulty, withSkill)
+    fix = '_skill' if withSkill else ''
+    file = data_path / f'charts/moe/{musicid}/{difficulty}{fix}.jpg'
     return file if file.exists() else None
 
 
@@ -176,7 +177,6 @@ async def downloadviewerchart(musicid, difficulty) -> bool:
                     if svg.text.count(f'{str(i).zfill(3)}</text>') == 0:
                         break
                 row = int((i - 2) / 4)
-                # print(row)
                 pic = Image.open(io.BytesIO(re.content))
                 r, g, b, mask = pic.split()
                 final = Image.new('RGB', pic.size, (255, 255, 255))
@@ -223,11 +223,12 @@ async def sus2img(musicid, difficulty):
 
 
 # 生成本地谱面预览
-async def moe2img(musicid, difficulty):
+async def moe2img(musicid, difficulty, withSkill=False):
     # 谱面图片保存位置
+    fix = '_skill' if withSkill else ''
     file_name = data_path / f'charts/moe/{musicid}'
     file_name.mkdir(parents=True, exist_ok=True)
-    if (file_name / f"{difficulty}.jpg").exists():
+    if (file_name / f"{difficulty}{fix}.jpg").exists():
         return
     # 初次生成
     # 获取谱面信息
@@ -267,26 +268,48 @@ async def moe2img(musicid, difficulty):
             playlevel = i["playLevel"]
             break
     # 生成谱面基础信息
-    sus = chart.SUS(
-        lines,
-        note_size=note_sizes[difficulty],
-        note_host=str(data_path.absolute()/'pics/notes'),
-        **({
-            'title': music['title'],
-            'artist': artist,
-            'difficulty': difficulty,
-            'playlevel': playlevel,
-            'jacket': str(data_path.absolute() / jacketdir / jacketfile)
-        }),
-    )
+    if not withSkill:
+        sus = chart.SUS(
+            lines,
+            note_size=note_sizes[difficulty],
+            note_host=str(data_path.absolute()/'pics/notes'),
+            **({
+                'title': music['title'],
+                'artist': artist,
+                'difficulty': difficulty,
+                'playlevel': playlevel,
+                'jacket': str(data_path.absolute() / jacketdir / jacketfile)
+            }),
+        )
+    else:
+        music_meta = None
+        with open(data_path / 'realtime/music_metas.json', 'r', encoding='utf-8') as f:
+            music_metas = json.load(f)
+        for mm in music_metas:
+            if mm['music_id'] == musicid and mm['difficulty'] == difficulty:
+                music_meta = mm
+                break
+        sus = chart.SUSwithskill(
+            lines,
+            note_size=note_sizes[difficulty],
+            note_host=str(data_path.absolute()/'pics/notes'),
+            **({
+                'title': music['title'],
+                'artist': artist,
+                'difficulty': difficulty,
+                'playlevel': playlevel,
+                'jacket': str(data_path.absolute() / jacketdir / jacketfile),
+                'meta': music_meta,
+            }),
+        )
     # 载入样式，生成谱面
     with open(f'{os.path.dirname(__file__)}/css/sus.css', encoding='utf-8') as f:
         style_sheet = f.read()
     with open(f'{os.path.dirname(__file__)}/css/master.css', encoding='utf-8') as f:
         style_sheet += '\n' + f.read()
     # 谱面临时保存为svg格式图片
-    svg_path = str(file_name.absolute() / f'{difficulty}.svg')
-    png_path = str(file_name.absolute() / f'{difficulty}.png')
+    svg_path = str(file_name.absolute() / f'{difficulty}{fix}.svg')
+    png_path = str(file_name.absolute() / f'{difficulty}{fix}.png')
     sus.export(svg_path, style_sheet=style_sheet)
     # svg转png
     cairosvg.svg2png(
@@ -295,7 +318,7 @@ async def moe2img(musicid, difficulty):
         scale=1.3
     )
     # png转jpg
-    Image.open(png_path).save(file_name / f"{difficulty}.jpg", quality=60)
+    Image.open(png_path).save(file_name / f"{difficulty}{fix}.jpg", quality=60)
     # 删除svg格式图片与png格式图片
     os.remove(svg_path)
     os.remove(png_path)
@@ -603,7 +626,6 @@ def create_image(music_info, music_score):
                             draw.text((x - font.getsize('Skill')[0] - unit_width - delta_unit_width - 5, image_top_bottom - 48), 'Skill', font=font, fill=(255, 255, 255))
                         continue
                     else:
-                        # print(note_info[note_type] + 'is not support (score_note_type = 1)')
                         continue
 
                     # paste note image
@@ -718,7 +740,6 @@ def create_image(music_info, music_score):
                     # unkonw
                     pass
                 else:
-                    # print(str(special_note_type) + 'is not support (score_note_type = 5)')
                     break
                 del notes_info_list['normal'][id]
                 continue
@@ -918,7 +939,6 @@ def create_image(music_info, music_score):
                     # add polygon info
                     polygon_list[long_id].append(notes_info_list['long_among_unvisible'][id])
                 else:
-                    # print(str(long_note_type) + 'is not support (score_note_type = 3)')
                     break
 
         last_unitid = unitid

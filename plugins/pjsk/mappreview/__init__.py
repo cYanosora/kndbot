@@ -1,10 +1,11 @@
-from nonebot import on_keyword, on_command
+import traceback
+from nonebot import on_keyword
 from nonebot.adapters.onebot.v11 import GROUP, GroupMessageEvent
 from utils.http_utils import AsyncHttpx
 from utils.message_builder import image
 from .._config import BUG_ERROR
 from .._song_utils import get_songs_data, save_songs_data, parse_bpm
-from .._map_utils import getchart, getmoechart
+from ._data_source import getchart, getmoechart
 try:
     import ujson as json
 except:
@@ -156,6 +157,7 @@ async def _(event: GroupMessageEvent):
         try:
             dir = await getmoechart(data['musicId'], diff, True)
         except:
+            traceback.print_exc()
             await skill_preview.finish(BUG_ERROR)
             return
         else:

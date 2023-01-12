@@ -131,19 +131,18 @@ def union(
     :param align_type: 非组合方向的对齐类型，left/top为左(上)对齐，center为居中对齐，right/bottom为右(下)对齐
     :param bk_color: 图片背景色， none时背景为透明
     """
-    if len(img_ls) == 1:
-        return img_ls[0]
     if type not in ['col', 'row']:
         raise TypeError("type类型错误")
     if align_type not in ['top', 'left', 'center', 'right', 'bottom']:
         raise TypeError("align_type类型错误")
+    img_len_sub1 = len(img_ls) - 1 if len(img_ls) > 1 else 1
     if type == 'col':
-        width = length + (len(img_ls) - 1) * interval_size
+        width = length + img_len_sub1 * interval_size
         height = max([i.height for i in img_ls])
         _sum = sum([i.width for i in img_ls])
-        _compare = _sum + interval * (len(img_ls) - 1)
+        _compare = _sum + interval * img_len_sub1
         attr = 'height'
-        space = (width - _sum) // (len(img_ls) - 1)
+        space = (width - _sum) // img_len_sub1
         if space < 0:
             width = _compare
             space = interval
@@ -151,11 +150,11 @@ def union(
             space = interval
     else:
         width = max([i.width for i in img_ls])
-        height = length + (len(img_ls) - 1) * interval_size
+        height = length + img_len_sub1 * interval_size
         _sum = sum([i.height for i in img_ls])
-        _compare = _sum + interval * (len(img_ls) - 1)
+        _compare = _sum + interval * img_len_sub1
         attr = 'width'
-        space = (height - _sum) // (len(img_ls) - 1)
+        space = (height - _sum) // img_len_sub1
         if space < 0:
             space = interval
             height = _compare

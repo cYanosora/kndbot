@@ -51,6 +51,33 @@ class PjskDataUpdate:
         except Exception as e:
             logger.info(f'{raw}下载失败, 错误原因:{e}')
 
+    async def update_music_meta_data(self, raw: str, block: bool = False):
+        try:
+            url = f'https://storage.sekai.best/sekai-best-assets/{raw}'
+            if block:
+                jsondata = requests.get(url, headers=lab_headers).content
+            else:
+                jsondata = (await AsyncHttpx.get(url, headers=lab_headers)).content
+            logger.info(f'{raw}下载成功')
+            filepath = self.path / 'realtime'
+            if not filepath.exists():
+                filepath.mkdir(parents=True, exist_ok=True)
+            filepath = filepath / raw
+            if not filepath.exists():
+                with open(filepath, 'wb') as f:
+                    f.write(jsondata)
+                    logger.info(f'初次创建{raw}')
+            else:
+                with open(filepath, 'rb') as f:
+                    if jsondata and hashlib.md5(f.read()).hexdigest() != hashlib.md5(jsondata).hexdigest():
+                        with open(filepath, "wb") as f:
+                            f.write(jsondata)
+                            logger.info(f'更新{raw}')
+                    else:
+                        logger.info(f'无需更新{raw}')
+        except Exception as e:
+            logger.info(f'{raw}下载失败, 错误原因:{e}')
+
     async def update_translate_data(self, raw: str, block: bool = False):
         filepath = self.path / 'translate.yaml'
         if not filepath.exists():
@@ -294,6 +321,8 @@ async def check_songs_resources(block: bool = False, iswait: bool = True):
     else:
         wait_time = 0
     # 更新音乐数据
+    await pjsk_update_manager.update_music_meta_data('music_metas.json', block=block)
+    await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_music_data('musicDifficulties.json', block=block)
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_music_data('musics.json', block=block)

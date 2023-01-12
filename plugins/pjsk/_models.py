@@ -1,4 +1,6 @@
 import math
+
+import requests
 import yaml
 import pytz
 import time
@@ -269,16 +271,34 @@ class UserProfile(object):
             self.expertscore[i] = [0, 0, 0, 0]
 
     async def getprofile(self, userid: str):
-        resp = await AsyncHttpx.get(f'{random.choice(api_base_url_list)}/user/{userid}/profile')
+        try:
+            resp = await AsyncHttpx.get(f'{random.choice(api_base_url_list)}/user/{userid}/profile', timeout=10)
+        except:
+            resp = requests.get(f'{random.choice(api_base_url_list)}/user/{userid}/profile', timeout=10)
         data = json.loads(resp.content)
+        if data == {'status': 'maintenance_in'}:
+            raise Exception('服务器正在维护')
         self.name = data['user']['userGamedata']['name']
-        self.twitterId = data['userProfile']['twitterId']
+        try:
+            self.twitterId = data['userProfile']['twitterId']
+        except:
+            pass
+
         self.userid = userid
-        self.word = data['userProfile']['word']
+
+        try:
+            self.word = data['userProfile']['word']
+        except:
+            pass
+
         self.rank = data['user']['userGamedata']['rank']
-        self.characterId = data['userChallengeLiveSoloResults'][0]['characterId']
-        self.highScore = data['userChallengeLiveSoloResults'][0]['highScore']
+        try:
+            self.characterId = data['userChallengeLiveSoloResults'][0]['characterId']
+            self.highScore = data['userChallengeLiveSoloResults'][0]['highScore']
+        except:
+            pass
         self.characterRank = data['userCharacters']
+
         self.userProfileHonors = data['userProfileHonors']
         with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
             allmusic = json.load(f)
@@ -286,7 +306,7 @@ class UserProfile(object):
             musicDifficulties = json.load(f)
         result = {}
         now = int(time.time() * 1000)
-
+        self.masterscore['33+musicId'] = []
         for music in allmusic:
             result[music['id']] = [0, 0, 0, 0, 0]
             if music['publishedAt'] < now:
@@ -298,11 +318,12 @@ class UserProfile(object):
                         found[0] = 1
                     elif music['id'] == diff['musicId'] and diff['musicDifficulty'] == 'master':
                         playLevel = diff['playLevel']
+                        if playLevel >= 34:
+                            self.masterscore['33+musicId'].append(music['id'])
                         self.masterscore[playLevel][3] = self.masterscore[playLevel][3] + 1
                         found[1] = 1
                     if found == [1, 1]:
                         break
-
         for music in data['userMusicResults']:
             musicId = music['musicId']
             musicDifficulty = music['musicDifficulty']
@@ -319,16 +340,19 @@ class UserProfile(object):
                 diffculty = 3
             else:
                 diffculty = 4
-            if playResult == 'full_perfect':
-                if result[musicId][diffculty] < 3:
-                    result[musicId][diffculty] = 3
-            elif playResult == 'full_combo':
-                if result[musicId][diffculty] < 2:
-                    result[musicId][diffculty] = 2
-            elif playResult == 'clear':
-                if result[musicId][diffculty] < 1:
-                    result[musicId][diffculty] = 1
-
+            try:
+                if playResult == 'full_perfect':
+                    if result[musicId][diffculty] < 3:
+                        result[musicId][diffculty] = 3
+                elif playResult == 'full_combo':
+                    if result[musicId][diffculty] < 2:
+                        result[musicId][diffculty] = 2
+                elif playResult == 'clear':
+                    if result[musicId][diffculty] < 1:
+                        result[musicId][diffculty] = 1
+            except KeyError:
+                # 韩服删除了on the rocks等歌曲 但这些歌曲成绩还保留在用户profile数据中 匹配不到歌曲会造成KeyError
+                pass
         for music in result:
             for i in range(0, 5):
                 if result[music][i] == 3:
@@ -368,7 +392,6 @@ class UserProfile(object):
                         self.expertscore[playLevel][2] += 1
                     elif result[music][i] == 1:
                         self.expertscore[playLevel][2] += 1
-
         for i in range(0, 5):
             self.userDecks[i] = data['userDecks'][0][f'member{i + 1}']
             for userCards in data['userCards']:

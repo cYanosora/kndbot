@@ -1,5 +1,7 @@
 import json
 import random
+import traceback
+
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import GROUP, MessageEvent, Message, ActionFailed
 from nonebot.params import CommandArg
@@ -52,6 +54,7 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
         await pjsk_assest.finish(NOT_PLAYER_ERROR)
         return
     except:
+        traceback.print_exc()
         await pjsk_assest.finish(BUG_ERROR)
         return
     text = f"{profile.name} - {userid}\n" if not isprivate else f"{profile.name}\n"
@@ -64,13 +67,13 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     fc33plus = profile.masterscore[33][1] + profile.masterscore[34][1] + profile.masterscore[35][1] + \
                profile.masterscore[36][1] + profile.masterscore[37][1]
     if ap33plus != 0:
-        text += f"\nLv.33及以上AP进度：{ap33plus}/{profile.masterscore[33][3] + profile.masterscore[34][3] + profile.masterscore[35][3] + profile.masterscore[36][3] + profile.masterscore[37][3]}"
+        text = text + f"\nLv.33及以上AP进度：{ap33plus}/{profile.masterscore[33][3] + profile.masterscore[34][3] + profile.masterscore[35][3] + profile.masterscore[36][3] + profile.masterscore[37][3]}"
     if fc33plus != 0:
-        text += f"\nLv.33及以上FC进度：{fc33plus}/{profile.masterscore[33][3] + profile.masterscore[34][3] + profile.masterscore[35][3] + profile.masterscore[36][3] + profile.masterscore[37][3]}"
+        text = text + f"\nLv.33及以上FC进度：{fc33plus}/{profile.masterscore[33][3] + profile.masterscore[34][3] + profile.masterscore[35][3] + profile.masterscore[36][3] + profile.masterscore[37][3]}"
     if profile.masterscore[32][0] != 0:
-        text += f"\nLv.32AP进度：{profile.masterscore[32][0]}/{profile.masterscore[32][3]}"
+        text = text + f"\nLv.32AP进度：{profile.masterscore[32][0]}/{profile.masterscore[32][3]}"
     if profile.masterscore[32][1] != 0:
-        text += f"\nLv.32FC进度：{profile.masterscore[32][1]}/{profile.masterscore[32][3]}"
+        text = text + f"\nLv.32FC进度：{profile.masterscore[32][1]}/{profile.masterscore[32][3]}"
 
     # 排位数据
     rankmatchid = currentrankmatch()

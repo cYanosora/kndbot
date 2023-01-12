@@ -1,6 +1,8 @@
 import random
 import re
 import time
+
+import requests
 import yaml
 from typing import List, Dict
 from PIL import Image
@@ -139,7 +141,10 @@ def near_rank(rank: int) -> List:
 
 # 获取用户当期活动信息
 async def getUserData(url: str, param: dict) -> Dict:
-    data_json = json.loads((await AsyncHttpx.get(url, params=param)).text)
+    try:
+        data_json = json.loads((await AsyncHttpx.get(url, params=param, timeout=4)).text)
+    except:
+        data_json = requests.get(url, params=param).json()
     result = data_json['rankings']
     userdata = {}
     try:

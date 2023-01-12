@@ -50,8 +50,17 @@ class Meta:
 @dataclasses.dataclass
 class CoverObject:
     bar_from: typing.Optional[float] = None
-    bar_to: typing.Optional[float] = None
     css_class: typing.Optional[str] = None
+
+
+@dataclasses.dataclass
+class CoverRect(CoverObject):
+    bar_to: typing.Optional[float] = None
+
+
+@dataclasses.dataclass
+class CoverText(CoverObject):
+    text: typing.Optional[str] = None
 
 
 class SUSwithskill:
@@ -116,6 +125,7 @@ class SUSwithskill:
         self.words: typing.List[Word] = []
 
         self.special_cover_objects: typing.List[CoverObject] = []
+        self.music_meta = kwargs['meta']
 
     def __getitem__(self, key: slice) -> svgwrite.Drawing:
         bar_from = key.start or 0
@@ -390,6 +400,41 @@ class SUSwithskill:
                     class_='tick-text',
                 ))
 
+        def draw_cover_object(cover_object: CoverObject):
+            if isinstance(cover_object, CoverText):
+                cover_bar_from = cover_object.bar_from
+                if cover_bar_from < bar_from - 0.2 or cover_bar_from >= bar_to - 0.1:
+                    return
+                drawing.add(drawing.text(
+                    cover_object.text,
+                    insert=(
+                        self.lane_size * self.n_lanes + self.padding * 2 - 3,
+                        round(self.pixel_per_second * self.score.get_time_delta(cover_bar_from, bar_to) + self.padding),
+                    ),
+                    transform=f'''rotate(-90, {
+                    round(self.lane_size * self.n_lanes + self.padding * 2 - 3)
+                    }, {
+                    round(self.pixel_per_second * self.score.get_time_delta(cover_bar_from, bar_to) + self.padding)
+                    })''',
+                    class_=cover_object.css_class,
+                ))
+            elif isinstance(cover_object, CoverRect):
+                cover_bar_from = max(bar_from - 0.2, cover_object.bar_from)
+                cover_bar_to = min(bar_to + 0.2, cover_object.bar_to)
+                if cover_bar_to <= cover_bar_from:
+                    return
+                drawing.add(drawing.rect(
+                    insert=(
+                        self.padding,
+                        round(self.pixel_per_second * self.score.get_time_delta(cover_bar_to, bar_to) + self.padding),
+                    ),
+                    size=(
+                        round(self.lane_size * self.n_lanes),
+                        round(self.pixel_per_second * self.score.get_time_delta(cover_bar_from, cover_bar_to)),
+                    ),
+                    class_=cover_object.css_class,
+                ))
+
         for i, note in enumerate(self.score.notes):
             if isinstance(note, Slide) and note.next:
                 next: Slide = note.next
@@ -482,23 +527,9 @@ class SUSwithskill:
             class_='lane',
         ))
 
-        # Draw special cover object
+        # Draw special cover object under notes
         for cover_object in self.special_cover_objects:
-            cover_bar_from = max(bar_from - 0.2, cover_object.bar_from)
-            cover_bar_to = min(bar_to + 0.2, cover_object.bar_to)
-            if cover_bar_to <= cover_bar_from:
-                continue
-            drawing.add(drawing.rect(
-                insert=(
-                    self.padding,
-                    round(self.pixel_per_second * self.score.get_time_delta(cover_bar_to, bar_to) + self.padding),
-                ),
-                size=(
-                    round(self.lane_size * self.n_lanes),
-                    round(self.pixel_per_second * self.score.get_time_delta(cover_bar_from, cover_bar_to)),
-                ),
-                class_=cover_object.css_class,
-            ))
+            draw_cover_object(cover_object)
 
         for lane in range(0, self.n_lanes + 1, 2):
             drawing.add(drawing.line(
@@ -798,24 +829,47 @@ class SUSwithskill:
         bar = 0
         event = Event(bar=0, bpm=120, bar_length=4, sentence_length=4)
 
-        # Add skill cover object
-        for e in self.score.events:
-
-            if e.text == "SKILL":
-                if display_skill_extra:
-                    self.special_cover_objects.append(CoverObject(
-                        self.score.get_bar(self.score.get_time(e.bar) - 5 / 60),
-                        self.score.get_bar(self.score.get_time(e.bar) + 5 + 5 / 60),
-                        "skill-great"
-                    ))
-                    self.special_cover_objects.append(CoverObject(
-                        self.score.get_bar(self.score.get_time(e.bar) - 2.5/60),
-                        self.score.get_bar(self.score.get_time(e.bar) + 5 + 2.5 / 60),
-                        "skill-perfect"
-                    ))
-                self.special_cover_objects.append(CoverObject(
-                    e.bar,self.score.get_bar(self.score.get_time(e.bar) + 5), "skill-duration"
+        # Add fever cover object
+        if self.music_meta:
+            for e in self.score.events:
+                if e.text != 'SUPER FEVER!!':
+                    continue
+                self.special_cover_objects.append(CoverRect(
+                    e.bar, "fever-duration", self.score.get_bar(self.music_meta["fever_end_time"])
                 ))
+                self.special_cover_objects.append(CoverText(
+                    e.bar, "skill-score", "多+%.2f%%" % (self.music_meta["fever_score"] * 100)
+                ))
+
+        # Add skill cover object
+        skill_i = 0
+        for e in self.score.events:
+            if e.text != "SKILL":
+                continue
+            if display_skill_extra:
+                self.special_cover_objects.append(CoverRect(
+                    self.score.get_bar(self.score.get_time(e.bar) - 5 / 60),
+                    "skill-great",
+                    self.score.get_bar(self.score.get_time(e.bar) + 5 + 5 / 60)
+                ))
+                self.special_cover_objects.append(CoverRect(
+                    self.score.get_bar(self.score.get_time(e.bar) - 2.5 / 60),
+                    "skill-perfect",
+                    self.score.get_bar(self.score.get_time(e.bar) + 5 + 2.5 / 60),
+                ))
+                self.special_cover_objects.append(CoverRect(
+                    e.bar, "skill-duration", self.score.get_bar(self.score.get_time(e.bar) + 5)
+                ))
+            if self.music_meta:
+                solo_skill_score = "+%.2f%%" % (self.music_meta["skill_score_solo"][skill_i] * 100)
+                multi_skill_score = "+%.2f%%" % (self.music_meta["skill_score_multi"][skill_i] * 100)
+                append_text = solo_skill_score
+                if solo_skill_score != multi_skill_score:
+                    append_text = "単%s 多%s" % (solo_skill_score, multi_skill_score)
+                self.special_cover_objects.append(CoverText(
+                    e.bar, "skill-score", append_text
+                ))
+            skill_i += 1
 
         for i in range(n_bars + 1):
             e = self.score.get_event(i)

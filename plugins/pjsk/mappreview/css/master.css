@@ -1,11 +1,32 @@
 .lane {
-    fill: #cfd8db;
+    fill: #CFD8DC;
 }
-
 .background {
     fill: #FFFFFF;
 }
-
 .meta {
     fill: #FFFFFF;
+}
+.skill-duration {
+    fill: #78909C;
+}
+.skill-perfect {
+    fill: #90A4AE;
+}
+
+.skill-great {
+    fill: #B0BEC5;
+}
+
+.skill-score {
+    font-size: 38px;
+    /*font-weight: 900;*/
+    font-family: FOT-RodinNTLG Pro DB;
+    fill: black;
+    text-anchor: start;
+    /*text-shadow: black 0.1em 0.1em 0.2em;*/
+}
+
+.fever-duration {
+    fill: #ECEFF1;
 }

@@ -46,9 +46,9 @@ __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 
 # findcard
-findcard = on_command('findcard', permission=GROUP, priority=5, block=True)
+findcard = on_command('findcard', aliases={"查卡", "查询卡面"}, permission=GROUP, priority=5, block=True)
 card = on_command('card', permission=GROUP, priority=5, block=True)
-cardinfo = on_command('cardinfo', aliases={"查卡"}, permission=GROUP, priority=4, block=True)
+cardinfo = on_command('cardinfo', permission=GROUP, priority=4, block=True)
 
 
 async def alias2id(alias: str, group_id: int):
@@ -71,6 +71,9 @@ async def alias2id(alias: str, group_id: int):
 @findcard.handle()
 async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
     alias = arg.extract_plain_text().strip()
+    if alias.isdigit():
+        await _cardinfo(arg)
+        return
     dic = {
         '一星': 'rarity_1',
         '1':'rarity_1',
@@ -144,7 +147,7 @@ async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
 
 
 @card.handle()
-async def _(arg: Message = CommandArg()):
+async def _card(arg: Message = CommandArg()):
     card_id = arg.extract_plain_text().strip()
     try:
         card_id = int(card_id)
@@ -155,7 +158,7 @@ async def _(arg: Message = CommandArg()):
 
 
 @cardinfo.handle()
-async def _(arg: Message = CommandArg()):
+async def _cardinfo(arg: Message = CommandArg()):
     card_id = arg.extract_plain_text().strip()
     try:
         card_id = int(card_id)
@@ -165,9 +168,9 @@ async def _(arg: Message = CommandArg()):
     path.mkdir(parents=True, exist_ok=True)
     file = path / f'id_{arg}.jpg'
     if not file.exists():
-        cardinfo = CardInfo()
-        await cardinfo.getinfo(card_id)
-        pic = await cardinfo.toimg()
+        card = CardInfo()
+        await card.getinfo(card_id)
+        pic = await card.toimg()
         pic = pic.convert('RGB')
         pic.save(file, quality=85)
-    await card.finish(image(file))
+    await cardinfo.finish(image(file))
