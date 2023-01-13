@@ -20,7 +20,7 @@ from models.ban_info import BanInfo
 from models.group_info import GroupInfo
 from models.group_member_info import GroupInfoUser
 from utils.utils import FreqLimiter, timeremain
-from utils.message_builder import image
+from utils.message_builder import image, at
 from manager import Config
 from manager import group_manager, plugins2settings_manager, requests_manager
 from configs.path_config import IMAGE_PATH, DATA_PATH
@@ -193,12 +193,12 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
                 msg = random.choice(Config.get_config("invite_manager", "welcome_message"))
                 if msg:
                     await group_increase_handle.send(
-                        "[[_task|group_welcome]]" + msg
+                        "[[_task|group_welcome]]" + at(event.user_id) + msg
                         + image(random.choice(os.listdir(IMAGE_PATH / "qxz")), "qxz")
                     )
                 else:
                     await group_increase_handle.send(
-                        f"[[_task|group_welcome]]欢迎新人，这里是{NICKNAME}，请多关照~"
+                        "[[_task|group_welcome]]" + at(event.user_id) + f"欢迎新人，这里是{NICKNAME}，请多关照~"
                         + image(random.choice(os.listdir(IMAGE_PATH / "qxz")), "qxz")
                     )
 

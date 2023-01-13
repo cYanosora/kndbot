@@ -9,7 +9,7 @@ from manager import (
     plugins2cd_manager,
     plugins2settings_manager,
     plugins2block_manager,
-    group_manager,
+    group_manager, plugins2count_manager,
 )
 from manager import Config
 from services.log import logger
@@ -23,6 +23,7 @@ usage：
     重载以下插件配置
     plugins2settings
     plugins2cd
+    plugins2count
     plugins2block
     group_manager
     Config
@@ -57,6 +58,7 @@ async def _(arg: Message = CommandArg()):
     arg = arg.extract_plain_text().strip()
     plugins2settings_manager.reload()
     plugins2cd_manager.reload()
+    plugins2count_manager.reload()
     plugins2block_manager.reload()
     if arg:
         data = plugins2settings_manager.get_data()

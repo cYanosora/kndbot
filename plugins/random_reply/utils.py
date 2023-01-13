@@ -47,8 +47,12 @@ class ReplyBank(db.Model):
         if r'[user]' in text:
             if user.level != 0:
                 user_name = user.nickname if user.nickname else user.name
+                if user.level < 2 and user.level != -1:
+                    user_name += '桑'
+                elif user.level < 4:
+                    user_name += '先生' if user.gender == 'male' else '小姐'
             else:
-                user_name = "豆腐"
+                user_name = "豆腐桑"
             text = text.replace('[user]', user_name)
         if r'[ta]' in text:
             text = text.replace('[ta]', "他" if user.gender == "male" else "她")
@@ -110,9 +114,13 @@ class ReplyBank(db.Model):
             (cls.catagory == catagory) & (cls.type == type) &
             (cls.level == int(user.level))
         ).gino.all()
+        ft_gender = ('[F]', '[M]') if user.gender == 'male' else ('[M]', '[F]')
         for each in q:
-            if not each.rule or each.rule and re.search(each.rule, user.text):
-                tmp.append((each.reply, each.new_st))
+            if (
+                (not each.rule or each.rule and re.search(each.rule, user.text))
+                and ft_gender[0] not in each.reply
+            ):
+                tmp.append((each.reply.replace(ft_gender[1], ''), each.new_st))
         return tmp
 
     @classmethod
