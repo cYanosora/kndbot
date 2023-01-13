@@ -7,6 +7,7 @@ from nonebot import on_command
 from nonebot.adapters.onebot.v11 import GROUP, MessageEvent, Message
 from nonebot.params import CommandArg
 from configs.path_config import FONT_PATH
+from utils.http_utils import AsyncHttpx
 from utils.imageutils import pic2b64, text2image
 from utils.message_builder import image
 from .._autoask import pjsk_update_manager
@@ -121,10 +122,12 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     # 获取profile
     await pjsk_b30.send("收到", at_sender=True)
     try:
-        data = (
-            requests.get(f'{random.choice(api_base_url_list)}/user/{userid}/profile')
-        ).json()
+        url = f'{random.choice(api_base_url_list)}/user/{userid}/profile'
+        data = (await AsyncHttpx.get(url, timeout=10)).json()
     except:
+        url = f'{random.choice(api_base_url_list)}/user/{userid}/profile'
+        data = requests.get(url, timeout=10).json()
+    if not data:
         await pjsk_b30.finish(TIMEOUT_ERROR)
         return
     # 设置文字

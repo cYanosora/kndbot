@@ -272,9 +272,15 @@ class UserProfile(object):
 
     async def getprofile(self, userid: str):
         try:
-            resp = await AsyncHttpx.get(f'{random.choice(api_base_url_list)}/user/{userid}/profile', timeout=10)
+            url = f'{random.choice(api_base_url_list)}/user/{userid}/profile'
+            print(url)
+            resp = await AsyncHttpx.get(url, timeout=10)
+            print(resp.status_code)
         except:
-            resp = requests.get(f'{random.choice(api_base_url_list)}/user/{userid}/profile', timeout=10)
+            url = f'{random.choice(api_base_url_list)}/user/{userid}/profile'
+            print(url)
+            resp = requests.get(url, timeout=10)
+            print(resp.status_code)
         data = json.loads(resp.content)
         if data == {'status': 'maintenance_in'}:
             raise Exception('服务器正在维护')

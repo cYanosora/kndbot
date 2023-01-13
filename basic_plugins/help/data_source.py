@@ -58,6 +58,8 @@ async def create_help_img(
                 plugin_level = plugins2settings_manager[matcher.plugin_name].get("level", 5)
                 if plugins2settings_manager[matcher.plugin_name].get("plugin_type"):
                     plugin_type = plugins2settings_manager.get_plugin_data(matcher.plugin_name)["plugin_type"]
+                    if isinstance(plugin_type, list):
+                        plugin_type = plugin_type[0]
             else:
                 try:
                     plugin_level = _module.__getattribute__("__plugin_settings__").get('level', 5)
@@ -70,7 +72,7 @@ async def create_help_img(
             # 获取完插件信息，保存插件名数据，便于生成帮助图
             if plugin_type not in _plugins_data.keys():
                 _plugins_data[plugin_type] = []
-            _plugins_data[plugin_type].append((plugin_name, plugin_level))
+            _plugins_data[plugin_type].append((matcher.plugin_name, plugin_name, plugin_level))
         except AttributeError as e:
             logger.warning(f"获取功能 {matcher.plugin_name}: {plugin_name} 设置失败...e：{e}")
     # 获取完所有的插件帮助信息，开始生成帮助图
@@ -83,19 +85,19 @@ async def create_help_img(
         for i, k in enumerate(sorted(_plugins_data[type_])):
             # 超管禁用flag, True表示禁用
             flag = True
-            if plugins_manager.get_plugin_status(k[0], "all"):
+            if plugins_manager.get_plugin_status(k[1], "all"):
                 flag = False
             if group_id:
                 flag = (
                     flag or not plugins_manager.get_plugin_status(k[0], "group")
                     or not group_manager.get_plugin_status(k[0], group_id, True)
-                    or group_manager.get_group_level(group_id) < k[1]
+                    or group_manager.get_group_level(group_id) < k[2]
                 )
             _pre_num = '1' if flag else '0'
             # 群聊禁用
             _post_num = '0' if group_id and group_manager.get_plugin_status(k[0], group_id) else '1'
             # (群功能状态|全局禁用状态, 序号.功能名)
-            simple_help_tuple_dic[type_].append([_pre_num+_post_num, f"{i+1}.{k[0]}"])
+            simple_help_tuple_dic[type_].append([_pre_num+_post_num, f"{i+1}.{k[1]}"])
     # 简易帮助图片合成
     random_bk = random.choice(os.listdir(random_bk_path))
     template_path = str(Path(__file__).parent / "templates")

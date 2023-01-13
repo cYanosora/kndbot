@@ -37,14 +37,14 @@ async def _(event: GroupMessageEvent):
     level = group_manager.get_group_level(event.group_id)
     tmp = ""
     data = plugins2settings_manager.get_data()
-    for module in data:
+    for module in data.keys():
         block_type = ""
         if data[module]["level"] > level:
             block_type = "(群权限不足)"
-        elif not group_manager.get_plugin_status(data[module], event.group_id):
+        elif not group_manager.get_plugin_status(module, event.group_id):
             block_type = "(群管禁用)"
         elif(
-            not group_manager.get_plugin_status(data[module], event.group_id, True) or
+            not group_manager.get_plugin_status(module, event.group_id, True) or
             not plugins_manager.get_plugin_status(module, block_type="group") or
             not plugins_manager.get_plugin_status(module, block_type="all")
         ):

@@ -9,10 +9,9 @@ NOT_PLAYER_ERROR = "未找到玩家"
 NOT_IMAGE_ERROR = "部分资源加载失败，重新发送中..."
 
 # api
-base_url = r'https://api.pjsekai.moe/api'
-base_url_bak1 = r'https://api.unipjsk.com/api'
-base_url_bak2 = r'https://sekai.jzlsx.cn/api'  #太慢了
-api_base_url_list = [base_url, base_url_bak1]
+base_url = r'https://api.unipjsk.com/api'
+base_url_bak1 = r'https://api.pjsekai.moe/api'
+api_base_url_list = [base_url]
 
 # 榜线url
 all_levels_url = r'https://api.sekai.best/event/live?region=jp'

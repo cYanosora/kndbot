@@ -106,7 +106,7 @@ def _getcharaname(characterid):
 
 
 # 生成单张缩略图信息
-async def findcardsingle(card, allcards, cardCostume3ds, costume3ds):
+async def findcardsingle(card, allcards, cardCostume3ds, costume3ds, skills):
     pic = Image.new("RGB", (420, 260), (255, 255, 255))
     badge = False
     cardtypenum = cardtype(card['id'], cardCostume3ds, costume3ds)
@@ -127,16 +127,29 @@ async def findcardsingle(card, allcards, cardCostume3ds, costume3ds):
 
     draw = ImageDraw.Draw(pic)
     font = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), 28)
-    text_width = font.getsize(f'{card["id"]}. {card["prefix"]}')
+    text_width = font.getsize(card["prefix"])
+
+    if text_width[0] > 420:
+        font = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), int(28 / (text_width[0] / 420)))
+        text_width = font.getsize(card["prefix"])
+
     text_coordinate = ((210 - text_width[0] / 2), int(195 - text_width[1] / 2))
-    draw.text(text_coordinate, f'{card["id"]}. {card["prefix"]}', '#000000', font)
+    draw.text(text_coordinate, card["prefix"], '#000000', font)
 
     name = _getcharaname(card['characterId'])
     font = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), 18)
-    text_width = font.getsize(name)
+    text_width = font.getsize(f'id:{card["id"]}  {name}')
     text_coordinate = ((210 - text_width[0] / 2), int(230 - text_width[1] / 2))
-    draw.text(text_coordinate, name, '#505050', font)
+    draw.text(text_coordinate, f'id:{card["id"]}  {name}', '#505050', font)
 
+    for skill in skills:
+        if skill['id'] == card['skillId']:
+            descriptionSpriteName = skill['descriptionSpriteName']
+            skillTypePic = Image.open(data_path / f'chara/skill_{descriptionSpriteName}.png')
+            skillTypePic = skillTypePic.resize((40, 40))
+            r, g, b, mask = skillTypePic.split()
+            pic.paste(skillTypePic, (370, 210), mask)
+            break
     return pic
 
 

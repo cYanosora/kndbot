@@ -143,8 +143,7 @@ async def _findevent(cmd: Tuple = Command(),arg: Message = CommandArg()):
         await findevent.finish(image(tip_path))
     # 没有参数但是指令不是活动图鉴
     elif not args and cmd[0] not in ["活动列表", "活动图鉴", "活动总览", "活动手册"]:
-        tip_path = data_path / 'pics/findevent_tips.jpg'
-        await findevent.finish(image(tip_path))
+        return
     # 检查本地活动图鉴是否需要更新
     with open(data_path / 'events.json', 'r', encoding='utf-8') as f:
         events = json.load(f)
