@@ -265,6 +265,7 @@ class UserProfile(object):
         self.highScore = 0
         self.masterscore = {}
         self.expertscore = {}
+        self.musicResult = {}
         for i in range(26, 38):
             self.masterscore[i] = [0, 0, 0, 0]
         for i in range(21, 32):
@@ -398,6 +399,7 @@ class UserProfile(object):
                         self.expertscore[playLevel][2] += 1
                     elif result[music][i] == 1:
                         self.expertscore[playLevel][2] += 1
+        self.musicResult = result
         for i in range(0, 5):
             self.userDecks[i] = data['userDecks'][0][f'member{i + 1}']
             for userCards in data['userCards']:

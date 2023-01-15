@@ -4,7 +4,7 @@ pjsk_path = IMAGE_PATH / "image_management" / "pjsk"
 
 # key为分类文件夹名，value为key文件夹下的第二级文件夹，用于本地搜图
 pjsk_info_dict = {
-    "25": ["knd", "mfy", "ena", "mzk"],
+    "25h": ["knd", "mfy", "ena", "mzk"],
     "vbs": ["khn", "an", "akt", "toya"],
     "mmj": ["mnr", "hrk", "airi", "szk"],
     "ln": ["ick", "saki", "hnm", "shiho"],
@@ -14,7 +14,7 @@ pjsk_info_dict = {
 }
 
 pjsk_cp_dict = {
-    "25": ["knen", "knmf", "knmz", "mfen", "mfmz", "mzen"],
+    "25h": ["knen", "knmf", "knmz", "mfen", "mfmz", "mzen"],
     "vbs": ["akan", "akkh", "akty", "ankh", "tyan", "tykh"],
     "mmj": ["armn", "hrar", "hrmn", "hrsz", "szar", "szmn"],
     "ln": ["ichn", "icsh", "icsk", "shhn", "skhn", "sksh"],
@@ -23,7 +23,7 @@ pjsk_cp_dict = {
 
 # key为分类文件夹名，value为默认全局称呼，数据用于存入数据库以及info功能
 pjsk_info_mapping = {
-    "25":"25时，在Night Code。","knd":"宵崎奏","mfy":"朝比奈真冬","ena":"东云绘名","mzk":"晓山瑞希",
+    "25h":"25时，在Night Code。","knd":"宵崎奏","mfy":"朝比奈真冬","ena":"东云绘名","mzk":"晓山瑞希",
     "vbs":"Vivid BAD SQUAD","khn":"小豆泽心羽","an":"白石杏","akt":"东云彰人","toya":"青柳冬弥",
     "mmj":"MORE MORE JUMP！","mnr":"花里实乃理","hrk":"桐谷遥","airi":"桃井爱莉","szk":"日野森雫",
     "ln":"Leo/need","ick":"星乃一歌","saki":"天马咲希","hnm":"望月穗波","shiho":"日野森志步",
