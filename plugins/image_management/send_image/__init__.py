@@ -23,7 +23,7 @@ except:
     pjsk_flag = False
 
 
-__plugin_name__ = "烧烤同人图库"
+__plugin_name__ = "本地图库/看图"
 __plugin_type__ = "好康的"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
@@ -34,7 +34,7 @@ usage：
         注意：[图片序号列表]为空时随机抽图，可用单个数字表示指定序号
         若需要同时指定多张请用使用中英文逗号或空格分隔,也可以使用 - 符号指定范围
     附加图库:
-        烧烤同人图库以外的公开图库如下(此类公开图库可以使用 '传图/连传' 功能自主传图)
+        烧烤图库以外的公开图库如下(此类公开图库可以使用 '传图/连传' 功能回馈好康的图给master)
             {"/".join(Config.get_config("image_management", "IMAGE_DIR_LIST"))}
             
     ↓↓↓听不懂没关系，看下面的例子↓↓↓
@@ -46,7 +46,7 @@ usage：
         来点奏宝 1 2 3 4 5  依次发送图库中 id为1、2、3、4、5的 knd同人图
         
         ### 对于团体
-        来丶25h 25          发送图库中 id为25 的25时cp图(基本上是一些弱cp向、全家福、以及和虚拟歌姬贴贴的图，其他组合同理)
+        来丶25 25          发送图库中 id为25 的25时cp图(基本上是一些弱cp向、全家福、以及和虚拟歌姬贴贴的图，其他组合同理)
         
         ### 对于cp/cb (不止以下cp，更多其他cp如果不清楚cp名是可以查询的、之后自行添加合适的称呼也行，详见 角色称呼 功能)
         来丶knmf 25        发送图库中 id为25 的k雪cp图(实际上不分左右，其他cp同理)
@@ -70,14 +70,14 @@ usage：
         各团同人图数量相差过大与个人偏好以及同人圈热度有关，但绝无故意拉大差距的意思，烤的米娜都很好我DD真的不挑
         另外虽然已将单人、cp图分在不同图库内，但实际上仍有极少一部分单人图可能略微地带有一些cp倾向
         ======================================================================================
-        限制群内1分钟内最多发送4张(包括连发)，单人每日最多看25张，防止刷屏(´∀｀；)(有用吗喂)
+        限制群内1分钟内最多使用4次，一次至多25张，每人每日最多看100张，防止有人吃撑死(´∀｀；)
 """.strip()
 __plugin_settings__ = {
-    "cmd": ["烧烤同人图库", "看图", "本地图库"]
+    "cmd": ["看图", "本地图库"]
 }
-__plugin_cd_limit__ = {"cd": 60, "limit_type": "group", "count_limit": 5, "rst": "请[cd]s后再看呢(￣▽￣)"}
+__plugin_cd_limit__ = {"cd": 60, "limit_type": "group", "count_limit": 4, "rst": "请[cd]s后再看呢(￣▽￣)"}
 __plugin_count_limit__ = {
-    "max_count": 25,
+    "max_count": 100,
     "limit_type": "user",
     "rst": "你今天已经看了[count]次啦，还请明天再看呢（。＾▽＾）[at]",
 }
@@ -115,11 +115,8 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
     img_ids = state['sendpic_imgid']
     # 优先在默认图库中匹配
     if gallery in Config.get_config("image_management", "IMAGE_DIR_LIST"):
-
         path = _path / cn2py(gallery)
-        if gallery in Config.get_config(
-            "image_management", "IMAGE_DIR_LIST"
-        ):
+        if gallery in Config.get_config("image_management", "IMAGE_DIR_LIST"):
             if not path.exists() and (path.parent.parent / cn2py(gallery)).exists():
                 path = IMAGE_PATH / cn2py(gallery)
             else:
@@ -210,6 +207,7 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
     if pjsk_flag:
         # 查询图库名路径与图片总数
         path, length = pjsk_get_path_and_len(gallery)
+        print(path, length)
         if not path:
             logger.warning("pjsk搜图模块文件路径不存在！")
             await send_img.finish("出错了，请稍后再试！>_<")
@@ -223,9 +221,10 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
         img_ids = sorted(set(img_ids))
         # 检查用户剩余看图次数
         if len(img_ids) > 1:
+            print(len(img_ids))
             end = count_check(matcher.plugin_name, event, bot, len(img_ids))
             if end:
-                await send_img.send("指定张数超过当日上限，只有部分图片可以发送(－ω－)", at_sender=True)
+                await send_img.send(f"指定张数超过当日使用上限，只有{end+1}张图片可以发送(－ω－)", at_sender=True)
                 img_ids = img_ids[:end]
             else:
                 await send_img.send("正在整理图片中，请耐心等待(｡･ω･)", at_sender=True)
@@ -254,7 +253,7 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
                 return
             else:
                 access_count(matcher.plugin_name, event, len(result))
-                access_cd(matcher.plugin_name, event, len(result))
+                access_cd(matcher.plugin_name, event, 1)
         else:
             logger.warning("pjsk搜图无结果")
             await send_img.finish("出错了，请稍后再试！>_<")

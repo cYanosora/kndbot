@@ -8,9 +8,8 @@ from utils.http_utils import AsyncHttpx
 from utils.imageutils import text2image, pic2b64
 from utils.message_builder import image
 from .._config import data_path
-from .._song_utils import get_songs_data, parse_bpm, save_songs_data, info
+from .._song_utils import get_songs_data, parse_bpm, save_songs_data, info, idtoname
 from .._models import PjskSongsAlias
-from .._song_utils import idtoname
 import json
 
 __plugin_name__ = "歌曲查询/pjskinfo"
@@ -246,9 +245,11 @@ async def _(msg: Message = CommandArg()):
     text = ''
     with open(data_path / 'musicDifficulties.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
+    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+        musics = json.load(f)
     for i in data:
         if i['noteCount'] == notes:
-            text += f"{idtoname(i['musicId'])}[{(i['musicDifficulty'].upper())} {i['playLevel']}]\n"
+            text += f"{idtoname(i['musicId'], musics)}[{(i['musicDifficulty'].upper())} {i['playLevel']}]\n"
     if text == '':
         text = '没有找到'
     await pjsknotecount.finish(text)

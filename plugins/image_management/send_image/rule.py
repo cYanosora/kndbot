@@ -53,7 +53,8 @@ def rule() -> T_RuleChecker:
                             start, end = unsolved_ids.split('-')
                             if is_number(start) and is_number(end) and int(end) >= int(start):
                                 true_start = int(start) if int(start) > 0 else 1
-                                true_end = int(end) + 1 if int(end) - int(start) < 99 else true_start + 25
+                                true_end = int(end) if int(end) > 0 else 1
+                                true_end = true_end + 1 if true_end - true_start < 25 else true_start + 25
                                 for num in range(true_start, true_end):
                                     final_ids.add(num)
                         elif is_number(unsolved_ids):

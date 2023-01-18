@@ -488,6 +488,63 @@ async def info(musicid) -> Tuple[bool, str]:
         return await _drawpjskinfo(musicid)
 
 
+# 获取pjsk进度图表
+def jinduChart(score):
+    try:
+        del score['33+musicId']
+    except KeyError:
+        pass
+    pic = Image.new("RGBA", (50 + 40 * len(score), 220), (0, 0, 0, 0))
+    i = 0
+    font = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Bold.otf'), 18)
+    for level in score:
+        draw = ImageDraw.Draw(pic)
+        draw.text((34 + 40 * i, 185), str(level), (0, 0, 0), font)
+
+        # 画总曲数
+        draw.rectangle((28 + 40 * i, 40, 60 + 40 * i, 180), fill=(68, 68, 102))
+        w = int(font.getsize(str(score[level][3]))[0] / 2)
+        draw.text(
+            (43 + 40 * i - w, 12), str(score[level][3]), (68, 68, 102), font,
+            stroke_width=1, stroke_fill=(255, 255, 255)
+        )
+
+        # Clear
+        ratio = score[level][2] / score[level][3]
+        draw.rectangle((28 + 40 * i, 180 - int(140 * ratio), 60 + 40 * i, 180), fill=(255, 183, 77))
+        if score[level][2] != 0:
+            w = int(font.getsize(str(score[level][2]))[0] / 2)
+            draw.text(
+                (43 + 40 * i - w, 152 - int(140 * ratio)), str(score[level][2]), (255, 183, 77), font,
+                stroke_width=1, stroke_fill=(255, 255, 255)
+            )
+
+        # FC
+        ratio = score[level][1] / score[level][3]
+        draw.rectangle((28 + 40 * i, 180 - int(140 * ratio), 60 + 40 * i, 180), fill=(240, 98, 146))
+        if score[level][1] != 0:
+            w = int(font.getsize(str(score[level][1]))[0] / 2)
+            draw.text(
+                (43 + 40 * i - w, 152 - int(140 * ratio)), str(score[level][1]), (240, 98, 146), font,
+                stroke_width=1, stroke_fill=(255, 255, 255)
+            )
+
+        # AP
+        ratio = score[level][0] / score[level][3]
+        draw.rectangle((28 + 40 * i, 180 - int(140 * ratio), 60 + 40 * i, 180), fill=(251, 217, 221))
+        if score[level][0] != 0:
+            w = int(font.getsize(str(score[level][0]))[0] / 2)
+            draw.text(
+                (43 + 40 * i - w, 152 - int(140 * ratio)), str(score[level][0]), (100, 181, 246), font,
+                stroke_width=1, stroke_fill=(255, 255, 255)
+            )
+
+        i += 1
+    return pic
+
+
+
+
 # 获取歌曲bpm
 async def parse_bpm(music_id):
     try:
@@ -558,9 +615,10 @@ async def parse_bpm(music_id):
 
 
 # 获取歌曲标题
-def idtoname(musicid):
-    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
-        musics = json.load(f)
+def idtoname(musicid, musics=None):
+    if musics is None:
+        with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+            musics = json.load(f)
     for i in musics:
         if i['id'] == musicid:
             return i['title']

@@ -7,6 +7,7 @@ from nonebot.params import CommandArg
 from configs.path_config import FONT_PATH
 from utils.message_builder import image
 from .._autoask import pjsk_update_manager
+from .._song_utils import jinduChart
 from .._utils import get_userid_preprocess
 from .._models import UserProfile
 from .._config import data_path, NOT_IMAGE_ERROR
@@ -100,7 +101,7 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     else:
         levelmin = 21
         profile.masterscore = profile.expertscore
-    for i in range(0, 6):
+    for i in range(0, 5):
         text_width = font_style.getsize(str(profile.masterscore[i + levelmin][0]))
         text_coordinate = (int(183 - text_width[0] / 2), int(295 + 97 * i - text_width[1] / 2))
         draw.text(text_coordinate, str(profile.masterscore[i + levelmin][0]), fill=(228, 159, 251), font=font_style)
@@ -118,25 +119,27 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
         draw.text(text_coordinate, str(profile.masterscore[i + levelmin][3]), fill=(108, 237, 226), font=font_style)
 
     if diff == 'master':
-        secondRawCount = 6
+        secondRawCount = 7
     else:
-        secondRawCount = 5
+        secondRawCount = 6
     for i in range(0, secondRawCount):
-        text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 6][0]))
+        text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 5][0]))
         text_coordinate = (int(683 - text_width[0] / 2), int(300 + 96.4 * i - text_width[1] / 2))
-        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][0]), fill=(228, 159, 251), font=font_style)
+        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 5][0]), fill=(228, 159, 251), font=font_style)
 
-        text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 6][1]))
+        text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 5][1]))
         text_coordinate = (int(683 + 78 - text_width[0] / 2), int(300 + 96.4 * i - text_width[1] / 2))
-        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][1]), fill=(254, 143, 249), font=font_style)
+        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 5][1]), fill=(254, 143, 249), font=font_style)
 
-        text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 6][2]))
+        text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 5][2]))
         text_coordinate = (int(683 + 2 * 78 - text_width[0] / 2), int(300 + 96.4 * i - text_width[1] / 2))
-        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][2]), fill=(255, 227, 113), font=font_style)
+        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 5][2]), fill=(255, 227, 113), font=font_style)
 
-        text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 6][3]))
+        text_width = font_style.getsize(str(profile.masterscore[i + levelmin + 5][3]))
         text_coordinate = (int(683 + 3 * 78 - text_width[0] / 2), int(300 + 96.4 * i - text_width[1] / 2))
-        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 6][3]), fill=(108, 237, 226), font=font_style)
+        draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 5][3]), fill=(108, 237, 226), font=font_style)
+    chart = jinduChart(profile.masterscore)
+    img.paste(chart, (15, 732), chart.split()[-1])
     buf = BytesIO()
     img.save(buf, format="PNG")
     base64_str = base64.b64encode(buf.getvalue()).decode()

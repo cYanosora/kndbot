@@ -11,6 +11,7 @@ from utils.http_utils import AsyncHttpx
 from utils.imageutils import pic2b64, text2image
 from utils.message_builder import image
 from .._autoask import pjsk_update_manager
+from .._song_utils import idtoname
 from .._utils import generatehonor, get_userid_preprocess
 from .._config import data_path, api_base_url_list, TIMEOUT_ERROR, NOT_IMAGE_ERROR, BUG_ERROR
 
@@ -322,11 +323,13 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     state = await get_userid_preprocess(event, msg)
     if reply := state['error']:
         await pjsk_r30.finish(reply, at_sender=True)
+    await pjsk_r30.send("收到")
+    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+        musicdata = json.load(f)
     userid = state['userid']
     isprivate = state['private']
     resp = requests.get(f'{random.choice(api_base_url_list)}/user/{userid}/profile')
     data = json.loads(resp.content)
-    print(resp.text[:100])
     name = data['user']['userGamedata']['name']
     userMusicResults = data['userMusicResults']
     userMusicResults.sort(key=lambda x: x["updatedAt"], reverse=True)
@@ -334,7 +337,7 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     for count, musics in enumerate(userMusicResults):
         timeArray = time.localtime(musics['updatedAt'] / 1000)
         otherStyleTime = time.strftime("%m-%d %H:%M", timeArray)
-        text += f"{otherStyleTime}: {idtoname(musics['musicId'])} [{musics['musicDifficulty'].upper()}] {musics['playType']}\n"
+        text += f"{otherStyleTime}: {idtoname(musics['musicId'], musicdata)} [{musics['musicDifficulty'].upper()}] {musics['playType']}\n"
         if count == 29:
             break
     text += '由于pjsk统计机制的问题会导致统计不全'
@@ -342,12 +345,3 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
         image(b64=pic2b64(text2image(text))),
         at_sender=True
     )
-
-
-def idtoname(musicid):
-    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
-        musics = json.load(f)
-    for i in musics:
-        if i['id'] == musicid:
-            return i['title']
-    return ""

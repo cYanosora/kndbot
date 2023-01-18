@@ -162,7 +162,7 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
                 )
             else:
                 cardimg = await pjsk_update_manager.get_asset(
-                    f'/startapp/thumbnail/chara', f'{assetbundleName}_normal.png'
+                    f'startapp/thumbnail/chara', f'{assetbundleName}_normal.png'
                 )
 
             cardimg = cardimg.resize((116, 116))

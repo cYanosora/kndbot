@@ -7,6 +7,8 @@ NICKNAME: str = "小奏"
 MAIN_BOT: int = 2953928559
 # bot二号机
 SUB_BOT: int = 2488024911
+# bot三号机
+AUX_BOT: int = 878536923
 
 # 数据库（必要）
 # 如果填写了bind就不需要再填写后面的字段了#）
