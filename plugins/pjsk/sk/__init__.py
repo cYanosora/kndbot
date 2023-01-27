@@ -141,7 +141,7 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
                 f'ondemand/event/{event_data["assetbundleName"]}/team_image', f'{assetbundleName}.png', block=True
             )
             team = team.resize((45, 45))
-            r, g, b ,mask = team.split()
+            r, g, b, mask = team.split()
             img.paste(team, (20, 63), mask)
             team_pos = (70, 65)
         except AttributeError:

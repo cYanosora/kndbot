@@ -2,6 +2,7 @@ import datetime
 import time
 from typing import Optional, Dict, List, Union, Tuple
 import pytz
+import yaml
 from PIL import Image, ImageDraw, ImageFont
 from configs.path_config import FONT_PATH
 from ._autoask import pjsk_update_manager
@@ -128,20 +129,34 @@ async def drawevent(event):
 
 # 生成活动图鉴
 async def draweventall(
-    event_type: str = 'all',
-    event_attr: str = 'all',
+    event_type: Optional[str] = None,
+    event_attr: Optional[str] = None,
+    event_units_name: Optional[List] = None,
     event_charas_id: Optional[List[Union[int, Tuple[int, str]]]] = None,
-    isContainAllCharasId: bool = False,
-    events: Optional[Dict] = None
+    isEqualAllUnits: bool = True,
+    isContainAllCharasId: bool = True,
+    isTeamEvent: Optional[bool] = None,
+    events: Optional[Dict] = None,
+    *args, **kwargs
 ):
     """
     生成活动图鉴
     :param event_type: 筛选的活动类型
     :param event_attr: 筛选的活动属性
+    :param event_units_name: 筛选的活动组合
     :param event_charas_id: 筛选的活动出卡角色
+    :param isEqualAllUnits: 筛选的活动组合是否需要完全等同所有组合名称，针对event_units_name参数
     :param isContainAllCharasId: 筛选的活动出卡是否需要包含所有角色id，针对event_charas_id参数
+    :param isTeamEvent: True时只筛选箱活、False时只筛选混活，会无视除event_type、event_attr的筛选条件
     :param events: events.json
     """
+    print(event_type)
+    print(event_attr)
+    print(event_units_name)
+    print(event_charas_id)
+    print(isEqualAllUnits)
+    print(isContainAllCharasId)
+    print(isTeamEvent)
     if events is None:
         with open(data_path / 'events.json', 'r', encoding='utf-8') as f:
             events = json.load(f)
@@ -153,11 +168,16 @@ async def draweventall(
         game_character_units = json.load(f)
     with open(data_path / 'cards.json', 'r', encoding='utf-8') as f:
         allcards = json.load(f)
+    if event_type != 'marathon':
+        with open(data_path / 'cheerfulCarnivalTeams.json', 'r', encoding='utf-8') as f:
+            allteams = json.load(f)
+        with open(data_path / 'translate.yaml', encoding='utf-8') as f:
+            trans = yaml.load(f, Loader=yaml.FullLoader)
     font30 = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), size=30)
     font20 = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), size=20)
     font10 = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), size=10)
     # 筛选：指定活动图鉴显示的活动类型
-    if event_type != 'all':
+    if event_type is not None:
         events = filter(lambda x: x['eventType'] == event_type, events)
     limit_count = 10  # 单列活动缩略图的个数
     event_size = (835, 230)  # 每张活动图的尺寸
@@ -194,6 +214,8 @@ async def draweventall(
                 except:
                     pass
             if _count < len(event_charas_id):
+                print(f'{each["id"]}:charas死了')
+                print('-' * 30)
                 continue
         # 获取活动加成角色，属性
         event_bonusecharas = []
@@ -203,7 +225,9 @@ async def draweventall(
             if bonuse['bonusRate'] == 50 and bonuse.get('gameCharacterUnitId')
         )
         event_bonuseattr = next(filter(lambda x: x.get('cardAttr'), current_bonuse))['cardAttr']
-        if event_attr != 'all' and event_bonuseattr != event_attr:
+        if event_attr is not None and event_bonuseattr != event_attr:
+            print(f'{each["id"]}:attr死了')
+            print('-'*30)
             continue
         tmp_bonuse_charas = []
         for unitid in event_bonusecharas:
@@ -223,12 +247,35 @@ async def draweventall(
                 'asset': 'vs_90.png'
             })
         event_bonusecharas = tmp_bonuse_charas
+        # 加成角色的所属团体
+        belong_units = set(map(lambda x: x['unit'], event_bonusecharas))
+        if isTeamEvent is True and len(belong_units) != 1:
+            print('不符合箱活')
+            continue
+        if isTeamEvent is False and len(belong_units) == 1:
+            print('不符合混活')
+            continue
+        if event_units_name:
+            # 当期加成只能是筛选团体（筛选团体单数时即为筛选箱活）
+            if isEqualAllUnits and belong_units != set(event_units_name):
+                print('不等同筛选团体')
+                continue
+            # 筛选团体存在当期加成即可（但排除箱活），可以是复数
+            if not isEqualAllUnits and not (
+                len(set(belong_units)) > 1 and
+                set(event_units_name).issubset(belong_units)
+            ):
+                print('不包含筛选团体')
+                continue
         # ********************************生成活动图片******************************** #
+        print(f'活动{each["id"]}通过')
         event_img = Image.new('RGB', event_size, 'white')
         draw = ImageDraw.Draw(event_img)
         _interval = 10
         _banner_width = 265
         _left_offset = 70
+        _team_size = 70
+        _team_pad = 5
 
         # 生成banner图
         bannerpic = await pjsk_update_manager.get_asset(f'ondemand/event_story/{each["assetbundleName"]}/screen_image', 'banner_event_story.png')
@@ -257,6 +304,34 @@ async def draweventall(
         event_img.paste(attrpic, (bannerpic.width + _left_offset + _interval, 80), attrpic)
         event_img.paste(charapic, (bannerpic.width + _left_offset + _interval + 60, 80), charapic)
 
+        # 如果活动类型为5v5，粘贴team图
+        if each['eventType'] == 'cheerful_carnival':
+            teams_info = filter(lambda x:x['eventId'] == each['id'], allteams)
+            for _i, team_info in enumerate(teams_info):
+                team_img = await pjsk_update_manager.get_asset(
+                    f'ondemand/event/{each["assetbundleName"]}/team_image', f'{team_info["assetbundleName"]}.png', block=True
+                )
+                team_img = team_img.resize((_team_size, _team_size))
+                team_bk_img = Image.new('RGBA', (_team_size+_team_pad*2, _team_size+_team_pad*2))
+                _color = "#00bbdd" if _i%2 else "#ff8833"
+                _draw = ImageDraw.Draw(team_bk_img)
+                _draw.rounded_rectangle((0,0,_team_size+_team_pad,_team_size+_team_pad), 10, _color, light_grey, 3)
+                team_bk_img.paste(team_img,(_team_pad-2, _team_pad-2),team_img)
+                try:
+                    team_name = trans['cheerful_carnival_teams'][team_info['id']]
+                except KeyError:
+                    team_name = team_info['teamName']
+                pos = (_left_offset+_banner_width+_interval*2+256+_i*(_team_size+2*_team_pad+_interval*3), 0)
+                event_img.paste(team_bk_img, (pos[0]+_interval, pos[1]),team_bk_img)
+                if _i != 0:
+                    draw.text((pos[0]-_interval*2, pos[1]+_team_size//2-15), 'VS', 'black', font20)
+                _name_width = font20.getsize(team_name)[0]
+                if _name_width > _team_size+2*_interval:
+                    _name_width = font10.getsize(team_name)[0]
+                    draw.text((pos[0]+(_team_size+2*(_interval+_team_pad)-_name_width)//2, pos[1]+_team_size+_interval), team_name, 'black', font10)
+                else:
+                    draw.text((pos[0]+(_team_size+2*(_interval+_team_pad)-_name_width)//2, pos[1]+_team_size), team_name, 'black', font20)
+
         # 生成活动出卡图
         for index, cardid in enumerate(event_cards):
             _c = (await cardthumnail(cardid, False, allcards)).resize((90, 90))
@@ -274,6 +349,7 @@ async def draweventall(
         draw.text((bannerpic.width + _left_offset + _interval, 0), eventtype, 'black', font20)
         draw.text((bannerpic.width + _left_offset + _interval, 25), f"开始于 {startAt}", 'black', font20)
         draw.text((bannerpic.width + _left_offset + _interval, 50), f"结束于 {aggregateAt}", 'black', font20)
+
         _tmp_event_imgs.append(event_img.copy())
         # 活动图数量达到每列限制数量
         if len(_tmp_event_imgs) >= limit_count:
@@ -308,17 +384,17 @@ async def draweventall(
     badge_img = Image.open(data_path / 'pics/findevent_badge.png')
     badge_img = badge_img.resize((event_size[0] // 2, int(badge_img.height / badge_img.width * event_size[0] // 2)))
     handbook_img.paste(badge_img, (handbook_pad[2], int(handbook_pad[1] / 3 * 2 - badge_img.height)), badge_img.split()[-1])
-    # water_mark = 'Generated by Unibot'
+    water_mark = 'Code by Yozora (Github @cYanosora)\nGenerated by Unibot'
     tips = '查活动 + [活动ID] 查询活动详情\n查卡 + [卡面ID] 查询卡面详情'
     draw = ImageDraw.Draw(handbook_img)
-    # draw.text(
-    #     (handbook_img.width - 300 - handbook_pad[3], handbook_img.height - 50 - handbook_pad[1] // 3),
-    #     water_mark,
-    #     '#00CCBB',
-    #     font30
-    # )
     draw.text(
-        (handbook_pad[3], handbook_img.height - 25 - handbook_pad[1] // 2),
+        (handbook_img.width - 500 - handbook_pad[3], handbook_img.height - 50 - handbook_pad[1] // 3),
+        water_mark,
+        '#00CCBB',
+        font30
+    )
+    draw.text(
+        (handbook_pad[3], handbook_img.height - 50 - handbook_pad[1] // 3),
         tips,
         '#00CCBB',
         font30

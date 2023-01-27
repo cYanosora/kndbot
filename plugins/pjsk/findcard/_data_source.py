@@ -3,7 +3,7 @@ from PIL import Image, ImageFont, ImageDraw
 from configs.path_config import FONT_PATH
 from .._autoask import pjsk_update_manager
 from .._config import data_path
-from .._data_source import cardthumnail
+from .._card_utils import cardthumnail, getcharaname
 try:
     import ujson as json
 except:
@@ -22,17 +22,6 @@ def cardtype(cardid, cardCostume3ds, costume3ds):
                 if model['partType'] == 'hair':
                     return 1
     return 0
-
-
-def getcharaname(characterid):
-    with open(data_path / 'gameCharacters.json', 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    for i in data:
-        if i['id'] == characterid:
-            try:
-                return i['firstName'] + i['givenName']
-            except KeyError:
-                return i['givenName']
 
 
 async def findcardsingle(card, allcards, cardCostume3ds, costume3ds):

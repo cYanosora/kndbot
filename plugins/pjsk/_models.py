@@ -1,12 +1,10 @@
 import math
-
 import requests
 import yaml
 import pytz
 import time
 import random
 import datetime
-from pathlib import Path
 from typing import List, Dict, Union, Optional
 from PIL import Image, ImageDraw, ImageFilter
 from services import logger
@@ -22,6 +20,110 @@ try:
     import ujson as json
 except:
     import json
+
+
+class PjskGuessRank(db.Model):
+    __tablename__ = "pjsk_guess_rank"
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer(), primary_key=True)
+    user_qq = db.Column(db.BigInteger(), nullable=False)
+    group_id = db.Column(db.BigInteger(), nullable=False)
+    game_type = db.Column(db.TEXT(), nullable=False)
+    total_count = db.Column(db.JSON(), default={}, nullable=False)
+    daily_count = db.Column(db.Integer(), default=0, nullable=False)
+    last_guess_time = db.Column(db.DateTime(), nullable=False, default=datetime.datetime.min)
+
+    @classmethod
+    async def get_rank(cls, group_id: int, game_type: str, guess_diff: Optional[int] = None):
+        """
+        说明：
+            获取某群某类型游戏的用户排行榜
+        参数：
+            :param group_id: 群号
+            :param game_type: 游戏类型
+            :param guess_diff: 游戏难度
+        """
+        user_ls = []
+        count_ls = []
+        query = cls.query.where((cls.group_id == group_id) & (cls.game_type == game_type))
+        if guess_diff is not None:
+            for user in await query.gino.all():
+                if count := user.total_count.get(str(guess_diff), 0):
+                    user_ls.append(user.user_qq)
+                    count_ls.append(count)
+        else:
+            for user in await query.gino.all():
+                total = user.total_count
+                count = sum(total.get(i) for i in total.keys())
+                user_ls.append(user.user_qq)
+                count_ls.append(count)
+        return user_ls, count_ls
+
+    @classmethod
+    async def add_count(
+        cls, user_qq: int, group_id: int, game_type: str, guess_diff: int
+    ):
+        """
+        说明：
+            添加次数
+        参数：
+            :param user_qq: qq号
+            :param group_id: 群号
+            :param game_type: 游戏类型
+            :param guess_diff: 游戏难度
+        """
+        user = await cls._get_user_info(user_qq, group_id, game_type)
+        print(user)
+        if cls._check_today_count(user):
+            flag = False
+        else:
+            flag = True
+            total_count = user.total_count
+            total_count[guess_diff] = total_count.get(guess_diff, 0) + 1
+            print(total_count)
+            await user.update(
+                total_count=total_count,
+                daily_count=user.daily_count+1,
+                last_guess_time=datetime.datetime.now()
+            ).apply()
+        print('add_success_flag:', flag)
+        return flag
+
+    @classmethod
+    async def _get_user_info(cls,user_qq: int, group_id: int, game_type: str):
+        """
+        说明：
+            获取用户信息
+        参数：
+            :param user_qq: qq号
+            :param group_id: 群号
+            :param game_type: 游戏类型
+        """
+        user = await cls.query.where(
+            (cls.user_qq == user_qq) & (cls.group_id == group_id) & (cls.game_type == game_type)
+        ).gino.first()
+        return user or await cls.create(
+            user_qq=user_qq,
+            group_id=group_id,
+            game_type=game_type,
+            total_count={},
+            daily_count=0,
+            last_guess_time=datetime.datetime.now().date()
+        )
+
+    @classmethod
+    def _check_today_count(cls, user: "PjskGuessRank") -> bool:
+        """
+        说明：
+            检查用户是否达到游戏上限
+        参数：
+            :param user: 用户信息
+        """
+        return True if(
+            user.last_guess_time.date() >= datetime.datetime.now().date() and user.daily_count >= 15
+        ) else False
+
 
 
 class PjskSongsAlias(db.Model):

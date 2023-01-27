@@ -317,7 +317,9 @@ class BuildImage:
         p = ((0, 0), (img_w, 0), (img_w, img_h), (0, img_h))
         coeffs = find_coeffs(points, p)
         self.image.transform((new_w, new_h), Image.PERSPECTIVE, coeffs, Image.BICUBIC)
-        return BuildImage(self.image)
+        return BuildImage(
+            self.image.transform((new_w, new_h), Image.PERSPECTIVE, coeffs, Image.BICUBIC)
+        )
 
     def gradient_color(
         self,

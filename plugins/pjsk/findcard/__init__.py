@@ -104,6 +104,8 @@ async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
         costume3ds = json.load(f)
     with open(data_path / f'skills.json', 'r', encoding='utf-8') as f:
         skills = json.load(f)
+    with open(data_path / 'gameCharacters.json', 'r', encoding='utf-8') as f:
+        gameCharacters = json.load(f)
     allcards.sort(key=lambda x: x["releaseAt"], reverse=True)
     # 获得卡面的数量，决定是否更新缓存
     count = 0
@@ -134,7 +136,7 @@ async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
                     if card['cardRarityType'] != cardRarityType:
                         continue
                 try:
-                    single = await findcardsingle(card, allcards, cardCostume3ds, costume3ds, skills)
+                    single = await findcardsingle(card, allcards, cardCostume3ds, costume3ds, skills, gameCharacters)
                     pos = (int(70 + count % 3 * 470), int(count / 3) * 310 + 60)
                     count += 1
                     pic.paste(single, pos)

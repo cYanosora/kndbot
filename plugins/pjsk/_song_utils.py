@@ -22,6 +22,28 @@ except:
 import os
 
 
+# 判断music是否未实装
+def isleak(musicid: int, musics=None):
+    if musics is None:
+        with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
+            musics = json.load(f)
+    for i in musics:
+        if i['id'] == musicid:
+            if int(time.time() * 1000) < i['publishedAt']:
+                return True
+            else:
+                return False
+    return True
+
+
+# 获取歌曲定数
+def getPlayLevel(musicid: int, difficulty: str, musicDifficulties=None):
+    if musicDifficulties is None:
+        with open(data_path / 'musicDifficulties.json', 'r', encoding='utf-8') as f:
+            musicDifficulties = json.load(f)
+    for diff in musicDifficulties:
+        if musicid == diff['musicId'] and diff['musicDifficulty'] == difficulty:
+            return diff['playLevel']
 
 
 # 更新从uniapi获取的歌曲alias

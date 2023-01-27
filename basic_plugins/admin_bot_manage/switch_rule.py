@@ -97,7 +97,7 @@ async def _(bot: Bot, event: MessageEvent, state: T_State):
                 await change_group_switch(_cmd, g, True)
                 group_name = (await bot.get_group_info(group_id=g))["group_name"]
                 text += f"{group_name}({g})\n"
-            await switch_rule_matcher.finish(image(pic2b64(text2image(text))))
+            await switch_rule_matcher.finish(image(b64=pic2b64(text2image(text))))
         # 超管指定私聊/群聊/全部某功能开关状态
         elif block_type in type_dic.keys():
             block_type = type_dic[block_type]

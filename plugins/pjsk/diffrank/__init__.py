@@ -80,7 +80,7 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
             difficulty = 'master'
             level = tmp_arg.strip()
         level = int(level) if level.isdigit() else 0
-        if not tmp_arg.strip() and level == 0:
+        if not tmp_arg.strip() and level == 0 and fcap == 0:
             await pjsk_hotrank.finish(
                 '参数错误，指令：难度排行 定数 难度\n'
                 '难度支持的输入: easy/ez, normal/nm, hard/hd, expert/ex, master/ma，如：难度排行 28 expert'

@@ -76,7 +76,9 @@ async def create_help_image():
     _plugins_data["被动开关"] = _plugins_data.get("被动开关", [])
     for x in task_data.keys():
         _plugins_data["被动开关"].append(f"开启/关闭{task_data[x]}")
-
+    types = list(_plugins_data.keys())
+    types.sort(key=lambda x: len(_plugins_data[x]), reverse=True)
+    _plugins_data = {_type: _plugins_data[_type] for _type in types}
     # 生成图片
     random_bk = random.choice(os.listdir(random_bk_path))
     template_path = str(Path(__file__).parent / "templates")

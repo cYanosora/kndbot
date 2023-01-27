@@ -315,7 +315,8 @@ def raisesign(text: str = Arg()):
             spacing=10,
             fontname="FZSEJW",
             fill="#51201b",
-            halign="center"
+            halign="center",
+            valign="center"
         )
     except ValueError:
         return OVER_LENGTH_MSG

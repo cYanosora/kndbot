@@ -94,10 +94,11 @@ async def cardthumnail(cardid, istrained=False, cards=None, limitedbadge=False):
 
 
 # 获取角色名称
-def _getcharaname(characterid):
-    with open(data_path / 'gameCharacters.json', 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    for i in data:
+def getcharaname(characterid, gameCharacters=None):
+    if gameCharacters is None:
+        with open(data_path / 'gameCharacters.json', 'r', encoding='utf-8') as f:
+            gameCharacters = json.load(f)
+    for i in gameCharacters:
         if i['id'] == characterid:
             try:
                 return i['firstName'] + i['givenName']
@@ -106,7 +107,7 @@ def _getcharaname(characterid):
 
 
 # 生成单张缩略图信息
-async def findcardsingle(card, allcards, cardCostume3ds, costume3ds, skills):
+async def findcardsingle(card, allcards, cardCostume3ds, costume3ds, skills, gameCharacters):
     pic = Image.new("RGB", (420, 260), (255, 255, 255))
     badge = False
     cardtypenum = cardtype(card['id'], cardCostume3ds, costume3ds)
@@ -136,7 +137,7 @@ async def findcardsingle(card, allcards, cardCostume3ds, costume3ds, skills):
     text_coordinate = ((210 - text_width[0] / 2), int(195 - text_width[1] / 2))
     draw.text(text_coordinate, card["prefix"], '#000000', font)
 
-    name = _getcharaname(card['characterId'])
+    name = getcharaname(card['characterId'], gameCharacters)
     font = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), 18)
     text_width = font.getsize(f'id:{card["id"]}  {name}')
     text_coordinate = ((210 - text_width[0] / 2), int(230 - text_width[1] / 2))

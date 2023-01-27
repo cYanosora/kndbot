@@ -2,7 +2,7 @@ import json
 import os
 import re
 from hashlib import md5
-from typing import Tuple
+from typing import Tuple, List
 
 from nonebot import on_command, require
 from nonebot.adapters.onebot.v11 import GROUP, Message
@@ -76,6 +76,139 @@ async def _eventinfo(arg: Message = CommandArg()):
             await findevent.finish("未找到活动或生成失败")
 
 
+async def event_argparse(args: List = None):
+    if not args:
+        args = []
+    event_type = None            # 活动类型
+    event_attr = None            # 活动属性
+    event_units_name = []        # 活动组合名称
+    event_charas_id = []         # 活动出卡角色id
+    isEqualAllUnits = True     # 活动组合是否需要完全等同所有组合名称
+    isContainAllCharasId = True  # 活动出卡是否需要包含所有角色id
+    islegal = True               # 参数是否合法
+    isTeamEvent = None          # 是否指定箱活
+    unit_dict = {
+        'ln': 'light_sound', 'mmj': 'idol', 'vbs': 'street', 'ws': 'theme_park', '25h': 'school_refusal',
+    }
+    team_dict = {
+        '箱活': True, '团队活': True, '混活': False, '团外活': False
+    }
+    event_type_dict = {
+        '普活': 'marathon', '马拉松': 'marathon', 'marathon': 'marathon',
+        '5v5': 'cheerful_carnival', 'cheerful_carnival': 'cheerful_carnival'
+    }
+    event_attr_dict = {
+        '蓝星': 'cool', '紫月': 'mysterious', '橙心': 'happy', '黄心': 'happy', '粉花': 'cute', '绿草': 'pure',
+        '蓝': 'cool', '紫': 'mysterious', '橙': 'happy', '黄': 'happy', '粉': 'cute', '绿': 'pure',
+        '星': 'cool', '月': 'mysterious', '心': 'happy', '花': 'cute', '草': 'pure',
+        'cool': 'cool', 'mysterious': 'mysterious', 'happy': 'happy', 'cute': 'cute', 'pure': 'pure',
+    }
+    chara_dict = {
+        'ick': 1, 'saki': 2, 'hnm': 3, 'shiho': 4,
+        'mnr': 5, 'hrk': 6, 'airi': 7, 'szk': 8,
+        'khn': 9, 'an': 10, 'akt': 11, 'toya': 12,
+        'tks': 13, 'emu': 14, 'nene': 15, 'rui': 16,
+        'knd': 17, 'mfy': 18, 'ena': 19, 'mzk': 20,
+        'miku': 21, 'rin': 22, 'len': 23, 'luka': 24, 'meiko': 25, 'kaito': 26
+    }
+    chara2unit_dict = {
+        'light_sound': [1,2,3,4],
+        'idol': [5,6,7,8],
+        'street': [9,10,11,12],
+        'theme_park': [13,14,15,16],
+        'school_refusal': [17,18,19,20]
+    }
+    print('args:',args)
+    for arg in args:
+        # 参数是否指定了箱活或混活
+        if arg in team_dict.keys():
+            isTeamEvent = team_dict[arg]
+            continue
+        # 参数是否为活动类型，只能指定一种
+        if _ := event_type_dict.get(arg):
+            if event_type:
+                islegal = False
+                break
+            else:
+                event_type = _
+                continue
+        # 参数是否为活动属性，只能指定一种
+        if _ := event_attr_dict.get(arg):
+            if event_attr:
+                islegal = False
+                break
+            else:
+                event_attr = _
+                continue
+        # 参数是否为组合缩写(指定一个时为箱活，指定多个时为混活)
+        if _ := unit_dict.get(arg):
+            event_units_name.append(_)
+            continue
+        # 参数是否为组合缩写(对参数中含"混"、"加成"的额外再判定一次)
+        # 末尾为"混"、"加成"，说明需要筛选带此组合任意角色玩的混活
+        unit_rule = "|".join(unit_dict.keys())
+        if match := re.match(rf'^({unit_rule})(?:混|加成)$', arg):
+            try:
+                event_units_name.append(unit_dict[match.group(1)])
+            except KeyError:
+                islegal = False
+                break
+            else:
+                isEqualAllUnits = False
+                continue
+        # 中间为"混"
+        if match := re.match(rf'^({unit_rule})混({unit_rule}).*$', arg):
+            try:
+                event_units_name.extend(unit_dict[j] for j in match.group().split('混'))
+                continue
+            except KeyError:
+                islegal = False
+                break
+        # 参数是否是带附属组合的vs角色
+        if match := re.match(rf"^({unit_rule})(.+)", arg):
+            unit = match.group(1)
+            alias = match.group(2)
+            if alias not in [i for i in chara_dict.keys() if chara_dict[i] > 20]:
+                alias = await PjskAlias.query_name(alias)
+            if alias and chara_dict[alias] > 20:
+                event_charas_id.append((chara_dict[alias], unit_dict[unit]))
+                continue
+            else:
+                islegal = False
+                break
+        # 以上判定均无果，则认定为sekai角色或无附属组合的vs角色
+        alias = arg
+        if alias not in chara_dict.keys():
+            alias = await PjskAlias.query_name(arg)
+        if alias:
+            event_charas_id.append(chara_dict[alias])
+        # 参数仍无法识别
+        else:
+            islegal = False
+            break
+
+    for i in event_charas_id:
+        if isinstance(i, tuple):
+            unit = i[1]
+        elif i <= 20:
+            unit = [x for x in chara2unit_dict.keys() if i in chara2unit_dict[x]][0]
+        else:
+            continue
+        if len(event_units_name) != 0 and unit not in event_units_name:
+            event_units_name.append(unit)
+            isEqualAllUnits = False
+    # 箱活标志只能与活动类型、活动属性搭配
+    if isTeamEvent is not None and (len(event_units_name)>0 or len(event_charas_id)>0):
+        islegal = False
+    return {
+        'event_type': event_type, 'event_attr': event_attr,
+        'event_units_name': list(set(event_units_name)), 'event_charas_id': list(set(event_charas_id)),
+        'islegal': islegal, 'isTeamEvent': isTeamEvent,
+        'isEqualAllUnits': isEqualAllUnits, 'isContainAllCharasId': isContainAllCharasId
+
+    }
+
+
 @findevent.handle()
 async def _findevent(cmd: Tuple = Command(),arg: Message = CommandArg()):
     args = arg.extract_plain_text().strip()
@@ -84,61 +217,10 @@ async def _findevent(cmd: Tuple = Command(),arg: Message = CommandArg()):
         return
     else:
         args = args.split()
-    event_type = 'all'
-    event_attr = 'all'
-    event_charas_id = []
-    for i in args:
-        # 是否为活动类型
-        if _ := {
-            '普活': 'marathon', '马拉松': 'marathon', 'marathon': 'marathon',
-            '5v5': 'cheerful_carnival', 'cheerful_carnival': 'cheerful_carnival'
-        }.get(i):
-            event_type = _
-        # 是否为活动属性
-        elif _ := {
-            '蓝星':'cool', '紫月':'mysterious', '橙心':'happy', '粉花':'cute', '绿草':'pure',
-            '蓝': 'cool', '紫': 'mysterious', '橙': 'happy', '粉': 'cute', '绿': 'pure',
-            '星': 'cool', '月': 'mysterious', '心': 'happy', '花': 'cute', '草': 'pure',
-            'cool': 'cool', 'mysterious': 'mysterious', 'happy': 'happy', 'cute': 'cute', 'pure': 'pure',
-        }.get(i):
-            event_attr = _
-        # 是否为组合（并不包含vs角色）
-        elif _ := {
-            'ln': [1,2,3,4], 'mmj': [5,6,7,8],'vbs': [9,10,11,12],'ws': [13,14,15,16],'25时': [17,18,19,20],
-        }.get(i):
-            event_charas_id.extend(_)
-        # 是否为角色
-        else:
-            # 是否是带附属组合的vs角色
-            for unit in ['ln','mmj','vbs','ws','25时']:
-                if i.startswith(unit):
-                    unit_dict = {
-                        'ln': 'light_sound', 'mmj': 'idol', 'vbs': 'street', 'ws': 'theme_park', '25时': 'school_refusal'
-                    }
-                    chara_dict = {'miku':21,'rin':22,'len':23,'luka':24,'meiko':25,'kaito':26}
-                    alias = i[len(unit):]
-                    if alias not in chara_dict.keys():
-                        alias = await PjskAlias.query_name(i[len(unit):])
-                    if alias:
-                        event_charas_id.append((chara_dict[alias],unit_dict[unit]))
-                        break
-            # sekai角色、无附属组合的vs角色
-            else:
-                chara_dict = {
-                    'ick': 1, 'saki': 2, 'hnm': 3, 'shiho': 4,
-                    'mnr': 5, 'hrk': 6, 'airi': 7, 'szk': 8,
-                    'khn': 9, 'an': 10, 'akt': 11, 'toya': 12,
-                    'tks': 13, 'emu': 14, 'nene': 15, 'rui': 16,
-                    'knd': 17, 'mfy': 18, 'ena': 19, 'mzk': 20,
-                    'miku': 21, 'rin': 22, 'len': 23, 'luka': 24, 'meiko': 25, 'kaito': 26
-                }
-                alias = i
-                if alias not in chara_dict.keys():
-                    alias = await PjskAlias.query_name(i)
-                if alias:
-                    event_charas_id.append(chara_dict[alias])
-    # 携带参数但是参数不合规范
-    if args and event_type == 'all' and event_attr == 'all' and not event_charas_id:
+    params = await event_argparse(args)
+    print('params',params)
+    if not params['islegal']:
+        print('为什么捏？')
         tip_path = data_path / 'pics/findevent_tips.jpg'
         await findevent.finish(image(tip_path))
     # 没有参数但是指令不是活动图鉴
@@ -151,30 +233,39 @@ async def _findevent(cmd: Tuple = Command(),arg: Message = CommandArg()):
     path = data_path / 'findevent'
     path.mkdir(parents=True, exist_ok=True)
     # 图片路径格式
-    charas_id_name = event_charas_id.copy()
-    for i in range(len(event_charas_id)):
-        if isinstance(event_charas_id[i], tuple):
-            charaid = event_charas_id[i][0] + ([
+    # 备份
+    _event_charas_id = params['event_charas_id'].copy()
+    _event_units_name = params['event_units_name'].copy()
+    charas_id_name = params['event_charas_id']
+    params['event_units_name'].sort()
+    for i in range(len(_event_charas_id)):
+        if isinstance(_event_charas_id[i], tuple):
+            _charaid = _event_charas_id[i][0] + ([
                  'light_sound','idol','street','theme_park','school_refusal'
-            ].index(event_charas_id[i][1])+1)*6
-            charas_id_name[i] = charaid
+            ].index(_event_charas_id[i][1])+1)*6
+            charas_id_name[i] = _charaid
     charas_id_name.sort()
-    save_file_prefix = md5(f'{event_type}{event_attr}{charas_id_name}'.encode()).hexdigest()
+    save_file_prefix = md5(''.join(str(params.values())).encode()).hexdigest()
     save_path = path / f'{save_file_prefix}-{count}.jpg'
+    # 还原
+    params['event_charas_id'] = _event_charas_id
+    params['event_units_name'] = _event_units_name
+
     if save_path.exists():
         await findevent.finish(image(save_path))
     else:
         # 开始生成新活动图鉴
-        isContainAllCharasId = True     # 活动出卡是否需要包含所有角色id
         try:
-            pic = await draweventall(event_type, event_attr, event_charas_id, isContainAllCharasId, events)
-        except:
+            pic = await draweventall(events=events, **params)
+        except Exception as e:
+            raise e
             await findevent.finish(BUG_ERROR)
         else:
             if pic:
                 pic = pic.convert('RGB')
+                pic.show()
                 pic.save(save_path, quality=70)
-                await findevent.finish(image(save_path))
+                # await findevent.finish(image(save_path))
             else:
                 tip_path = data_path / 'pics/findevent_tips.jpg'
                 await findevent.finish(image(tip_path))
