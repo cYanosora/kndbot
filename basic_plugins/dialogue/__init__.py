@@ -46,7 +46,7 @@ __plugin_settings__ = {
 
 dialogue_data = {}
 dialogue = on_command("联系管理员", aliases={"滴滴滴", "联系管理"}, priority=5, block=True)
-reply = on_command("/t", aliases={".t"}, priority=5, permission=SUPERUSER, block=True)
+reply = on_command("/t", aliases={".t"}, priority=1, permission=SUPERUSER, block=True)
 
 
 @dialogue.handle()

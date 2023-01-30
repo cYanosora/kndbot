@@ -304,10 +304,11 @@ async def group_user_check(nickname: str, user_qq: int, group: int) -> MessageSe
 
 
 # 查看好感排行
-async def group_impression_rank(group: int, num: int) -> Optional[Mat]:
+async def group_impression_rank(group: int, num: int) -> Optional[IMG]:
     user_qq_list, impression_list, _ = await SignGroupUser.get_all_impression(group)
-    return await init_rank("好感度排行榜", user_qq_list, impression_list, group, num)
-
+    return await init_rank(
+        "好感度排行榜", user_qq_list, impression_list, group, num, 50, f"g{group}_{num}_signrank"
+    )
 
 # 查看签到总榜
 async def impression_rank(group_id: int, data: dict):

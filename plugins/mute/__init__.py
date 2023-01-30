@@ -49,6 +49,10 @@ admin_usage：
         T的取值范围限制为1~120(秒)
         N的取值范围限制为2~30(次数)
         M的取值范围限制为0~43200(分钟)(0为关闭)
+    举例：
+        设置刷屏禁言参数 0 60 3 1       :群内有人一分钟重复发送同一消息3次，禁言拉黑1分钟
+        设置刷屏禁言参数 1 5 3 1        :群内有人5秒发消息3次，禁言拉黑1分钟
+        设置刷屏禁言参数 2 30 3 1       :群内有人30秒触发3次bot的指令，禁言拉黑1分钟
 """.strip()
 __plugin_configs__ = {
     "MUTE_LEVEL [LEVEL]": {"value": 6, "help": "更改禁言设置的管理权限", "default_value": 6},
@@ -226,7 +230,7 @@ async def _(event: GroupMessageEvent, cmd: Tuple[str, ...] = Command(), arg: Mes
         )
     if cmd[0] == "设置刷屏禁言参数":
         if len(msg.split()) < 4:
-            await mute_setting.finish("请提供完整参数！指令：设置刷屏检测配置 [检测类型:0/1/2] [检测时间/秒] [检测次数] [禁言时长/分钟]", at_sender=True)
+            await mute_setting.finish("请提供完整参数！指令：设置刷屏禁言参数 [检测类型:0/1/2] [检测时间/秒] [检测次数] [禁言时长/分钟]", at_sender=True)
         m0, m1, m2, m3 = msg.split()[:4]
         m0 = dic_type2type.get(m0)
         if m0 and is_number(m1) and is_number(m2) and is_number(m3):

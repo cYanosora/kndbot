@@ -1,5 +1,4 @@
 import datetime
-import time
 from typing import Optional, Dict, List, Union, Tuple
 import pytz
 import yaml
@@ -150,13 +149,6 @@ async def draweventall(
     :param isTeamEvent: True时只筛选箱活、False时只筛选混活，会无视除event_type、event_attr的筛选条件
     :param events: events.json
     """
-    print(event_type)
-    print(event_attr)
-    print(event_units_name)
-    print(event_charas_id)
-    print(isEqualAllUnits)
-    print(isContainAllCharasId)
-    print(isTeamEvent)
     if events is None:
         with open(data_path / 'events.json', 'r', encoding='utf-8') as f:
             events = json.load(f)
@@ -214,8 +206,6 @@ async def draweventall(
                 except:
                     pass
             if _count < len(event_charas_id):
-                print(f'{each["id"]}:charas死了')
-                print('-' * 30)
                 continue
         # 获取活动加成角色，属性
         event_bonusecharas = []
@@ -226,8 +216,6 @@ async def draweventall(
         )
         event_bonuseattr = next(filter(lambda x: x.get('cardAttr'), current_bonuse))['cardAttr']
         if event_attr is not None and event_bonuseattr != event_attr:
-            print(f'{each["id"]}:attr死了')
-            print('-'*30)
             continue
         tmp_bonuse_charas = []
         for unitid in event_bonusecharas:
@@ -250,25 +238,20 @@ async def draweventall(
         # 加成角色的所属团体
         belong_units = set(map(lambda x: x['unit'], event_bonusecharas))
         if isTeamEvent is True and len(belong_units) != 1:
-            print('不符合箱活')
             continue
         if isTeamEvent is False and len(belong_units) == 1:
-            print('不符合混活')
             continue
         if event_units_name:
             # 当期加成只能是筛选团体（筛选团体单数时即为筛选箱活）
             if isEqualAllUnits and belong_units != set(event_units_name):
-                print('不等同筛选团体')
                 continue
             # 筛选团体存在当期加成即可（但排除箱活），可以是复数
             if not isEqualAllUnits and not (
                 len(set(belong_units)) > 1 and
                 set(event_units_name).issubset(belong_units)
             ):
-                print('不包含筛选团体')
                 continue
         # ********************************生成活动图片******************************** #
-        print(f'活动{each["id"]}通过')
         event_img = Image.new('RGB', event_size, 'white')
         draw = ImageDraw.Draw(event_img)
         _interval = 10

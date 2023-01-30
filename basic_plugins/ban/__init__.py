@@ -58,7 +58,7 @@ __plugin_configs__ = {
 ban = on_command(
     ".ban",
     aliases={".unban", "/ban", "/unban"},
-    priority=5,
+    priority=3,
     block=True,
 )
 

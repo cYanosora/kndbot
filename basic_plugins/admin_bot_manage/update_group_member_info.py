@@ -30,7 +30,7 @@ __plugin_settings__ = {
 
 
 refresh_member_group = on_command(
-    "更新群组成员列表", aliases={"更新群组成员", "更新群成员"}, permission=GROUP, priority=5, block=True
+    "更新群组成员列表", aliases={"更新群组成员", "更新群成员"}, permission=GROUP, priority=3, block=True
 )
 
 

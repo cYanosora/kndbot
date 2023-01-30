@@ -47,6 +47,9 @@ async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
     all_users = await BagUser.get_all_users(event.group_id)
     all_user_id = [user.user_qq for user in all_users]
     all_user_data = [user.gold for user in all_users]
-    rank_image = await init_rank("金币排行", all_user_id, all_user_data, event.group_id, num)
+    rank_image = await init_rank(
+        "金币排行", all_user_id, all_user_data, event.group_id,
+        num, 50, f"g{event.group_id}_{num}_goldrank"
+    )
     if rank_image:
         await gold_rank.finish(reply(event.message_id)+image(b64=rank_image.pic2bs4()))

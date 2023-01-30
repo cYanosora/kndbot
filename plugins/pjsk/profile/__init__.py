@@ -1,6 +1,4 @@
 import json
-import traceback
-
 from PIL import Image, ImageFont, ImageDraw
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import GROUP, MessageEvent, Message

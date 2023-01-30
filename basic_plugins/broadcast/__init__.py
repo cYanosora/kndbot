@@ -1,5 +1,5 @@
 import random
-from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent
+from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent, ActionFailed
 from nonebot import on_command
 from nonebot.permission import SUPERUSER
 from nonebot.params import CommandArg
@@ -62,11 +62,18 @@ async def _(bot: Bot, event: MessageEvent, arg: Message = CommandArg()):
         try:
             await bot.send_group_msg(group_id=g, message="来自master的广播消息\n" + msg + rst)
             logger.info(f"GROUP {g} 投递广播成功")
-        except Exception as e:
-            logger.error(f"GROUP {g} 投递广播失败：{type(e)}")
-            error += f"GROUP {g} 投递广播失败：{type(e)}\n"
+        except ActionFailed:
+            # 尝试再次发送
+            try:
+                await bot.send_group_msg(
+                    group_id=g, message="来自master的广播消息\n" + msg + rst
+                )
+                logger.info(f"GROUP {g} 投递广播成功")
+            except Exception as e:
+                logger.error(f"GROUP {g} 投递广播失败：{type(e)}")
+                error += f"GROUP {g} 投递广播失败：{type(e)}\n"
         # 自主休息4~8秒后再发送到下一个群，防止消息风控
-        await asyncio.sleep(random.randint(4, 8))
+        await asyncio.sleep(random.randint(5, 8))
     await broadcast.send(f"已播报至 100% 的群聊")
     if error:
         await broadcast.send(f"播报时错误：{error}")

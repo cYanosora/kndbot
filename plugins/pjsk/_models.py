@@ -63,7 +63,7 @@ class PjskGuessRank(db.Model):
     @classmethod
     async def add_count(
         cls, user_qq: int, group_id: int, game_type: str, guess_diff: int
-    ):
+    ) -> bool:
         """
         说明：
             添加次数
@@ -74,21 +74,14 @@ class PjskGuessRank(db.Model):
             :param guess_diff: 游戏难度
         """
         user = await cls._get_user_info(user_qq, group_id, game_type)
-        print(user)
-        if cls._check_today_count(user):
-            flag = False
-        else:
-            flag = True
-            total_count = user.total_count
-            total_count[guess_diff] = total_count.get(guess_diff, 0) + 1
-            print(total_count)
-            await user.update(
-                total_count=total_count,
-                daily_count=user.daily_count+1,
-                last_guess_time=datetime.datetime.now()
-            ).apply()
-        print('add_success_flag:', flag)
-        return flag
+        total_count = user.total_count
+        total_count[guess_diff] = total_count.get(guess_diff, 0) + 1
+        await user.update(
+            total_count=total_count,
+            daily_count=user.daily_count+1,
+            last_guess_time=datetime.datetime.now()
+        ).apply()
+        return False if cls._check_today_count(user) else True
 
     @classmethod
     async def _get_user_info(cls,user_qq: int, group_id: int, game_type: str):
@@ -116,7 +109,7 @@ class PjskGuessRank(db.Model):
     def _check_today_count(cls, user: "PjskGuessRank") -> bool:
         """
         说明：
-            检查用户是否达到游戏上限
+            检查用户是否达到游戏获取金币上限
         参数：
             :param user: 用户信息
         """

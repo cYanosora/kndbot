@@ -169,7 +169,7 @@ async def my_wife(user: UserInfo, *args, **kwargs):
             reply, state = await ReplyBank.get_user_mutil_reply(cid, "other", inner_user, 1, 0.2)
             return reply, state
         if not re.search(r".*(老婆).*$", user.text):
-            if re.search(r".*(爱你|爱死你|喜欢你).*", user.text):
+            if re.search(r".*(爱你|爱死你|喜欢你|suki).*", user.text):
                 reply, state = await ReplyBank.get_user_mutil_reply(cid, "other", inner_user, 1, 0.2)
                 return reply, state
             return None, -1

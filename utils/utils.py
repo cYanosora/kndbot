@@ -1,3 +1,5 @@
+import io
+import os
 from datetime import datetime
 from collections import defaultdict
 from nonebot import require
@@ -10,7 +12,7 @@ import nonebot
 import pytz
 import pypinyin
 import time
-
+from configs.path_config import TEMP_PATH
 try:
     import ujson as json
 except ModuleNotFoundError:
@@ -19,7 +21,9 @@ except ModuleNotFoundError:
 
 scheduler = require("nonebot_plugin_apscheduler").scheduler
 htmlrender = require("nonebot_plugin_htmlrender")
-
+avatar_path = TEMP_PATH / 'avatars'
+if not avatar_path.exists():
+    avatar_path.mkdir(parents=True, exist_ok=True)
 
 class CountLimiter:
     """
@@ -388,11 +392,21 @@ async def get_user_avatar(qq: int) -> Optional[bytes]:
     参数：
         :param qq: qq号
     """
+    file = avatar_path / f'u{qq}.jpg'
+    if file.exists():
+        if file.stat().st_ctime + 86400 > time.time():
+            with open(file, 'br') as f:
+                return f.read()
+        else:
+            file.unlink()
     url = f"http://q1.qlogo.cn/g?b=qq&nk={qq}&s=160"
     async with httpx.AsyncClient() as client:
         for _ in range(3):
             try:
-                return (await client.get(url)).content
+                content = (await client.get(url)).content
+                with open(file, 'bw') as f:
+                    f.write(content)
+                return content
             except TimeoutError:
                 pass
     return None
@@ -405,11 +419,21 @@ async def get_group_avatar(group_id: int) -> Optional[bytes]:
     参数：
         :param group_id: 群号
     """
+    file = avatar_path / f'g{group_id}.jpg'
+    if file.exists():
+        if file.stat().st_ctime + 86400 > time.time():
+            with open(file, 'br') as f:
+                return f.read()
+        else:
+            file.unlink()
     url = f"http://p.qlogo.cn/gh/{group_id}/{group_id}/640/"
     async with httpx.AsyncClient() as client:
         for _ in range(3):
             try:
-                return (await client.get(url)).content
+                content = (await client.get(url)).content
+                with open(file, 'bw') as f:
+                    f.write(content)
+                return content
             except TimeoutError:
                 pass
     return None
