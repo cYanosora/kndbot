@@ -73,6 +73,7 @@ class PjskGuessRank(db.Model):
             :param game_type: 游戏类型
             :param guess_diff: 游戏难度
         """
+        guess_diff = str(guess_diff)
         user = await cls._get_user_info(user_qq, group_id, game_type)
         total_count = user.total_count
         total_count[guess_diff] = total_count.get(guess_diff, 0) + 1

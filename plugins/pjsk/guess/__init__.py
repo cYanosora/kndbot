@@ -1,10 +1,11 @@
 import asyncio
-# import datetime
+import datetime
 import math
 import random
 import re
+import time
 from typing import Any, Tuple, Optional
-# from apscheduler.triggers.date import DateTrigger
+from apscheduler.triggers.date import DateTrigger
 from nonebot import on_regex, on_command, on_message, get_bot
 from nonebot.adapters.onebot.v11 import GROUP, GroupMessageEvent, Bot, MessageSegment
 from nonebot.internal.matcher import Matcher
@@ -14,7 +15,7 @@ from models.bag_user import BagUser
 from services import logger
 from utils.data_utils import init_rank
 from utils.imageutils import text2image, pic2b64
-# from utils.utils import scheduler
+from utils.utils import scheduler
 from utils.message_builder import at, image
 from ._config import pjskguess, GUESS_MUSIC, GUESS_CARD, PJSK_GUESS, max_tips_count, guess_time, PJSK_ANSWER
 from ._data_source import (
@@ -147,21 +148,18 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
     for msg in msgs:
         await pjsk_guessmusic.send(msg)
     pjskguess[GUESS_CARD][event.group_id] = {
-        'isgoing': True, 'diff': guessDiff, 'tips': None,
+        'isgoing': True, 'diff': guessDiff, 'tips': None, 'time': time.time(),
         'charaid': charaid, 'cardname': cardname, 'cardid': cardid, 'charaname': charaname,
         'userid': event.user_id, 'file': file, 'endfile': endfile
     }
-    await asyncio.sleep(guess_time)
-    await endgame(event.group_id, event.self_id, GUESS_CARD)
-    # 采用scheduler有时会有严重的时间误差
-    # delta = datetime.timedelta(seconds=guess_time)
-    # trigger = DateTrigger(run_date=datetime.datetime.now() + delta)
-    # scheduler.add_job(
-    #     func=endgame,
-    #     trigger=trigger,
-    #     kwargs={'group_id':event.group_id, 'game_type': GUESS_CARD, 'self_id': event.self_id},
-    #     # misfire_grace_time=5,
-    # )
+    delta = datetime.timedelta(seconds=guess_time)
+    trigger = DateTrigger(run_date=datetime.datetime.now() + delta)
+    scheduler.add_job(
+        func=endgame,
+        trigger=trigger,
+        kwargs={'group_id':event.group_id, 'game_type': GUESS_CARD, 'self_id': event.self_id},
+        # misfire_grace_time=5,
+    )
 
 
 @pjsk_guessmusic.handle()
@@ -222,21 +220,18 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
     for msg in msgs:
         await pjsk_guessmusic.send(msg)
     pjskguess[GUESS_MUSIC][event.group_id] = {
-        'isgoing': True, 'diff': guessDiff, 'tips': None,
+        'isgoing': True, 'diff': guessDiff, 'tips': None, 'time': time.time(),
         'musicid': musicid, 'musicname': musicname,
         'userid': event.user_id, 'file': file, 'endfile': endfile
     }
-    await asyncio.sleep(guess_time)
-    await endgame(event.group_id, event.self_id, GUESS_MUSIC)
-    # 采用scheduler有时会有严重的时间误差
-    # delta = datetime.timedelta(seconds=guess_time)
-    # trigger = DateTrigger(run_date=datetime.datetime.now() + delta)
-    # scheduler.add_job(
-    #     func=endgame,
-    #     trigger=trigger,
-    #     kwargs={'group_id':event.group_id, 'game_type': GUESS_MUSIC, 'self_id': event.self_id},
-    #     # misfire_grace_time=5,
-    # )
+    delta = datetime.timedelta(seconds=guess_time)
+    trigger = DateTrigger(run_date=datetime.datetime.now() + delta)
+    scheduler.add_job(
+        func=endgame,
+        trigger=trigger,
+        kwargs={'group_id':event.group_id, 'game_type': GUESS_MUSIC, 'self_id': event.self_id},
+        # misfire_grace_time=5,
+    )
 
 
 @pjsk_guessmap.handle()
@@ -256,21 +251,18 @@ async def _(event: GroupMessageEvent):
     for msg in msgs:
         await pjsk_guessmap.send(msg)
     pjskguess[GUESS_MUSIC][event.group_id] = {
-        'isgoing': True, 'diff': guessDiff, 'tips': None,
+        'isgoing': True, 'diff': guessDiff, 'tips': None, 'time': time.time(),
         'musicid': musicid, 'musicname': musicname,
         'userid': event.user_id, 'file': file, 'endfile': endfile
     }
-    await asyncio.sleep(guess_time)
-    await endgame(event.group_id, event.self_id, GUESS_MUSIC)
-    # 采用scheduler有时会有严重的时间误差
-    # delta = datetime.timedelta(seconds=guess_time)
-    # trigger = DateTrigger(run_date=datetime.datetime.now() + delta)
-    # scheduler.add_job(
-    #     func=endgame,
-    #     trigger=trigger,
-    #     kwargs={'group_id':event.group_id, 'game_type': GUESS_MUSIC, 'self_id': event.self_id},
-    #     # misfire_grace_time=5,
-    # )
+    delta = datetime.timedelta(seconds=guess_time)
+    trigger = DateTrigger(run_date=datetime.datetime.now() + delta)
+    scheduler.add_job(
+        func=endgame,
+        trigger=trigger,
+        kwargs={'group_id':event.group_id, 'game_type': GUESS_MUSIC, 'self_id': event.self_id},
+        # misfire_grace_time=5,
+    )
 
 
 @pjsk_gameover.handle()
@@ -450,6 +442,20 @@ async def endgame(
                     msgs[0] = at(qq) + f"您猜对了，但是已达今日游戏获取金币上限，并没有奖励！\n" + msgs[0]
             # 时间到自然结束游戏 或 提前结束
             else:
+                # 先判断是否是正常到达时间
+                starttime = pjskguess[game_type][group_id]['time']
+                left_time = starttime + guess_time - time.time()
+                # scheduler调度出现严重时间误差，重新调度
+                if left_time > guess_time * 0.05:
+                    delta = datetime.timedelta(seconds=left_time)
+                    trigger = DateTrigger(run_date=datetime.datetime.now() + delta)
+                    scheduler.add_job(
+                        func=endgame,
+                        trigger=trigger,
+                        kwargs={'group_id': group_id, 'game_type': game_type, 'self_id': self_id},
+                        # misfire_grace_time=5,
+                    )
+                    return
                 _over = '提前结束' if advanceover else '时间到'
                 # 针对猜曲
                 if game_type == GUESS_MUSIC:
