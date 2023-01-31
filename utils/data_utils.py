@@ -1,8 +1,9 @@
+import datetime
 import io
 import math
 import random
 import time
-from PIL import Image, ImageFilter
+from PIL import Image
 from utils.utils import get_user_avatar
 from models.group_member_info import GroupInfoUser
 from utils.imageutils import BuildMat, BuildImage, union
@@ -112,9 +113,12 @@ async def _init_rank_graph(
         titlepic.draw_text((titlesize[0] - 720, 0, titlesize[0], 180), f"* 可以在命令后添加数字来指定排行人数 至多{limit_count} *", fontsize=30,
                            fill="#50555b", valign='center')
     else:
-        titlepic.draw_text((titlesize[0] - 720, 0, titlesize[0], 90), f"* 可以在命令后添加数字来指定排行人数 至多{limit_count} *", fontsize=30,
+        titlepic.draw_text((titlesize[0] - 720, 0, titlesize[0], 60), f"* 可以在命令后添加数字来指定排行人数 至多{limit_count} *", fontsize=30,
                            fill="#50555b", valign='center')
-        titlepic.draw_text((titlesize[0]-720, 90, titlesize[0], 180), "* 相同排行榜限制每小时刷新一次 *", fontsize=30, fill="#50555b", valign='center')
+        titlepic.draw_text((titlesize[0]-720, 60, titlesize[0], 120), "* 相同排行榜限制每小时刷新一次 *", fontsize=30, fill="#50555b", valign='center')
+        nowtime = datetime.datetime.strftime(datetime.datetime.now(), '%Y/%m/%d %H:%M')
+        titlepic.draw_text((titlesize[0] - 720, 120, titlesize[0], 180), f"* 当前时间:{nowtime} *", fontsize=30, fill="#50555b",
+                           valign='center')
     titlepic = titlepic.image
     oneranksize = (1680, 180)
     # 排行榜图片
@@ -137,18 +141,18 @@ async def _init_rank_graph(
         avatarpic = avatarpic.circle()
         onerank.paste(avatarpic, (198, 26), alpha=True)
         onerank.draw_text((233, 0, 1060, 180), f"{_uname_lst[i]}", fill="#4d4d4d", halign='center', valign='center')
-        _num = format(_num_lst[i], '.3f') if str(int(_num_lst[i])) != format(_num_lst[i], '.5g') else int(_num_lst[i])
+        _num = format(_num_lst[i], '.3f') if str(int(_num_lst[i])) != format(_num_lst[i], '.5g') else str(int(_num_lst[i]))
         onerank.draw_text((1060, 0, 1680, 180), _num, fontsize=80, fill="#ff55aa", halign='center', valign='center')
         rankpics.append(onerank.image)
     # 合成排行榜图片
     picnum = math.ceil(len(rankpics) / columns)
     allrankpic = union(
-        rankpics[:picnum], type='row', interval=25, bk_color='#cdd9e9',
+        rankpics[:picnum], type='row', interval=25, bk_color='white',
         padding=(50, 50, 50, 50), border_type='circle'
     )
     for c in range(columns-1):
         _ = union(
-            rankpics[picnum*(c+1):picnum*(c+2)], type='row', interval=25, bk_color='#cdd9e9',
+            rankpics[picnum*(c+1):picnum*(c+2)], type='row', interval=25, bk_color='white',
             padding=(50, 50, 50, 50), border_type='circle'
         )
         allrankpic = union([allrankpic, _], type='col', interval=30, align_type='top')

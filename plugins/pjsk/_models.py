@@ -73,16 +73,19 @@ class PjskGuessRank(db.Model):
             :param game_type: 游戏类型
             :param guess_diff: 游戏难度
         """
-        guess_diff = str(guess_diff)
         user = await cls._get_user_info(user_qq, group_id, game_type)
+        guess_diff = str(guess_diff)
         total_count = user.total_count
         total_count[guess_diff] = total_count.get(guess_diff, 0) + 1
+        lastdate = user.last_guess_time.date()
+        nowdate = datetime.datetime.now().date()
+        daily_count = 1 if nowdate > lastdate else user.daily_count+1
         await user.update(
             total_count=total_count,
-            daily_count=user.daily_count+1,
+            daily_count=daily_count,
             last_guess_time=datetime.datetime.now()
         ).apply()
-        return False if cls._check_today_count(user) else True
+        return False if await cls._check_today_count(user_qq, group_id) else True
 
     @classmethod
     async def _get_user_info(cls,user_qq: int, group_id: int, game_type: str):
@@ -107,15 +110,19 @@ class PjskGuessRank(db.Model):
         )
 
     @classmethod
-    def _check_today_count(cls, user: "PjskGuessRank") -> bool:
+    async def _check_today_count(cls, user_qq: int, group_id: int) -> bool:
         """
         说明：
             检查用户是否达到游戏获取金币上限
         参数：
-            :param user: 用户信息
+            :param user_qq: qq号
+            :param group_id: 群号
         """
+        users = await cls.query.where((cls.user_qq == user_qq) & (cls.group_id == group_id)).gino.all()
+        last_date = max(user.last_guess_time.date() for user in users)
+        daily_count = sum(user.daily_count for user in users)
         return True if(
-            user.last_guess_time.date() >= datetime.datetime.now().date() and user.daily_count >= 15
+            last_date >= datetime.datetime.now().date() and daily_count >= 10
         ) else False
 
 

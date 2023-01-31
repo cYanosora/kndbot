@@ -324,7 +324,7 @@ async def pjsk_cheer_pred_update():
                     TeamRates = other_data['predictRates'][str(TeamId)]
                     break
             try:
-                translate = f"({trans['cheerfulCarnivalTeams'][TeamId]})"
+                translate = f"({trans['cheerful_carnival_teams'][TeamId]})"
             except KeyError:
                 translate = ''
             for i in Teams:
