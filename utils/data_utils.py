@@ -117,7 +117,7 @@ async def _init_rank_graph(
                            fill="#50555b", valign='center')
         titlepic.draw_text((titlesize[0]-720, 60, titlesize[0], 120), "* 相同排行榜限制每小时刷新一次 *", fontsize=30, fill="#50555b", valign='center')
         nowtime = datetime.datetime.strftime(datetime.datetime.now(), '%Y/%m/%d %H:%M')
-        titlepic.draw_text((titlesize[0] - 720, 120, titlesize[0], 180), f"* 当前时间:{nowtime} *", fontsize=30, fill="#50555b",
+        titlepic.draw_text((titlesize[0] - 720, 120, titlesize[0], 180), f"* 生成时间:{nowtime} *", fontsize=30, fill="#50555b",
                            valign='center')
     titlepic = titlepic.image
     oneranksize = (1680, 180)
@@ -125,10 +125,12 @@ async def _init_rank_graph(
     rankpics = []
     max_num = max(_num_lst)
     for i in range(len(_uid_lst)):
-        barlen = int(_num_lst[i] / max_num * 620)
+        max_bar_size = oneranksize[0]
+        barlen = int(_num_lst[i] / max_num * max_bar_size)
         onerank = BuildImage.new("RGBA", oneranksize, color='white')
-        onebar = BuildImage.new("RGBA", (barlen, 180), color='#fefeed')
-        onerank.paste(onebar, (1060, 0))
+        if barlen > 0:
+            onebar = BuildImage.open(bk_path / 'rankbar.png').resize((barlen, 180))
+            onerank.paste(onebar, (0, 0), True)
         onerank = onerank.circle_corner(r=35)
         onerank.draw_rounded_rectangle((0, 0, 1680, 180), radius=35, outline='#8c8c8c', width=8)
         if i < 3:

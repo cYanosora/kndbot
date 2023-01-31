@@ -179,13 +179,17 @@ class BuildImage:
         image = self.convert("RGBA")
         w, h = image.size
         alpha = image.image.split()[-1]
-        circle = Image.new("L", (r * 2, r * 2), 0)  # 创建黑色方形
+        circle = Image.new("RGBA", (r * 2, r * 2), (0,0,0,255))  # 创建黑色方形
         draw = ImageDraw.Draw(circle)
         draw.ellipse((0, 0, r * 2, r * 2), fill=255)  # 黑色方形内切白色圆形
-        alpha.paste(circle.crop((0, 0, r, r)), (0, 0))  # 左上角
-        alpha.paste(circle.crop((r, 0, r * 2, r)), (w - r, 0))  # 右上角
-        alpha.paste(circle.crop((r, r, r * 2, r * 2)), (w - r, h - r))  # 右下角
-        alpha.paste(circle.crop((0, r, r, r * 2)), (0, h - r))  # 左下角
+        lt = circle.crop((0, 0, r, r))
+        rt = circle.crop((r, 0, r * 2, r))
+        rb = circle.crop((r, r, r * 2, r * 2))
+        lb = circle.crop((0, r, r, r * 2))
+        alpha.paste(lt, (0, 0),lt.split()[-1])  # 左上角
+        alpha.paste(rt, (w - r, 0),rt.split()[-1])  # 右上角
+        alpha.paste(rb, (w - r, h - r),rb.split()[-1])  # 右下角
+        alpha.paste(lb, (0, h - r),lb.split()[-1])  # 左下角
         image.image.putalpha(alpha)
         return image
 
