@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from services.db_context import db
 
 
@@ -65,6 +65,20 @@ class SignGroupUser(db.Model):
         db.session.commit()
         query = query.with_for_update()
         return await query.gino.all()
+
+    @classmethod
+    async def get_all_users(cls, group_id: Optional[int] = None) -> List["SignGroupUser"]:
+        """
+        说明:
+            获取所有签到数据
+        参数:
+            :param group_id: 群号
+        """
+        if not group_id:
+            query = await cls.query.gino.all()
+        else:
+            query = await cls.query.where((cls.group_id == group_id)).gino.all()
+        return query
 
     @classmethod
     async def sign(cls, user: "SignGroupUser", impression: float, checkin_time_last: datetime):

@@ -1,8 +1,9 @@
+import math
 from nonebot import on_command
+from models.user_shop_gold_log import UserShopGoldLog
 from services.log import logger
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message
 from nonebot.params import CommandArg
-from utils.message_builder import image
 from utils.utils import is_number
 from models.bag_user import BagUser
 from services.db_context import db
@@ -25,7 +26,7 @@ usage：
         购买 1 4
 """.strip()
 __plugin_settings__ = {
-    "cmd": ["商店", "购买道具", "购买商品"],
+    "cmd": ["购买道具", "购买商品", "商店"],
 }
 
 buy = on_command("购买", aliases={"购买道具", "购买商品"}, priority=5, block=True, permission=GROUP)
@@ -35,7 +36,8 @@ async def get_whatbuy(msg: str):
     goods_list = [
         x
         for x in await GoodsInfo.get_all_goods()
-        if x.goods_limit_time > time.time() or x.goods_limit_time == 0
+        if (x.goods_limit_time == 0 or x.goods_limit_time > time.time())
+        and x.is_show
     ]
     # 传入的文本完全是数字
     if sum([1 for u in [is_number(i) for i in msg.split()] if u]) == len(msg.split()):
@@ -53,7 +55,6 @@ async def get_whatbuy(msg: str):
         goods_name_list = [x.goods_name for x in goods_list]
         for good_name in goods_name_list:
             if msg.startswith(good_name):
-                print(goods_name_list.index(good_name))
                 buy_good = goods_list[goods_name_list.index(good_name)]
                 buy_num = msg[len(good_name):].strip()
                 break
@@ -63,17 +64,16 @@ async def get_whatbuy(msg: str):
     if not is_number(buy_num) or int(buy_num) <= 0:
         raise ValueError('购买的数量要是数字且大于0！')
     else:
-        print(buy_good, buy_num)
         return buy_good, int(buy_num)
 
 
 @buy.handle()
 async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
-    if arg.extract_plain_text().strip() in ["奏宝", "小奏", "宵崎奏", "奏", "kanade", "knd"]:
-        await buy.finish("你光想想就好了，我才不可能卖给你的啦~" + image("tehe.png", "kanade/shop"), at_sender=True)
+    if arg.extract_plain_text().replace("本人", "").strip() in ["奏宝", "小奏", "宵崎奏", "奏", "kanade", "knd"]:
+        await buy.finish("你光想想就好了，我才不可能卖给你的啦~", at_sender=True)
     msg = arg.extract_plain_text().strip()
     if not msg:
-        await buy.finish("你的用法不对哦：购买 [道具序号或名称]", at_sender=True)
+        await buy.finish("你的用法不对哦。指令格式：购买 道具序号或名称 数量(可省略)", at_sender=True)
     buy_good = buy_num = None
     try:
         buy_good, buy_num = await get_whatbuy(msg)
@@ -83,21 +83,39 @@ async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
         await buy.finish(str(e), at_sender=True)
     if not buy_good or not buy_num:
         return
+    if buy_good.goods_price < 0:
+        await buy.finish("此道具目前无法售出", at_sender=True)
     async with db.transaction():
         if (
             await BagUser.get_gold(event.user_id, event.group_id)
         ) < buy_good.goods_price * buy_num * buy_good.goods_discount:
             await buy.finish("啊咧..？您的金币好像不太够哦", at_sender=True)
+        flag, n = await GoodsInfo.check_user_daily_purchase(
+            buy_good, event.user_id, event.group_id, buy_num
+        )
+        if flag:
+            await buy.finish(f"此道具今天只能还购买{n}次噢", at_sender=True)
         if await BagUser.buy_property(event.user_id, event.group_id, buy_good, buy_num):
+            await GoodsInfo.add_user_daily_purchase(
+                buy_good, event.user_id, event.group_id, buy_num
+            )
             await buy.send(
-                f"花费 {buy_good.goods_price * buy_num * buy_good.goods_discount} "
+                f"花费 {math.ceil(buy_good.goods_price * buy_num * buy_good.goods_discount)} "
                 f"金币购买 {buy_good.goods_name} × {buy_num} 成功！",
                 at_sender=True,
             )
             logger.info(
                 f"USER {event.user_id} GROUP {event.group_id} "
-                f"花费 {buy_good.goods_price*buy_num} "
+                f"花费 {buy_good.goods_price*buy_num:.2f} "
                 f"金币购买 {buy_good.goods_name} × {buy_num} 成功！"
+            )
+            await UserShopGoldLog.add_shop_log(
+                event.user_id,
+                event.group_id,
+                0,
+                buy_good.goods_name,
+                buy_num,
+                buy_good.goods_price * buy_num * buy_good.goods_discount,
             )
         else:
             await buy.send(f"{buy_good.goods_name} 购买失败！", at_sender=True)

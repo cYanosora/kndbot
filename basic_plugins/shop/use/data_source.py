@@ -1,11 +1,10 @@
+from services.log import logger
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageSegment, Message, MessageEvent, Bot
+from pydantic import create_model, BaseModel
+from typing import Optional, Union, Callable, List, Tuple, Dict, Any
+from types import MappingProxyType
 import inspect
 import asyncio
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageSegment, MessageEvent
-from services.log import logger
-from nonebot.adapters.onebot.v11 import Bot
-from pydantic import create_model, BaseModel
-from typing import Optional, Union, Any
-from types import MappingProxyType
 
 
 class ShopParam(BaseModel):
@@ -14,6 +13,8 @@ class ShopParam(BaseModel):
     group_id: int
     bot: Any
     event: MessageEvent
+    message: Message
+    text: str
     num: int        # 道具单次使用数量
     send_success_msg: bool = True  # 是否发送使用成功信息
     max_num_limit: int = 1         # 单次使用最大次数
@@ -22,6 +23,30 @@ class ShopParam(BaseModel):
 class GoodsUseFuncManager:
     def __init__(self):
         self._data = {}
+
+    def register_use_before_handle(self, goods_name: str, fun_list: List[Callable]):
+        """
+        说明:
+            注册商品使用前函数
+        参数:
+            :param goods_name: 商品名称
+            :param fun_list: 函数列表
+        """
+        if fun_list:
+            self._data[goods_name]["before_handle"] = fun_list
+            logger.info(f"register_use_before_handle 成功注册商品：{goods_name} 的{len(fun_list)}个使用前函数")
+
+    def register_use_after_handle(self, goods_name: str, fun_list: List[Callable]):
+        """
+        说明:
+            注册商品使用后函数
+        参数:
+            :param goods_name: 商品名称
+            :param fun_list: 函数列表
+        """
+        if fun_list:
+            self._data[goods_name]["after_handle"] = fun_list
+            logger.info(f"register_use_after_handle 成功注册商品：{goods_name} 的{len(fun_list)}个使用后函数")
 
     def register_use(self, goods_name: str, **kwargs):
         """
@@ -36,7 +61,7 @@ class GoodsUseFuncManager:
         判断商品使用方法是否被注册
         :param goods_name: 商品名称
         """
-        return bool(self ._data.get(goods_name))
+        return bool(self._data.get(goods_name))
 
     def get_max_num_limit(self, goods_name: str) -> int:
         """
@@ -47,39 +72,42 @@ class GoodsUseFuncManager:
             return self._data[goods_name]["kwargs"]["max_num_limit"]
         return 1
 
+    def _parse_args(self, args_: MappingProxyType, param: ShopParam, **kwargs):
+        param_list_ = []
+        _bot = param.bot
+        param.bot = None
+        param_json = param.dict()
+        param_json["bot"] = _bot
+        for par in args_.keys():
+            if par in ["shop_param"]:
+                param_list_.append(param)
+            elif par not in ["args", "kwargs"]:
+                param_list_.append(param_json.get(par))
+                if kwargs.get(par) is not None:
+                    del kwargs[par]
+        return param_list_
+
     async def use(
-        self, param: "ShopParam", **kwargs
+        self, param: ShopParam, **kwargs
     ) -> Optional[Union[str, MessageSegment]]:
         """
         使用道具
         :param param: BaseModel
         :param kwargs: kwargs
         """
-        def parse_args(args_: MappingProxyType):
-            param_list_ = []
-            _bot = param.bot
-            param.bot = None
-            param_json = param.dict()
-            param_json["bot"] = _bot
-            for par in args_.keys():
-                if par in ["shop_param"]:
-                    param_list_.append(param)
-                elif par not in ["args", "kwargs"]:
-                    param_list_.append(param_json.get(par))
-                    if kwargs.get(par) is not None:
-                        del kwargs[par]
-            return param_list_
         goods_name = param.goods_name
         if self.exists(goods_name):
+            # 使用方法
             args = inspect.signature(self._data[goods_name]["func"]).parameters
+
             if args and list(args.keys())[0] != "kwargs":
                 if asyncio.iscoroutinefunction(self._data[goods_name]["func"]):
                     return await self._data[goods_name]["func"](
-                        *parse_args(args)
+                        *self._parse_args(args, param, **kwargs)
                     )
                 else:
                     return self._data[goods_name]["func"](
-                        *parse_args(args)
+                        *self._parse_args(args, param, **kwargs)
                     )
             else:
                 if asyncio.iscoroutinefunction(self._data[goods_name]["func"]):
@@ -90,6 +118,21 @@ class GoodsUseFuncManager:
                     return self._data[goods_name]["func"](
                         **kwargs,
                     )
+
+    async def run_handle(self, goods_name: str, type_: str, param: ShopParam, **kwargs):
+        if self._data[goods_name].get(type_):
+            for func in self._data[goods_name].get(type_):
+                args = inspect.signature(func).parameters
+                if args and list(args.keys())[0] != "kwargs":
+                    if asyncio.iscoroutinefunction(func):
+                        await func(*self._parse_args(args, param, **kwargs))
+                    else:
+                        func(*self._parse_args(args, param, **kwargs))
+                else:
+                    if asyncio.iscoroutinefunction(func):
+                        await func(**kwargs)
+                    else:
+                        func(**kwargs)
 
     def check_send_success_message(self, goods_name: str) -> bool:
         """
@@ -109,7 +152,7 @@ class GoodsUseFuncManager:
             return self._data[goods_name]["kwargs"]
         return {}
 
-    def init_model(self, goods_name: str, bot: Bot, event: GroupMessageEvent, num: int):
+    def init_model(self, goods_name: str, bot: Bot, event: GroupMessageEvent, num: int, text: str):
         return self._data[goods_name]["model"](
             **{
                 "goods_name": goods_name,
@@ -118,6 +161,8 @@ class GoodsUseFuncManager:
                 "user_id": event.user_id,
                 "group_id": event.group_id,
                 "num": num,
+                "message": event.message,
+                "text": text
             }
         )
 
@@ -125,8 +170,41 @@ class GoodsUseFuncManager:
 func_manager = GoodsUseFuncManager()
 
 
+def build_params(
+    bot: Bot, event: GroupMessageEvent, goods_name: str, num: int, text: str
+) -> Tuple[ShopParam, Dict[str, Any]]:
+    """
+    说明:
+        构造参数
+    参数:
+        :param bot: bot
+        :param event: event
+        :param goods_name: 商品名称
+        :param num: 数量
+        :param text: 其他信息
+    :return:
+    """
+    _kwargs = func_manager.get_kwargs(goods_name)
+    if not _kwargs:
+        raise NotMeetUseConditionsException("道具暂时无法生效，请等待后续更新")
+    return (
+        func_manager.init_model(goods_name, bot, event, num, text),
+        {
+            **_kwargs,
+            "_bot": bot,
+            "event": event,
+            "group_id": event.group_id,
+            "user_id": event.user_id,
+            "num": num,
+            "text": text,
+            "message": event.message,
+            "goods_name": goods_name,
+        },
+    )
+
+
 async def effect(
-    bot: Bot, event: GroupMessageEvent, goods_name: str, num: int
+    bot: Bot, event: GroupMessageEvent, goods_name: str, num: int, text: str, message: Message
 ) -> Optional[Union[str, MessageSegment]]:
     """
     商品生效
@@ -134,29 +212,21 @@ async def effect(
     :param event: GroupMessageEvent
     :param goods_name: 商品名称
     :param num: 使用数量
+    :param text: 其他信息
+    :param message: Message
     :return: 使用是否成功
     """
     # 优先使用注册的商品插件
-    # try:
     if func_manager.exists(goods_name):
-        _kwargs = func_manager.get_kwargs(goods_name)
-        return await func_manager.use(
-            func_manager.init_model(goods_name, bot, event, num),
-            **{
-                **_kwargs,
-                "_bot": bot,
-                "event": event,
-                "group_id": event.group_id,
-                "user_id": event.user_id,
-                "num": num,
-                "goods_name": goods_name,
-            },
-        )
-    logger.info(f"商品：{goods_name} 的使用函数成功生效")
-    return None
+        # _kwargs = func_manager.get_kwargs(goods_name)
+        model, kwargs = build_params(bot, event, goods_name, num, text)
+        logger.info(f"商品：{goods_name} 的使用函数成功生效")
+        return await func_manager.use(model, **kwargs)
+    else:
+        raise NotMeetUseConditionsException("道具暂时无法生效，请等待后续更新")
 
 
-def register_use(goods_name: str, func, **kwargs):
+def register_use(goods_name: str, func: Callable, **kwargs):
     """
     注册商品使用方法
     :param goods_name: 商品名称
@@ -178,3 +248,15 @@ def register_use(goods_name: str, func, **kwargs):
     )
     logger.info(f"register_use 成功注册商品：{goods_name} 的使用函数")
 
+
+class NotMeetUseConditionsException(Exception):
+    """
+    不满足条件异常类
+    """
+
+    def __init__(self, info: Optional[Union[str, MessageSegment, Message]]):
+        super().__init__(self)
+        self._info = info
+
+    def get_info(self):
+        return self._info

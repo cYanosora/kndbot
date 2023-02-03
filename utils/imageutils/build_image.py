@@ -7,7 +7,8 @@ from PIL.ImageColor import getrgb
 from PIL.Image import Image as IMG
 from typing import List, Optional
 from PIL.ImageDraw import ImageDraw as Draw
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from .fonts import Font
 from .types import *
 from .text2image import Text2Image
 
@@ -494,6 +495,72 @@ class BuildImage:
     ) -> "BuildImage":
         """在图片上画圆"""
         self.draw.ellipse(xy, fill, outline, width)
+        return self
+
+    def draw_text_raw(
+        self,
+        xy: XYType,text:str,
+        fontsize: int = 25,
+        fontname: str = "SourceHanSansCN-Medium.otf",
+        fill: ColorType = "black",
+        halign: HAlignType = "left",
+        valign: VAlignType = "top",
+        warp_align: HAlignType = "left",
+    ):
+        """
+        使用原始ImageFont在图片上指定区域画文字
+
+        :参数:
+          * ``xy``: 文字区域，顺序依次为 左，上，右，下|或者只提供 左，上 位置也可以
+          * ``text``: 文字，支持多行
+          * ``fill``: 文字颜色
+          * ``halign``: 水平对齐方式
+          * ``valign``: 垂直对齐方式
+          * ``warp_align``: 垂直对齐方式
+          * ``fontname``: 指定首选字体
+        """
+        font = Font.find(fontname)
+        font = ImageFont.truetype(str(font.path), size=fontsize)
+        lines = text.split('\n')
+        max_width = xy[2]-xy[0] if len(xy)==4 else None
+        if max_width is not None:
+            def wrap(line, max_width):
+                (_w, _), (_, _) = font.font.getsize(line)
+                last_idx = 0
+                for idx in range(len(line)):
+                    (_tmp_w, _), (_, _) = font.font.getsize(line[last_idx: idx + 1])
+                    if _tmp_w > max_width:
+                        yield line[last_idx:idx]
+                        last_idx = idx
+                yield line[last_idx:]
+
+            new_lines = []
+            for line in lines:
+                l = wrap(line, max_width)
+                new_lines.extend(l)
+            lines = new_lines
+        text = "\n".join(lines)
+        size = font.getsize(text)
+        size = (size[0], size[1]*len(lines))
+        offset_x = offset_y = 0
+        if len(xy) == 4:
+            if halign == 'left':
+                offset_x = 0
+            elif halign == 'center':
+                offset_x = (xy[2]-xy[0]-size[0])//2
+            else:
+                offset_x = xy[2]-xy[0]-size[0]
+            if valign == 'top':
+                offset_y = 0
+            elif valign == 'center':
+                offset_y = (xy[3]-xy[1]-size[1])//2
+            else:
+                offset_y = xy[3]-xy[1]-size[1]
+        offset_x = offset_x + xy[0] if offset_x > 0 else xy[0]
+        offset_y = offset_y + xy[1] if offset_y > 0 else xy[1]
+        draw = ImageDraw.Draw(self.image)
+        pos = (offset_x, offset_y)
+        draw.text(pos, text, fill, font, align=warp_align)
         return self
 
     def draw_text(

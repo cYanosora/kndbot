@@ -1,3 +1,4 @@
+import random
 from asyncpg.exceptions import (
     DuplicateColumnError,
     UndefinedColumnError,
@@ -5,13 +6,13 @@ from asyncpg.exceptions import (
 )
 import nonebot
 from nonebot import Driver
-
 from configs.path_config import TEXT_PATH
 from services.db_context import db
 from services.log import logger
 from utils.http_utils import AsyncHttpx
-from utils.utils import scheduler
-
+from utils.utils import scheduler, GDict
+from models.bag_user import BagUser
+from models.sign_group_user import SignGroupUser
 try:
     import ujson as json
 except ModuleNotFoundError:
@@ -54,8 +55,64 @@ async def update_city():
         except ValueError:
             logger.warning("自动城市列表失败.....")
         except Exception as e:
-            logger.error(f"自动城市列表未知错误 {type(e)}：{e}")
+            logger.error(f"自动城市列表未知错误 {type(e)}：{e}")\
 
+
+@driver.on_startup
+async def _():
+    """
+    临时改变数据
+    """
+    async with db.transaction():
+        users = await BagUser.get_all_users()
+        for user in users:
+            f=False
+            props: dict = user.property
+            for item in props.copy():
+                if item == '好感度双倍加持卡Ⅰ':
+                    f=True
+                    props['好感双倍卡1'] = props[item]
+                    props.pop(item)
+                elif item == '好感度双倍加持卡Ⅱ':
+                    f=True
+                    props['好感双倍卡2'] = props[item]
+                    props.pop(item)
+                elif item == '好感度双倍加持卡Ⅲ':
+                    f=True
+                    props['好感双倍卡3'] = props[item]
+                    props.pop(item)
+                elif item == '好感度双倍加持卡MAX':
+                    f=True
+                    props['好感双倍卡max'] = props[item]
+                    props.pop(item)
+            if f:
+                print(f'{user.user_qq}道具修改后:', props)
+            await user.update(property=props).apply()
+    async with db.transaction():
+        sign_users = await SignGroupUser.get_all_users()
+        for user in sign_users:
+            f=False
+            props: dict = user.sign_items
+            for item in props.copy():
+                if item == '好感度双倍加持卡Ⅰ':
+                    f=True
+                    props['好感双倍卡1'] = props[item]
+                    props.pop(item)
+                elif item == '好感度双倍加持卡Ⅱ':
+                    f=True
+                    props['好感双倍卡2'] = props[item]
+                    props.pop(item)
+                elif item == '好感度双倍加持卡Ⅲ':
+                    f=True
+                    props['好感双倍卡3'] = props[item]
+                    props.pop(item)
+                elif item == '好感度双倍加持卡MAX':
+                    f=True
+                    props['好感双倍卡max'] = props[item]
+                    props.pop(item)
+            if f:
+                print(f'{user.user_qq}签到修改后:', props)
+            await user.update(sign_items=props).apply()
 
 @driver.on_startup
 async def _():
@@ -96,10 +153,13 @@ async def _():
         #     "sign_group_users"
         # ),  # sign_group_users 表添加一个 impression_promoted_time 字段
     ]
-    for sql in sql_str:
+    for sql in sql_str + GDict.get('run_sql', []):
         try:
-            flag = sql[1]
-            sql = sql[0]
+            if isinstance(sql, str):
+                flag = f'{random.randint(1, 10000)}'
+            else:
+                flag = sql[1]
+                sql = sql[0]
             query = db.text(sql)
             await db.first(query)
             logger.info(f"完成sql操作：{sql}")
