@@ -11,7 +11,6 @@ from nonebot.adapters.onebot.v11 import (
     FriendAddNoticeEvent, PRIVATE_FRIEND, PrivateMessageEvent,
 )
 from services import logger
-from configs.path_config import IMAGE_PATH
 from configs.config import NICKNAME, MAIN_BOT, SUB_BOT, AUX_BOT
 from models.friend_user import FriendUser
 from models.group_info import GroupInfo
@@ -36,7 +35,7 @@ _reply_flmt = FreqLimiter(300)
 friend_req = on_request(priority=5, block=True, rule=friend_request_rule())
 group_req = on_request(priority=5, block=True, rule=group_request_rule())
 friend_reply = on_notice(priority=5, block=False, rule=friend_reply_rule())
-group_reply = on_command("入群条件", aliases={"入群申请"}, priority=1, block=True, permission=PRIVATE_FRIEND)
+group_reply = on_command("入群条件", aliases={"入群申请", "拉群"}, priority=1, block=True, permission=PRIVATE_FRIEND)
 
 exists_data = {"private": {}, "group": {}}
 
@@ -50,7 +49,7 @@ async def _(bot: Bot, event: FriendAddNoticeEvent):
             message="已通过你的好友申请啦，这里是奏宝一号机\n"
                     "咱的功能只能在群聊中使用哦\n"
                     "由于一些不可抗力因素，咱目前已经停止接受新群的邀请了~\n"
-                    "如果需要拉群，并且是烧烤群，那么请找三号机878536923(好友验证填 拉群)\n"
+                    "如果需要拉群，并且是pjsk群(必须)，那么请找三号机878536923(好友验证填 拉群)\n"
                     "如需咨询咱的master请通过指令沟通👉👉发送格式：滴滴滴 这里是你想说的话"
         )
     # 二号机自动同意好友请求并回复
@@ -60,7 +59,7 @@ async def _(bot: Bot, event: FriendAddNoticeEvent):
             message="已通过你的好友申请啦，这里是奏宝二号机\n"
                     "咱的功能只能在群聊中使用哦\n"
                     "由于一些不可抗力因素，咱目前已经停止接受新群的邀请了~\n"
-                    "如果需要拉群，并且是烧烤群，那么请找三号机878536923(好友验证填 拉群)\n"
+                    "如果需要拉群，并且是pjsk群(必须)，那么请找三号机878536923(好友验证填 拉群)\n"
                     "如需咨询咱的master请务必使用指令沟通👉👉发送格式：滴滴滴 这里是你想说的话"
         )
     # 三号机验证后同意好友请求并回复
@@ -95,9 +94,11 @@ async def _(bot: Bot, event: FriendRequestEvent):
     # 好友验证
     else:
         answer = comment[comment.find("回答:") + len("回答:"):].strip()
+        answer = answer or comment[comment.find("备注:") + len("备注:"):].strip()
         flag = True if re.search('拉.*群', answer) else False
         # 验证通过
         if flag:
+            await bot.set_friend_add_request(flag=event.flag, approve=True)
             await FriendUser.add_friend_info(user["user_id"], user["nickname"])
         # 添加到请求管理器
         else:
@@ -220,6 +221,11 @@ async def _(bot: Bot, event: PrivateMessageEvent):
             await bot.send_private_msg(
                 user_id=int(list(bot.config.superusers)[0]),
                 message=f"用户({event.user_id})获取拉群请求失败，请尝试主动沟通！"
+            )
+        else:
+            await bot.send_private_msg(
+                user_id=int(list(bot.config.superusers)[0]),
+                message=f"用户({event.user_id})正在阅读入群条件中"
             )
 
 

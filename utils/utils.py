@@ -1,5 +1,3 @@
-import io
-import os
 from datetime import datetime
 from collections import defaultdict
 from nonebot import require
@@ -24,6 +22,13 @@ htmlrender = require("nonebot_plugin_htmlrender")
 avatar_path = TEMP_PATH / 'avatars'
 if not avatar_path.exists():
     avatar_path.mkdir(parents=True, exist_ok=True)
+
+# 全局字典
+GDict = {
+    "run_sql": [],                  # 需要启动前运行的sql语句
+    "_shop_before_handle": {},      # 商品使用前函数
+    "_shop_after_handle": {},      # 商品使用后函数
+}
 
 class CountLimiter:
     """

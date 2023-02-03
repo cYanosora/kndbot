@@ -17,12 +17,12 @@ __plugin_usage__ = """
 usage：
     有什么话想对bot管理员说嘛？
     指令：
-        联系管理/滴滴滴 ?[文本] ?[图片]
+        滴滴滴/联系管理/联系master/联系工具人 ?[文本] ?[图片]
     示例：
         滴滴滴 在？出来处理个bug？
     提示：
-        若只是不懂如何触发bot功能，别急着问master，
-        请先仔细阅读bot使用方法(发送：@bot help)
+        若只是不懂如何触发bot功能，可以先别急着问master，
+        请先仔细阅读bot使用方法(发送：kndhelp)
         其他问题只要是关于bot的就都可以问
 """.strip()
 __plugin_superuser_usage__ = """
@@ -45,8 +45,8 @@ __plugin_settings__ = {
 }
 
 dialogue_data = {}
-dialogue = on_command("联系管理员", aliases={"滴滴滴", "联系管理"}, priority=5, block=True)
-reply = on_command("/t", aliases={".t"}, priority=1, permission=SUPERUSER, block=True)
+dialogue = on_command("联系管理员", aliases={"滴滴滴", "联系管理", "联系master", "联系工具人"}, priority=5, block=True)
+reply = on_command("/t", aliases={".t"}, priority=5, permission=SUPERUSER, block=True)
 
 
 @dialogue.handle()
@@ -56,7 +56,7 @@ async def _(bot: Bot, event: MessageEvent, arg: Message = CommandArg()):
     for img in get_message_img(event.json()):
         img_msg += image(img)
     if not text and not img_msg:
-        await dialogue.send("请发送 滴滴滴 + 您要说的内容~", at_sender=True)
+        await dialogue.send("有什么话需要告诉master吗？请发送 滴滴滴 + 您要说的内容~", at_sender=True)
     else:
         group_id = 0
         group_name = "None"
