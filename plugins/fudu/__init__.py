@@ -2,9 +2,9 @@ import re
 import random
 from nonebot import on_message
 from nonebot.adapters.onebot.v11.permission import GROUP
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, Bot
 from manager import Config
-from utils.utils import get_message_text
+from utils.utils import FreqLimiter
 from .data_source import _fudu_list
 
 __plugin_name__ = "复读 [Hidden]"
@@ -22,15 +22,21 @@ Config.add_plugin_config(
 
 
 fudu = on_message(permission=GROUP, priority=100)
+_cd_fqlmt = FreqLimiter(300, 3)
 
 
 @fudu.handle()
-async def _(event: GroupMessageEvent):
+async def _(bot: Bot, event: GroupMessageEvent):
     if event.is_tome():
         return
-    if get_message_text(event.json()):
-        if get_message_text(event.json()).find("@yoisaki_kanade") != -1:
-            await fudu.finish("复制粘贴的虚空艾特？", at_sender=True)
+    plaintext = event.get_plaintext().strip()
+    if plaintext.startswith('@'):
+        info = await bot.get_group_member_info(group_id=event.group_id, user_id=event.self_id)
+        botname = info.get("card", "") or info.get("nickname", "")
+        if plaintext.startswith(f'@{botname}'):
+            if _cd_fqlmt.count_check(event.group_id):
+                _cd_fqlmt.start_cd(event.group_id)
+                await fudu.finish("复制粘贴的艾特也太没诚意了吧", at_sender=True)
     add_msg, raw_message = messagePreprocess(str(event.message))
     if _fudu_list.size(event.group_id) == 0:
         _fudu_list.append(event.group_id, add_msg)
