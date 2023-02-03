@@ -24,9 +24,15 @@ async def _(matcher: Matcher, bot: Bot, event: Event):
     for each_bot in recent_event.keys():
         if each_bot == selfid:
             continue
-        for each_event in recent_event[each_bot]:
-            if combine == each_event:
-                matcher.stop_propagation()
-                raise IgnoredException("相同事件")
+        if any(map(lambda each_event: each_event == combine, recent_event[each_bot])):
+            matcher.stop_propagation()
+            await matcher.finish()
+            return
+        # for each_event in recent_event[each_bot]:
+        #     if combine == each_event:
+        #         await matcher.finish()
+        #         matcher.stop_propagation()
+        #         return
+                # raise IgnoredException("相同事件")
     recent_event[selfid].clear()
     recent_event[selfid].append(combine)
