@@ -10,14 +10,14 @@ from utils.message_builder import at
 from nonebot.params import CommandArg
 
 
-__plugin_name__ = "联系管理员"
+__plugin_name__ = "联系master"
 __plugin_type__ = "其他"
 __plugin_version__ = 0.1
 __plugin_usage__ = """
 usage：
-    有什么话想对bot管理员说嘛？
+    有什么话想对bot的master说嘛？
     指令：
-        滴滴滴/联系管理/联系master/联系工具人 ?[文本] ?[图片]
+        滴滴滴/联系master/联系管理/联系工具人 ?[文本] ?[图片]
     示例：
         滴滴滴 在？出来处理个bug？
     提示：
@@ -27,7 +27,7 @@ usage：
 """.strip()
 __plugin_superuser_usage__ = """
 superuser usage：
-    管理员对消息的回复
+    master对消息的回复
     指令：
         /t                      : 查看当前存储的消息id
         /t -d [id]              : 删除指定id的对话
@@ -76,7 +76,7 @@ async def _(bot: Bot, event: MessageEvent, arg: Message = CommandArg()):
                 )
                 + img_msg,
             )
-        await dialogue.send(_text(f"消息已发送至管理员，请耐心等候回复"), at_sender=True)
+        await dialogue.send(_text(f"消息已发送至master，请耐心等候回复"), at_sender=True)
         nickname = event.sender.nickname if event.sender.nickname else event.sender.card
         dialogue_data[len(dialogue_data)] = {
             "nickname": nickname,
@@ -85,7 +85,7 @@ async def _(bot: Bot, event: MessageEvent, arg: Message = CommandArg()):
             "group_name": group_name,
             "msg": _text(text) + img_msg,
         }
-        logger.info(f"Q{event.user_id}@群{group_id} 联系管理员：text:{text}")
+        logger.info(f"Q{event.user_id}@群{group_id} 联系master：text:{text}")
 
 
 @reply.handle()
@@ -153,15 +153,15 @@ async def _(bot: Bot, event: MessageEvent, arg: Message = CommandArg()):
     if group_id:
         if user_id:
             await bot.send_group_msg(
-                group_id=group_id, message="*****管理员回复*****\n"+at(user_id)+text
+                group_id=group_id, message="*****master回复*****\n"+at(user_id)+text
             )
         else:
-            await bot.send_group_msg(group_id=group_id, message="*****管理员回复*****\n"+text)
+            await bot.send_group_msg(group_id=group_id, message="*****master回复*****\n"+text)
         await reply.finish("群聊消息发送成功", at_sender=True)
     else:
         if user_id in [qq["user_id"] for qq in await bot.get_friend_list()]:
             await bot.send_private_msg(
-                user_id=user_id, message="*****管理员回复*****\n"+text
+                user_id=user_id, message="*****master回复*****\n"+text
             )
             await reply.finish("私聊消息发送成功", at_sender=True)
         else:

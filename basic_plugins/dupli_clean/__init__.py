@@ -1,6 +1,6 @@
 from typing import Any, Dict
 from nonebot.adapters.onebot.v11 import Event, Bot
-from nonebot.exception import IgnoredException
+from nonebot.exception import FinishedException
 from nonebot.internal.matcher import Matcher
 from nonebot.message import run_preprocessor
 from utils.utils import get_message_at
@@ -26,13 +26,10 @@ async def _(matcher: Matcher, bot: Bot, event: Event):
             continue
         if any(map(lambda each_event: each_event == combine, recent_event[each_bot])):
             matcher.stop_propagation()
-            await matcher.finish()
-            return
-        # for each_event in recent_event[each_bot]:
-        #     if combine == each_event:
-        #         await matcher.finish()
-        #         matcher.stop_propagation()
-        #         return
-                # raise IgnoredException("相同事件")
-    recent_event[selfid].clear()
-    recent_event[selfid].append(combine)
+            try:
+                await matcher.finish()
+            except FinishedException:
+                pass
+            finally:
+                recent_event[selfid].clear()
+                recent_event[selfid].append(combine)

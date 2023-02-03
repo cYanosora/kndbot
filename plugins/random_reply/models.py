@@ -86,7 +86,7 @@ class RetryManager:
 
     def clear_data(self):
         _data = self.data
-        for each in _data:
+        for each in _data.copy():
             data = self.data.get(each)
             if data and data['time'] + 30 < time.time():
                 self.data.pop(each)

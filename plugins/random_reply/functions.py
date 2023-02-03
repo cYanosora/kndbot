@@ -70,17 +70,17 @@ async def knd_zwa(user: UserInfo, *args, **kwargs):
                 if sw in user.text:
                     text_type = zwa_text_dict[sw]
                     break
-            # 判断两种回复类型是否一致
+            # 两种回复类型不一致，判断为乱打招呼
             if not func_type.startswith(text_type):
-                if _zwa_fqlmt.count_check(inner_user.qq):
-                    if text_type != "sleep":
-                        _zwa_fqlmt.start_cd(inner_user.qq)
-                    func_type += f"_{text_type}"
+                # 排除晚安
+                if text_type != "sleep":
+                    _zwa_fqlmt.start_cd(inner_user.qq)
                 # 多次乱打招呼，被拉黑3分钟
-                else:
+                if not _zwa_fqlmt.count_check(inner_user.qq):
                     reply, state = await ReplyBank.get_user_mutil_reply(cid, "special", inner_user, 0.7, 1, True)
                     await BanInfo.ban(9, 180, user_id=inner_user.qq, group_id=inner_user.group)
                     return reply, state
+                func_type += f"_{text_type}"
             reply, state = await ReplyBank.get_user_mutil_reply(cid, func_type, inner_user, 0.7, 1, True)
             return reply, state
         return await zwa_func(user, 5, True)

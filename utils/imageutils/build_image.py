@@ -253,17 +253,10 @@ class BuildImage:
         :param filter_: 变化效果
         :param aud: 利率
         """
-        _x = None
-        if filter == "GaussianBlur":  # 高斯模糊
-            _x = ImageFilter.GaussianBlur
-        elif filter == "EDGE_ENHANCE":  # 锐化效果
-            _x = ImageFilter.EDGE_ENHANCE
-        elif filter == "BLUR":  # 模糊效果
-            _x = ImageFilter.BLUR
-        elif filter == "CONTOUR":  # 铅笔滤镜
-            _x = ImageFilter.CONTOUR
-        elif filter == "FIND_EDGES":  # 边缘检测
-            _x = ImageFilter.FIND_EDGES
+        try:
+            _x = getattr(ImageFilter, filter)
+        except AttributeError:
+            _x = None
         if _x:
             if aud:
                 self.image = self.image.filter(_x(aud))

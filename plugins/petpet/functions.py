@@ -44,13 +44,13 @@ async def operations(
             img = img.convert("RGB")
             frame = ImageOps.invert(img.image)
         elif opt == "浮雕":
-            frame = img.filter(ImageFilter.EMBOSS)
+            frame = img.filter('EMBOSS')
         elif opt == "轮廓":
-            frame = img.filter(ImageFilter.CONTOUR)
+            frame = img.filter('CONTOUR')
         elif opt == "锐化":
-            frame = img.filter(ImageFilter.SHARPEN)
+            frame = img.filter('SHARPEN')
         else:
-            raise ValueError(help_msg)
+            return help_msg
         return frame
 
     return make_jpg_or_gif(img, make, isreverse=isreverse)
@@ -725,7 +725,7 @@ def my_friend(
     name_img = Text2Image.from_text(name, 25, fill="#868894").to_image()
     name_w, name_h = name_img.size
     if name_w >= 600:
-        raise ValueError(NAME_TOO_LONG)
+        return NAME_TOO_LONG
 
     corner1 = load_image("my_friend/corner1.png")
     corner2 = load_image("my_friend/corner2.png")

@@ -58,7 +58,8 @@ async def update_city():
             logger.error(f"自动城市列表未知错误 {type(e)}：{e}")\
 
 
-@driver.on_startup
+# 临时变换数据，已完成
+# @driver.on_startup
 async def _():
     """
     临时改变数据
