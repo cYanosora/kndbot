@@ -14,9 +14,9 @@ def random_event(impression: float) -> 'Union[str, int], str':
     global PROB_DATA
     if not PROB_DATA:
         PROB_DATA = {
-            Config.get_config("sign_in", "SIGN_CARD3_PROB"): '好感度双倍加持卡Ⅲ',
-            Config.get_config("sign_in", "SIGN_CARD2_PROB"): '好感度双倍加持卡Ⅱ',
-            Config.get_config("sign_in", "SIGN_CARD1_PROB"): '好感度双倍加持卡Ⅰ',
+            Config.get_config("sign_in", "SIGN_CARD3_PROB"): '好感双倍卡3',
+            Config.get_config("sign_in", "SIGN_CARD2_PROB"): '好感双倍卡2',
+            Config.get_config("sign_in", "SIGN_CARD1_PROB"): '好感双倍卡1',
             Config.get_config("sign_in", "RESIGN_CARD_PROB"): '补签卡'
         }
     rand = random.random() - impression / 1000
@@ -27,4 +27,3 @@ def random_event(impression: float) -> 'Union[str, int], str':
     max_sign_gold = Config.get_config("sign_in", "MAX_SIGN_GOLD")
     gold = max_sign_gold if gold > max_sign_gold else gold
     return gold, 'gold'
-

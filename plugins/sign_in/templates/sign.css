@@ -113,14 +113,14 @@
     }
     div.title{
         position:absolute;
-        left:570px;
+        left:560px;
         top:167px;
         font-size:30px;
     }
     div.total{
 	white-space: pre-line;
         position:absolute;
-        left:580px;
+        left:560px;
         top:220px;
         font-size:15px;
     }

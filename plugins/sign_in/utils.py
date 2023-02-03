@@ -119,6 +119,7 @@ async def _generate_card_render(
     if user.impression_promoted_time and user.impression_promoted_time.replace(tzinfo=None) + timedelta(hours=8) > datetime.now():
         promoted_flag = True
     # 暂时：对于等级高达4的用户做好感限制
+    # 写好好感度5级的文案再开放
     if int(level) > 4:
         level = "4"
     elif promoted_flag and level == "4":
@@ -193,7 +194,7 @@ async def _generate_card_render(
             _double_flag = True if is_double else False
             for item in items:
                 items_text += f"已使用{item} × {items.get(item)}"
-                if str(item).startswith("好感度双倍") and is_double:
+                if str(item).startswith("好感双倍") and is_double:
                     _double_flag = False
                     items_text += " (触发双倍)"
                 elif str(item) == "杯面":

@@ -5,7 +5,7 @@ from models.group_member_info import GroupInfoUser
 from models.bag_user import BagUser
 from configs.config import NICKNAME
 from nonebot.adapters.onebot.v11 import MessageSegment, GroupMessageEvent, Message
-from utils.imageutils import BuildImage as IMG, BuildMat as Mat, Text2Image, text2image, pic2b64
+from utils.imageutils import BuildImage as IMG, Text2Image, text2image, pic2b64
 from services.db_context import db
 from utils.message_builder import image
 from .utils import get_card, SIGN_TODAY_CARD_PATH, get_level_and_next_impression, clear_sign_view_pic, \
@@ -29,7 +29,6 @@ from basic_plugins.shop.use.data_source import effect
 
 # 用户单个群签到处理
 async def group_user_check_in(bot: Bot, event: GroupMessageEvent) -> MessageSegment:
-    "Returns string describing the result of checking in"
     nickname = event.sender.card or event.sender.nickname
     present = datetime.now()
     async with db.transaction():
@@ -37,14 +36,11 @@ async def group_user_check_in(bot: Bot, event: GroupMessageEvent) -> MessageSegm
         user = await SignGroupUser.ensure(event.user_id, event.group_id, for_update=True)
         # print('逻辑测试:', user.checkin_time_last + timedelta(hours=32),"\n",present)
         # 如果同一天签到过，特殊处理
-        print('上次签到日期:', (user.checkin_time_last + timedelta(hours=8)).date())
-        print('当前日期:', present.date())
-        if (    # 加8小时是因为时区要转换为东八区时间进行比较，数据库中存的时间取出来时默认为格林尼治时间
+        if (    # +8小时是因为数据库中存的时间带时区属性，默认为格林尼治时间，需要转为东八区时间
             (user.checkin_time_last + timedelta(hours=8)).date() >= present.date()
             or f"{event.user_id}_{event.group_id}_sign_{present.date()}.png"
                 in os.listdir(SIGN_TODAY_CARD_PATH)
         ):
-            print('已经签过到了')
             gold = await BagUser.get_gold(event.user_id, event.group_id)
             res = await get_card(user, nickname, -1, gold, "")
         else:
@@ -83,20 +79,20 @@ async def _handle_check_in(
     user_qq = event.user_id
     user = await SignGroupUser.ensure(user_qq, group, for_update=True)
     items: dict = user.sign_items
-    # 未使用双倍卡加成道具时自动使用加成道具
+    # 未使用好感双倍卡道具时自动使用
     property_ = await BagUser.get_property(user_qq, group)
     if property_:
         for item in items:
-            if item.startswith("好感度双倍加持卡"):
+            if item.startswith("好感双倍卡"):
                 break
         else:
-            for item in ["好感度双倍加持卡Ⅰ", "好感度双倍加持卡Ⅱ", "好感度双倍加持卡Ⅲ"]:
+            for item in ["好感双倍卡1", "好感双倍卡2", "好感双倍卡3"]:
                 if item in property_.keys():
                     if await BagUser.delete_property(user_qq, group, item, 1):
-                        await effect(bot, event, item, 1)
+                        await effect(bot, event, item, 1, "", event.message)
                         items[item] = 1
                         break
-
+    # todo1: 被动道具享受加成
     # 杯面道具的额外好感
     impression_added = (secrets.randbelow(99) + 1) / 100
     logger.info(
@@ -309,6 +305,7 @@ async def group_impression_rank(group: int, num: int) -> Optional[IMG]:
     return await init_rank(
         "好感度排行榜", user_qq_list, impression_list, group, num, 50, f"g{group}_{num}_signrank"
     )
+
 
 # 查看签到总榜
 async def impression_rank(group_id: int, data: dict):
