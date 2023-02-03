@@ -71,7 +71,7 @@ async def _init_rank_graph(
     :param save_key: 排行榜保存的临时文件名
     """
     if save_key is not None:
-        save_path = TEMP_PATH / f"{save_key}.png"
+        save_path = TEMP_PATH / f"{save_key}.jpg"
         if save_path.exists():
             if save_path.stat().st_ctime + 3600 > time.time():
                 return BuildImage.open(save_path)
@@ -80,8 +80,8 @@ async def _init_rank_graph(
     # 计算排行榜列数
     def warps(length, ratio) -> int:
         columns = 1
-        height = 210
-        width = 1680
+        height = 105
+        width = 840
         while True:
             last_ratio = width * columns / math.ceil(length * height / columns)
             if last_ratio < ratio * 0.5:
@@ -104,23 +104,23 @@ async def _init_rank_graph(
     ratio = bkpic.width/bkpic.height
     columns = warps(len(_uid_lst), ratio)
     # 排行榜标题图片
-    titlesize = (1780 + 1810 * (columns-1), 180)
+    titlesize = (890 + 905 * (columns-1), 90)
     titlepic = BuildImage.new('RGBA', titlesize, color='#bfd9ea')
     titlepic = titlepic.circle_corner(r=35)
-    titlepic.draw_text((2, 2, titlesize[0]-720, 182), title, fontsize=80, fill="#eccfe1", halign='center', valign='center')
-    titlepic.draw_text((0, 0, titlesize[0]-720, 180), title, fontsize=80, fill="#50555b", halign='center', valign='center')
+    titlepic.draw_text((1, 1, titlesize[0]-360, 91), title, fontsize=40, fill="#eccfe1", halign='center', valign='center')
+    titlepic.draw_text((0, 0, titlesize[0]-360, 90), title, fontsize=40, fill="#50555b", halign='center', valign='center')
     if save_key is None:
-        titlepic.draw_text((titlesize[0] - 720, 0, titlesize[0], 180), f"* 可以在命令后添加数字来指定排行人数 至多{limit_count} *", fontsize=30,
+        titlepic.draw_text((titlesize[0] - 360, 0, titlesize[0], 90), f"* 可以在命令后添加数字来指定排行人数 至多{limit_count} *", fontsize=15,
                            fill="#50555b", valign='center')
     else:
-        titlepic.draw_text((titlesize[0] - 720, 0, titlesize[0], 60), f"* 可以在命令后添加数字来指定排行人数 至多{limit_count} *", fontsize=30,
+        titlepic.draw_text((titlesize[0] - 360, 0, titlesize[0], 30), f"* 可以在命令后添加数字来指定排行人数 至多{limit_count} *", fontsize=15,
                            fill="#50555b", valign='center')
-        titlepic.draw_text((titlesize[0]-720, 60, titlesize[0], 120), "* 相同排行榜限制每小时刷新一次 *", fontsize=30, fill="#50555b", valign='center')
+        titlepic.draw_text((titlesize[0]-360, 30, titlesize[0], 60), "* 相同排行榜限制每小时刷新一次 *", fontsize=15, fill="#50555b", valign='center')
         nowtime = datetime.datetime.strftime(datetime.datetime.now(), '%Y/%m/%d %H:%M')
-        titlepic.draw_text((titlesize[0] - 720, 120, titlesize[0], 180), f"* 生成时间:{nowtime} *", fontsize=30, fill="#50555b",
+        titlepic.draw_text((titlesize[0] - 360, 60, titlesize[0], 90), f"* 生成时间:{nowtime} *", fontsize=15, fill="#50555b",
                            valign='center')
     titlepic = titlepic.image
-    oneranksize = (1680, 180)
+    oneranksize = (840, 90)
     # 排行榜图片
     rankpics = []
     max_num = max(_num_lst)
@@ -129,37 +129,37 @@ async def _init_rank_graph(
         barlen = int(_num_lst[i] / max_num * max_bar_size)
         onerank = BuildImage.new("RGBA", oneranksize, color='white')
         if barlen > 0:
-            onebar = BuildImage.open(bk_path / 'rankbar.png').resize((barlen, 180))
+            onebar = BuildImage.open(bk_path / 'rankbar.png').resize((barlen, 90))
             onerank.paste(onebar, (0, 0), True)
-        onerank = onerank.circle_corner(r=35)
-        onerank.draw_rounded_rectangle((0, 0, 1680, 180), radius=35, outline='#8c8c8c', width=8)
+        onerank = onerank.circle_corner(r=20)
+        onerank.draw_rounded_rectangle((0, 0, 840, 90), radius=20, outline='#8c8c8c', width=4)
         if i < 3:
-            levelpic = Image.open(bk_path / f'rank{i+1}.png')
-            onerank.paste(levelpic, (35, 26), alpha=True)
+            levelpic = Image.open(bk_path / f'rank{i+1}.png').resize((75, 39))
+            onerank.paste(levelpic, (9, 25), alpha=True)
         else:
-            onerank.draw_text((35, 26, 35+128,26+128),f"{i+1}",fontsize=80,fill="#00ccbb", halign='center', valign='center')
+            onerank.draw_text((20, 13, 20+64,13+64),f"{i+1}",fontsize=40,fill="#00ccbb", halign='center', valign='center')
         avatarpic = await get_user_avatar(_uid_lst[i])
-        avatarpic = BuildImage.open(io.BytesIO(avatarpic)).resize((128, 128))
+        avatarpic = BuildImage.open(io.BytesIO(avatarpic)).resize((64, 64))
         avatarpic = avatarpic.circle()
-        onerank.paste(avatarpic, (198, 26), alpha=True)
-        onerank.draw_text((233, 0, 1060, 180), f"{_uname_lst[i]}", fill="#4d4d4d", halign='center', valign='center')
+        onerank.paste(avatarpic, (99, 13), alpha=True)
+        onerank.draw_text((170, 0, 530, 90), f"{_uname_lst[i]}", max_fontsize=25, fill="#4d4d4d", halign='center', valign='center')
         _num = format(_num_lst[i], '.3f') if str(int(_num_lst[i])) != format(_num_lst[i], '.5g') else str(int(_num_lst[i]))
-        onerank.draw_text((1060, 0, 1680, 180), _num, fontsize=80, fill="#ff55aa", halign='center', valign='center')
+        onerank.draw_text((530, 0, 840, 90), _num, fontsize=40, fill="#ff55aa", halign='center', valign='center')
         rankpics.append(onerank.image)
     # 合成排行榜图片
     picnum = math.ceil(len(rankpics) / columns)
     allrankpic = union(
-        rankpics[:picnum], type='row', interval=25, bk_color='white',
-        padding=(50, 50, 50, 50), border_type='circle'
+        rankpics[:picnum], type='row', interval=12, bk_color='white',
+        padding=(25, 25, 25, 25), border_type='circle'
     )
     for c in range(columns-1):
         _ = union(
-            rankpics[picnum*(c+1):picnum*(c+2)], type='row', interval=25, bk_color='white',
-            padding=(50, 50, 50, 50), border_type='circle'
+            rankpics[picnum*(c+1):picnum*(c+2)], type='row', interval=12, bk_color='white',
+            padding=(25, 25, 25, 25), border_type='circle'
         )
-        allrankpic = union([allrankpic, _], type='col', interval=30, align_type='top')
+        allrankpic = union([allrankpic, _], type='col', interval=15, align_type='top')
 
-    size = allrankpic.width + 240, allrankpic.height + titlepic.height + 180 + 30
+    size = allrankpic.width + 120, allrankpic.height + titlepic.height + 90 + 15
     ratio = bkpic.width/bkpic.height
     bk_width = max(size[0], bkpic.width)
     bk_height = max(size[1], bkpic.height)
@@ -170,11 +170,12 @@ async def _init_rank_graph(
     tmp = BuildImage.open(bk_path / 'rankmask.png').resize(bkpic.size)
     bkpic.paste(tmp, alpha=True)
     bkpic.paste(
-        union([titlepic, allrankpic], type='row', interval=30),
+        union([titlepic, allrankpic], type='row', interval=15),
         (0,0), alpha=True, center_type="center"
     )
+    bkpic = bkpic.convert("RGB")
     if save_key is not None:
-        bkpic.image.save(save_path)
+        bkpic.image.save(save_path, quality=85)
     return bkpic
 
 

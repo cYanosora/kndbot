@@ -208,7 +208,7 @@ def timeremain(t: float):
         :param t: 时间戳
     """
     if t < 60:
-        return f'{int(t)}秒钟'
+        return f'{int(t)}秒'
     elif t < 3600:
         result = f'{int(t / 60)}分'
         if int(t % 60):

@@ -249,12 +249,12 @@ async def _(matcher: Matcher, bot: Bot, event: Event):
                         # 最后通牒(
                         else:
                             cd = plugins2cd_manager.get_cd(module, cd_type_)
-                            await send_msg(f"功能还在cd中啦，再无视咱就不理你了！[剩余cd:{cd}s][at]", bot, event)
+                            await send_msg(f"功能还在cd中啦，再无视咱就不理你了！[剩余cd:{timeremain(cd)}][at]", bot, event)
                     else:
                         # 触发正常cd回复
                         if "[cd]" in rst:
                             cd = plugins2cd_manager.get_cd(module, cd_type_)
-                            rst = rst.replace("[cd]", str(cd))
+                            rst = rst.replace("[cd]", timeremain(cd))
                         rst = await init_rst(rst, event)
                         await send_msg(rst, bot, event)
                 else:
