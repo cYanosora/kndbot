@@ -1,6 +1,6 @@
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageEvent, GROUP
-from nonebot import on_command, on_message, on_regex
-from nonebot.params import RegexGroup
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageEvent, GROUP, Message, ActionFailed
+from nonebot import on_command, on_message, on_regex, get_bots
+from nonebot.params import RegexGroup, CommandArg, Command
 from nonebot.rule import to_me
 from nonebot.typing import T_State
 from utils.imageutils import text2image, pic2b64
@@ -10,7 +10,8 @@ from ._data_source import (
     set_plugin_status,
     get_plugin_status,
     group_current_status,
-    set_group_bot_status
+    set_group_bot_status,
+    get_plugin_group_status
 )
 from services.log import logger
 from configs.config import NICKNAME
@@ -29,21 +30,24 @@ __plugin_type__ = "群相关"
 __plugin_version__ = 0.1
 __plugin_admin_usage__ = f"""
 admin_usage：
-    群内功能与被动技能开关
+    群内通用功能与被动功能开关
     指令：
-        开启/关闭[功能]               :通用插件开关
         群被动状态                    :查看群被动状态
-        开启/关闭全部被动              :群被动总开关
+        开启/关闭[功能]               :插件开关
+        开启/关闭全部被动              :群被动功能总开关
+        开启/关闭全部功能              :群通用功能总开关
         @bot {'/'.join(up_cmd)}     :让{NICKNAME}工作
-        @bot {'/'.join(down_cmd)}   :让{NICKNAME}睡大觉
+        @bot {'/'.join(down_cmd)}   :让{NICKNAME}睡大觉 (此时通用功能与被动功能全部无法使用)
 """.strip()
 __plugin_superuser_usage__ = """
 usage:
     功能总开关与指定群禁用，私聊中master使用
+    [功能]参数支持一般、被动插件的功能名称、别名、类型
     指令：
         功能状态
-        开启/关闭[功能] [*群号]                          :指定群某功能开关
+        开启/关闭[功能]                                :某功能全局开关
         开启/关闭[功能] [p或private、g或group、a或all]   :指定私聊/群聊/所有情况某功能开关
+        开启/关闭[功能] [*群号]                         :指定群某功能开关
 """.strip()
 __plugin_settings__ = {
     "admin_level": Config.get_config("admin_bot_manage", "CHANGE_GROUP_SWITCH_LEVEL"),
@@ -54,6 +58,10 @@ switch_rule_matcher = on_message(rule=switch_rule, permission=GROUP | SUPERUSER,
 
 plugins_status = on_command("功能状态", permission=SUPERUSER, priority=1, block=True)
 
+check_plugin_status = on_command(
+    "查看功能开启状态", aliases={"查看功能关闭状态"}, permission=SUPERUSER, priority=1, block=True
+)
+
 group_task_status = on_command("群被动状态", permission=GROUP | SUPERUSER, priority=3, block=True)
 
 group_status = on_regex(
@@ -63,6 +71,36 @@ group_status = on_regex(
     priority=3,
     block=True
 )
+
+
+@check_plugin_status.handle()
+async def _(cmd: Tuple[str] = Command(), arg: Message = CommandArg()):
+    msg = arg.extract_plain_text().strip()
+    status = True if cmd[0] == '查看功能开启状态' else False
+    group_plugin_status = await get_plugin_group_status(msg, status)
+    error_reply = f"没有找到！可能是功能名有误 或者 没有群{'开启' if status else '关闭'}此功能"
+    if sum(len(group_plugin_status[x]) for x in group_plugin_status) == 0:
+        await check_plugin_status.finish(error_reply)
+    reply = ''
+    bots = list(get_bots().values())
+    for bot in bots:
+        gl = await bot.get_group_list()
+        _tmp_reply = ''
+        for module in group_plugin_status.keys():
+            msg = [
+                f"{g['group_id']} {g['group_name']} {module}"
+                for g in gl
+                if g['group_id'] in group_plugin_status[module]
+            ]
+            _tmp_reply += "\n".join(msg)
+        if _tmp_reply:
+            reply += f"bot:{bot.self_id}\n| 群号 | 群名 | 功能名称 | 状态:{status}|\n" + _tmp_reply + '\n'
+    if not reply:
+        await check_plugin_status.finish(error_reply)
+    try:
+        await check_plugin_status.finish(reply[:-1])
+    except ActionFailed:
+        await check_plugin_status.finish(image(b64=pic2b64(text2image(reply))))
 
 
 @switch_rule_matcher.handle()
@@ -109,7 +147,7 @@ async def _(bot: Bot, event: MessageEvent, state: T_State):
             else:
                 await switch_rule_matcher.send(f"已{_cmd[:2]}功能：{_cmd[2:].strip()}")
         else:
-            await switch_rule_matcher.finish("格式错误：开启/关闭[功能] [群号]或[p/g/a]")
+            await switch_rule_matcher.finish("格式错误：开启/关闭[功能] *[群号]或[p/g/a]")
         logger.info(f"USER {event.user_id} 使用功能管理命令 {_cmd} | {block_type}")
 
 

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from pathlib import Path
 from datetime import datetime
 from nonebot.adapters.onebot.v11.message import MessageSegment
@@ -122,6 +122,40 @@ async def del_group_welcome(user_id: int, group_id: int) -> str:
             logger.error(f"GROUP {group_id} 删除群消息失败 e:{e}")
             return "删除群欢迎消息失败.."
     return f"删除群欢迎消息成功！"
+
+
+async def get_plugin_group_status(cmd: str, status: bool) -> Dict[str, List[int]]:
+    """
+    获取插件在各群的开关状态(不统计超管)
+    :param cmd:功能名称
+    :param status:开关状态，True时获取打开功能的群号
+    :returns: dict(模块名:群号列表)
+    """
+    global task_data
+    if not task_data:
+        task_data = group_manager.get_task_data()
+    plugin_status = {}
+    if cmd in [task_data[x] for x in task_data.keys()]:
+        type_ = "task"
+        modules = [x for x in task_data.keys() if task_data[x] == cmd]
+    else:
+        type_ = "plugin"
+        modules = plugins2settings_manager.get_plugin_module(cmd, True)
+    groups = group_manager.get_group_list()
+    for module in modules:
+        if type_ == 'task':
+            plugin_status[task_data[module]] = []
+            for group_id in groups:
+                _status = await group_manager.check_group_task_status(group_id, module)
+                if not (status ^ _status):
+                    plugin_status[task_data[module]].append(group_id)
+        else:
+            plugin_status[module] = []
+            for group_id in groups:
+                _status = group_manager.get_plugin_status(module, group_id, False)
+                if not (status ^ _status):
+                    plugin_status[module].append(group_id)
+    return plugin_status
 
 
 async def change_group_switch(cmd: str, group_id: int, is_super: bool = False):

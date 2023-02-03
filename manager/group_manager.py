@@ -169,6 +169,13 @@ class GroupManager(StaticData):
         """
         return self._data["super"]["white_group_list"]
 
+    def get_group_list(self) -> List[int]:
+        """
+        说明：
+            获取所有群名单
+        """
+        return [int(i) for i in self._data["group_manager"].keys() if i.isdigit()]
+
     def delete_group(self, group_id: int):
         """
         说明：

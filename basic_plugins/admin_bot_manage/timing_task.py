@@ -1,7 +1,9 @@
+import random
 import shutil
 import nonebot
 from pathlib import Path
 from asyncpg.exceptions import ConnectionDoesNotExistError, UndefinedColumnError
+from configs.config import MAIN_BOT, SUB_BOT, AUX_BOT
 from utils.utils import scheduler, get_bot
 from services.log import logger
 from models.group_info import GroupInfo
@@ -137,3 +139,32 @@ async def _():
                     logger.info(f'已完成自动备份：{x}')
             except Exception as e:
                 logger.error(f"自动备份文件 {x} 发生错误 {type(e)}:{e}")
+
+
+# 每天定时检查群是否已有认证
+@scheduler.scheduled_job(
+    "cron",
+    hour=3,
+    minute=30,
+)
+async def _():
+    groupinfo = await GroupInfo.query.gino.all()
+    illegal_groups = [g.group_id for g in groupinfo if not g.group_flag]
+    bot_ls = [MAIN_BOT, SUB_BOT, AUX_BOT]
+    if illegal_groups:
+        while True:
+            if not bot_ls:
+                break
+            botid = random.choice(bot_ls)
+            bot_ls.remove(botid)
+            bot = nonebot.get_bot(str(botid))
+            try:
+                await bot.send_private_msg(
+                    user_id=int(list(bot.config.superusers)[0]),
+                    message=f"*****风险提醒*****\n"
+                            f"以下群未通过群认证：\n"
+                            f"{','.join(illegal_groups)}",
+                )
+                break
+            except:
+                pass
