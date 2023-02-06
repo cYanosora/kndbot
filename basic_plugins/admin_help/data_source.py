@@ -69,7 +69,11 @@ async def create_help_image():
     # 总体开关功能
     _plugins_data["总体开关"] = _plugins_data.get("总体开关", [])
     for x in _plugin_types:
-        _plugins_data["总体开关"].append(f"开启/关闭{x}")
+        if '&' in x:
+            for _x in x.split('&'):
+                _plugins_data["总体开关"].append(f"开启/关闭{_x}")
+        else:
+            _plugins_data["总体开关"].append(f"开启/关闭{x}")
 
     # 被动功能
     task_data = group_manager.get_task_data()

@@ -20,7 +20,7 @@ __plugin_settings__ = {
 }
 
 
-update_info1 = on_command(f"关于{NICKNAME}", aliases={'关于奏宝'}, priority=5, block=True)
+update_info1 = on_command(f"关于{NICKNAME}", aliases={'关于奏宝', "关于knd"}, priority=5, block=True)
 update_info2 = on_command(f"关于", rule=to_me(), priority=5, block=True)
 
 

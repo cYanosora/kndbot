@@ -23,7 +23,7 @@ except:
     pjsk_flag = False
 
 
-__plugin_name__ = "本地图库/看图"
+__plugin_name__ = "烧烤同人图库"
 __plugin_type__ = "好康的"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
@@ -207,7 +207,6 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
     if pjsk_flag:
         # 查询图库名路径与图片总数
         path, length = pjsk_get_path_and_len(gallery)
-        print(path, length)
         if not path:
             logger.warning("pjsk搜图模块文件路径不存在！")
             await send_img.finish("出错了，请稍后再试！>_<")
@@ -221,7 +220,6 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
         img_ids = sorted(set(img_ids))
         # 检查用户剩余看图次数
         if len(img_ids) > 1:
-            print(len(img_ids))
             end = count_check(matcher.plugin_name, event, bot, len(img_ids))
             if end:
                 await send_img.send(f"指定张数超过当日使用上限，只有{end+1}张图片可以发送(－ω－)", at_sender=True)

@@ -25,11 +25,8 @@ async def _(matcher: Matcher, bot: Bot, event: Event):
         if each_bot == selfid:
             continue
         if any(map(lambda each_event: each_event == combine, recent_event[each_bot])):
+            recent_event[selfid].clear()
             matcher.stop_propagation()
-            try:
-                await matcher.finish()
-            except FinishedException:
-                pass
-            finally:
-                recent_event[selfid].clear()
-                recent_event[selfid].append(combine)
+            raise FinishedException()
+    recent_event[selfid].clear()
+    recent_event[selfid].append(combine)

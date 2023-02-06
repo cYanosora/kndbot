@@ -65,7 +65,7 @@ def pjsk_get_pic(path: Union[str, Path], img_ids: List = None):
         if res:
             return time.mktime(time.strptime(res.group(1), "%Y%m%d_%H%M%S"))
         else:
-            return os.path.getmtime(Path(path) / file)
+            return False
     pic_list = sorted(os.listdir(Path(path)), reverse=True, key=lambda x: sort_key(path, x))
     # pic_list.sort(key=lambda x: x.split('.')[0])
     # pic_list.sort(key=lambda x: os.path.getctime(x))
