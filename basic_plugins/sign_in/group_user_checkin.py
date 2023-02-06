@@ -15,16 +15,17 @@ from nonebot.adapters.onebot.v11 import Bot
 from services.log import logger
 from .random_event import random_event
 from utils.data_utils import init_rank
-from utils.utils import get_user_avatar
+from utils.utils import get_user_avatar, GDict
 from io import BytesIO
 import random
 import math
 import asyncio
 import secrets
 import os
-
+require('shop')
 require("use")
 from basic_plugins.shop.use.data_source import effect
+GDict['run_sql'].append("ALTER TABLE sign_group_users ADD COLUMN continued_sign_items JSON default '{}' NOT NULL;")
 
 
 # 用户单个群签到处理
@@ -34,7 +35,6 @@ async def group_user_check_in(bot: Bot, event: GroupMessageEvent) -> MessageSegm
     async with db.transaction():
         # 取得相应用户
         user = await SignGroupUser.ensure(event.user_id, event.group_id, for_update=True)
-        # print('逻辑测试:', user.checkin_time_last + timedelta(hours=32),"\n",present)
         # 如果同一天签到过，特殊处理
         if (    # +8小时是因为数据库中存的时间带时区属性，默认为格林尼治时间，需要转为东八区时间
             (user.checkin_time_last + timedelta(hours=8)).date() >= present.date()
@@ -42,9 +42,8 @@ async def group_user_check_in(bot: Bot, event: GroupMessageEvent) -> MessageSegm
                 in os.listdir(SIGN_TODAY_CARD_PATH)
         ):
             gold = await BagUser.get_gold(event.user_id, event.group_id)
-            res = await get_card(user, nickname, -1, gold, "")
+            res = await get_card(user, nickname, None, gold, "")
         else:
-            # print('尚未签过到')
             res = await _handle_check_in(bot, event, present)
         return res
 
@@ -78,60 +77,95 @@ async def _handle_check_in(
     nickname = event.sender.card or event.sender.nickname
     user_qq = event.user_id
     user = await SignGroupUser.ensure(user_qq, group, for_update=True)
-    items: dict = user.sign_items
-    # 未使用好感双倍卡道具时自动使用
+    sign_items: dict = user.sign_items
+    continued_items: dict = user.continued_sign_items
     property_ = await BagUser.get_property(user_qq, group)
-    if property_:
-        for item in items:
-            if item.startswith("好感双倍卡"):
-                break
-        else:
-            for item in ["好感双倍卡1", "好感双倍卡2", "好感双倍卡3"]:
-                if item in property_.keys():
-                    if await BagUser.delete_property(user_qq, group, item, 1):
-                        await effect(bot, event, item, 1, "", event.message)
-                        items[item] = 1
-                        break
-    # todo1: 被动道具享受加成
+    # 若无乐谱道具时
+    if '乐谱' not in continued_items.keys():
+        # 未使用好感双倍卡道具时自动使用
+        if property_:
+            for item in sign_items:
+                if item.startswith("好感双倍卡"):
+                    break
+            else:
+                for item in ["好感双倍卡1", "好感双倍卡2", "好感双倍卡3"]:
+                    if item in property_.keys():
+                        if await BagUser.delete_property(user_qq, group, item, 1):
+                            await effect(bot, event, item, 1, "", event.message)
+                            sign_items[item] = 1
+                            break
+    # 有乐谱道具时，删除所有好感双倍卡道具，并返还
+    else:
+        for used_item in sign_items.copy().keys():
+            if used_item.startswith("好感双倍卡"):
+                print(used_item, sign_items[used_item])
+                await BagUser.add_property(user_qq, group, used_item, sign_items[used_item])
+                del sign_items[used_item]
+
     # 杯面道具的额外好感
     impression_added = (secrets.randbelow(99) + 1) / 100
     logger.info(
         f"(用户{user.user_qq}, 群组 {user.group_id})"
         f"签到原始好感随机值：{impression_added:.2f} "
     )
+    # 如果用户存在康乃馨
+    extra_items = {}
     extra_impression = user.extra_impression
-    extra_impression += items.get("互动加成", 0) * 0.01
+    extra_impression += sign_items.get("互动加成", 0) * 0.01
     impression_added += extra_impression
-
     # 双倍卡的额外好感
     critx2 = random.random()
     add_probability = user.add_probability
-    if critx2 + add_probability > 0.97:
+    is_double = False
+    # 乐谱的加成
+    if '乐谱' in continued_items.keys():
         impression_added *= 2
+        extra_items['乐谱'] = continued_items['乐谱']
+        is_double = True
+    elif critx2 + add_probability > 0.97:
+        impression_added *= 2
+        is_double = True
+    # 康乃馨的加成
+    if "康乃馨" in property_.keys():
+        item_impr_add = 0.06*impression_added
+        extra_items["康乃馨"] = item_impr_add
+        impression_added += item_impr_add
     # 签到记录进数据库
     await SignGroupUser.sign(user, impression_added, present)
     # 生成签到随机事件，记录进数据库
     gold = random.randint(1, 100)
     gift, gift_type = random_event(user.impression)
     if gift_type == "gold":
-        await BagUser.add_gold(user_qq, group, gold + gift)
+        gold += gift
         gift = f"额外金币 + {gift}"
     else:
-        await BagUser.add_gold(user_qq, group, gold)
         await BagUser.add_property(user_qq, group, gift)
         gift += ' + 1'
+    # 八音盒的加成
+    if "八音盒" in property_.keys():
+        item_gold_add = round(gold * 0.25)
+        extra_items["八音盒"] = item_gold_add
+        gold += item_gold_add
+    # 奏生日7天内集体+360金币
+    nowdate = datetime.now().date()
+    if nowdate.month == 2 and 10 <= nowdate.day <= 16:
+        gold += 360
+    # 加金币
+    await BagUser.add_gold(user_qq, group, gold)
 
     # 日志记录以及生成签到图片
+    logger_extra = f"受到被动道具("+'、'.join(extra_items.keys())+")加成" if extra_items else ""
     logger.info(
         f"(用户 {user.user_qq}, 群组 {user.group_id})"
         f" 签到成功，好感度: {user.impression:.2f} (+{impression_added:.2f})"
         f"获取金币：{gold + int(gift) if gift == 'gold' else gold}"
-        f"获得道具：{gift if gift != 'gold' else '无'}"
+        f"获得道具：{gift if gift != 'gold' else '无'}"+
+        logger_extra
     )
-    if critx2 + add_probability > 0.97:
-        return await get_card(user, nickname, impression_added, gold, gift, items, True)
+    if is_double:
+        return await get_card(user, nickname, impression_added, gold, gift, sign_items, True, False, extra_items)
     else:
-        return await get_card(user, nickname, impression_added, gold, gift, items, False)
+        return await get_card(user, nickname, impression_added, gold, gift, sign_items, False, False, extra_items)
 
 
 # 用户单个群补签处理
@@ -141,6 +175,7 @@ async def group_user_recheck_in(bot: Bot, event: GroupMessageEvent, gid: int = N
 
     # 获得签到用户以及bot可补签的天数
     property_ = await BagUser.get_property(user_id, group_id)
+
     sale_price = 500
     user = await SignGroupUser.ensure(user_id, group_id, for_update=True)
     botinfo = await GroupInfoUser.get_member_info(int(bot.self_id), group_id)
@@ -296,7 +331,14 @@ async def group_user_check(nickname: str, user_qq: int, group: int) -> MessageSe
     # heuristic: if users find they have never checked in they are probable to check in
     user = await SignGroupUser.ensure(user_qq, group)
     gold = await BagUser.get_gold(user_qq, group)
-    return await get_card(user, nickname, None, gold, "", is_card_view=True)
+    items = user.sign_items
+    extra_items = user.continued_sign_items
+    property = await BagUser.get_property(user_qq, group)
+    passive_items = ['康乃馨', '八音盒']
+    for prop in passive_items:
+        if prop in property.keys():
+            extra_items[prop] = property[prop]
+    return await get_card(user, nickname, None, gold, "", items=items, extra_items=extra_items, is_card_view=True)
 
 
 # 查看好感排行

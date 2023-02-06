@@ -86,26 +86,31 @@ async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
     if buy_good.goods_price < 0:
         await buy.finish("此道具目前无法售出", at_sender=True)
     async with db.transaction():
+        user_items = await BagUser.get_property(event.user_id, event.group_id)
+        extra_discount = 0.8 if "合成器" in user_items.keys() else 1
         if (
             await BagUser.get_gold(event.user_id, event.group_id)
-        ) < buy_good.goods_price * buy_num * buy_good.goods_discount:
+        ) < buy_good.goods_price * buy_num * buy_good.goods_discount * extra_discount:
             await buy.finish("啊咧..？您的金币好像不太够哦", at_sender=True)
         flag, n = await GoodsInfo.check_user_daily_purchase(
             buy_good, event.user_id, event.group_id, buy_num
         )
         if flag:
             await buy.finish(f"此道具今天只能还购买{n}次噢", at_sender=True)
-        if await BagUser.buy_property(event.user_id, event.group_id, buy_good, buy_num):
+        if await BagUser.buy_property(event.user_id, event.group_id, buy_good, buy_num, extra_discount):
             await GoodsInfo.add_user_daily_purchase(
                 buy_good, event.user_id, event.group_id, buy_num
             )
+            extra_text = "拥有合成器道具，享受20%折扣，" if extra_discount != 1 else ""
             await buy.send(
-                f"花费 {math.ceil(buy_good.goods_price * buy_num * buy_good.goods_discount)} "
+                extra_text +
+                f"花费 {math.ceil(buy_good.goods_price * buy_num * buy_good.goods_discount * extra_discount)} "
                 f"金币购买 {buy_good.goods_name} × {buy_num} 成功！",
                 at_sender=True,
             )
             logger.info(
                 f"USER {event.user_id} GROUP {event.group_id} "
+                f"{extra_text}"
                 f"花费 {buy_good.goods_price*buy_num:.2f} "
                 f"金币购买 {buy_good.goods_name} × {buy_num} 成功！"
             )

@@ -45,6 +45,7 @@ async def get_card(
         items: dict = None,
         is_double: bool = False,
         is_card_view: bool = False,
+        extra_items: dict = None
 ) -> MessageSegment:
     user_id = user.user_qq
     date = datetime.now().date()
@@ -53,14 +54,15 @@ async def get_card(
             Path(SIGN_TODAY_CARD_PATH)
             / f"{user_id}_{user.group_id}_{_type}_{date}.png"
     )
+    print(_type)
     # 若当天签到图片已存在直接返回，否则新生成签到图片
     if card_file.exists():
         return image(
             f"{user_id}_{user.group_id}_{_type}_{date}.png", "sign/today_card"
         )
     else:
-        # 若好感加成为特殊值(-1)，代表生成好感度图片，否则生成签到图片
-        if add_impression == -1:
+        # 若无好感加成，代表生成好感度图片，否则生成签到图片
+        if add_impression is None:
             card_file = (
                     Path(SIGN_TODAY_CARD_PATH)
                     / f"{user_id}_{user.group_id}_view_{date}.png"
@@ -71,7 +73,6 @@ async def get_card(
                     "sign/today_card",
                 )
             is_card_view = True
-        # ava = BytesIO(await get_user_avatar(user_id))
         uid = await GroupInfoUser.get_group_member_uid(
             user.user_qq, user.group_id
         )
@@ -88,10 +89,11 @@ async def get_card(
             gold,
             gift,
             items,
+            extra_items,
             uid,
             impression_list,
             is_double,
-            is_card_view,
+            is_card_view
         )
 
 
@@ -102,6 +104,7 @@ async def _generate_card_render(
     gold: Optional[int],
     gift: str,
     items: dict,
+    extra_items: dict,
     uid: str,
     impression_list: List[float],
     is_double: bool = False,
@@ -119,7 +122,6 @@ async def _generate_card_render(
     if user.impression_promoted_time and user.impression_promoted_time.replace(tzinfo=None) + timedelta(hours=8) > datetime.now():
         promoted_flag = True
     # 暂时：对于等级高达4的用户做好感限制
-    # 写好好感度5级的文案再开放
     if int(level) > 4:
         level = "4"
     elif promoted_flag and level == "4":
@@ -178,7 +180,29 @@ async def _generate_card_render(
         total = ""
         total += f"上次签到日期：{'从未' if user.checkin_time_last == datetime.min else user.checkin_time_last.date()}\n"
         total += f"总金币：{gold}"
-        _isSign = "view"
+        extra_items_text = ""
+        touch_text = ''
+        items_text = ''
+        if extra_items:
+            if _value := extra_items.get("康乃馨"):
+                extra_items_text += f"康乃馨生效中，"
+            if _value := extra_items.get("八音盒"):
+                extra_items_text += f"八音盒生效中，"
+            if _value := extra_items.get("乐谱"):
+                extra_items_text += f"乐谱生效(剩余{_value}天)，"
+        if items:
+            if "互动加成" in items:
+                touch_text = f"下次签到互动好感加成+{items.pop('互动加成') * 0.01})"
+            for item in items:
+                items_text += f"下次签到将使用{item} × {items.get(item)}"
+                items_text += '\n'
+        if extra_items_text:
+            total += '\n' + extra_items_text[:-1]
+        if items_text:
+            total += '\n' + items_text[:-1]
+        if touch_text:
+            total += '\n' + touch_text
+        _isSign = False
     else:
         total = ""
         title = "今日签到"
@@ -187,6 +211,16 @@ async def _generate_card_render(
         total += impression_text + gold_text + '\n'
         # 生成touch、道具数据
         touch_text = ""
+        extra_items_text = ""
+        if extra_items:
+            if _value := extra_items.get("康乃馨"):
+                extra_items_text += f"康乃馨生效好感+{_value:.3g}，"
+            if _value := extra_items.get("八音盒"):
+                extra_items_text += f"八音盒生效金币+{_value}，"
+            if _value := extra_items.get("乐谱"):
+                extra_items_text += f"乐谱生效(剩余{_value-1}天)，"
+            if extra_items_text:
+                extra_items_text = '('+extra_items_text[:-1]+')\n'
         if items:
             if "互动加成" in items:
                 touch_text = f"(日常互动+{items.pop('互动加成') * 0.01})"
@@ -208,9 +242,9 @@ async def _generate_card_render(
                 items_text += '\n'
             if _double_flag:
                 touch_text += "(触发双倍)"
-            total += items_text + touch_text
+            total += extra_items_text + items_text + touch_text
         elif is_double:
-            total += "(触发双倍)"
+            total += extra_items_text + "(触发双倍)"
         _isSign = True
 
     # 生成时间数据

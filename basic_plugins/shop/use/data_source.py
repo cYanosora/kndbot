@@ -205,7 +205,7 @@ def build_params(
 
 async def effect(
     bot: Bot, event: GroupMessageEvent, goods_name: str, num: int, text: str, message: Message
-) -> Optional[Union[str, MessageSegment]]:
+) -> Optional[Union[List[Union[str, MessageSegment, Message]], str, MessageSegment]]:
     """
     商品生效
     :param bot: Bot

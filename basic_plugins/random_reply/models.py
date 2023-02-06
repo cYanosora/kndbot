@@ -66,14 +66,16 @@ class RetryManager:
             return self.data[f"{qq}_{group}"]
         return {}
 
-    def add(self, qq: int, group: int, cid: int, state: int):
+    def add(self, qq: int, group: int, cid: int, state: int, *args, **kwargs):
         if not self.exist(qq, group):
             self.data[f"{qq}_{group}"] = {
                 "cid": cid,
                 "state": state,
                 "cnt": 0,
                 "time": time.time(),
-                "run": True
+                "run": True,
+                "args": args,
+                "kwargs": kwargs
             }
         else:
             self.data[f"{qq}_{group}"]["run"] = True

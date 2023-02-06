@@ -133,15 +133,3 @@ async def _(event: MessageEvent, arg: Message = CommandArg()):
             await shop_update_goods.send(name, at_sender=True)
             logger.info(f"USER {event.user_id} 修改商品 {name} 数据 {text} 失败")
 
-
-@scheduler.scheduled_job(
-    "cron",
-    hour=0,
-    minute=0,
-)
-async def _():
-    try:
-        await GoodsInfo.reset_daily_purchase()
-        logger.info("商品每日限购次数重置成功...")
-    except Exception as e:
-        logger.error(f"商品每日限购次数重置发生错误 {type(e)}：{e}")

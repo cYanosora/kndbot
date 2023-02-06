@@ -1,5 +1,6 @@
 import asyncio
 import random
+import re
 from typing import Union
 from nonebot import on_regex
 from nonebot.log import logger
@@ -9,25 +10,41 @@ from nonebot.matcher import Matcher
 from nonebot.typing import T_Handler, T_State
 from nonebot.adapters.onebot.v11 import Bot
 from nonebot.adapters import Bot
+
+from configs.config import NICKNAME
 from utils.limit_utils import ignore_mute
 from .data_source import commands
 from .rule import retry_rule, check_rule, poke_rule, normal_rule
 from .models import Command, retry_manager, UserInfo
 from .utils import ReplyBank, get_user_info
 
-__plugin_name__ = "随机消息回复"
+__plugin_name__ = "互动"
 __plugin_type__ = "娱乐功能"
 __plugin_version__ = 0.1
-__plugin_usage__ = """
+__plugin_usage__ = f"""
 usage：
-    支持戳一戳、夸可爱、叫lp、嗦面、奏门、骂人、今日运势(幸运曲)等消息的 "随机" 回复(需要@)
+    {NICKNAME}可以对一些关键词做出各种反应，而且说不定有时还会索求你作出一些特定回复的样子噢？
+    这里列出一些常见的关键词(需要艾特)：
+    戳一戳、夸可爱、叫laopo、嗦面、奏门、骂人、今日运势(幸运曲)、一些和奏有关系的sekai角色的名字
+    除此之外，还有一些整活向关键词等等就需要你日常使用时慢慢发掘啦，虽然很少也很难被触发(ˉ▽ˉ；)...
     
-    * 部分回复的文案内容与好感度相关, 详见签到功能             *
-    * 有好玩的需要特定回复的词条可以联系管理添加               *
-    * 非！常！缺！文！案！有合适的新文案请联系管理添加吖QAQ呜呜呜 *
+    注意：
+        * 部分回复的文案内容与好感度相关, 详见签到功能 *
+        * 文案语料库在以极其缓慢的速度更新中 *
+        
+        * 功能存在的时间已久，部分旧文案可能已经ooc (ﾉω･､)*
+        * 但语料库本身十！分！缺！文！案！而且维护语料库比较麻烦，姑且不修改or删除(*￣3￣) *
+        
+        * 有好玩的需要特定回复的词条可以联系管理添加，哦内该 ヾ(_ _。） *
+        * master属性all奏all杂食，无需担心会被文案雷到(但会被ooc的文案创到)*
+
+        * 文案内容偏向于还原可爱(目前是占压倒性的主要成分)、亚萨西、怕生、呆萌、容易害羞（下接） *
+        * 体力差、自我谴责、阴郁、作曲脑、音乐宅、完全夜行性、偶尔又会突然很帅气高冷等等等的奏。*
+        * 没错，定了个基本完全还原奏的目标，但对于master的水平而言感觉是在挑战不可能 *
+        * 所以还请不要太期待master一个人的力量能把奏宝从游戏里带出来(画大饼ing *
 """.strip()
 __plugin_settings__ = {
-    "cmd": ["随机消息回复", "随机消息", "随机回复"],
+    "cmd": ["互动", "随机消息回复", "随机消息", "随机回复", "娱乐功能"],
 }
 __plugin_block_limit__ = {}
 
@@ -51,6 +68,9 @@ async def send_msg(matcher: Matcher, res: Union[Message, MessageSegment, str]):
 async def _(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
     # 开始这轮对话
     retry_info = retry_manager.get(event.user_id, event.group_id)
+    args = retry_info['args']
+    kwargs = retry_info['kwargs']
+    print(retry_manager.data)
     user = UserInfo(
         qq=event.user_id,
         group=event.group_id,
@@ -76,7 +96,7 @@ async def _(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
             retry_manager.add(user.qq, user.group, cmd.id, user.state)
     raw_st = user.state
     # 触发对话处理函数，获取 回复内容、新状态
-    res, user.state = await cmd.func(user)
+    res, user.state = await cmd.func(user, *args, **kwargs)
     # 新状态值为-1，视为触发其他命令，若此状态触发3次基本说明用户不想在继续对话的retry，则删除retry信息
     if user.state == -1:
         ignore_mute(f"{user.group}_{user.qq}")
@@ -136,6 +156,7 @@ def create_matchers():
         if command.mode == "reg":
             test = on_regex(
                 pattern=command.reg,
+                flags=re.I,
                 rule=check_rule(command),
                 permission=GROUP,
                 priority=command.priority,

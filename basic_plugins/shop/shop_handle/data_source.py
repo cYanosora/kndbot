@@ -6,18 +6,18 @@ import random
 from typing import Optional, Union, Tuple, List
 from PIL import Image
 from models.goods_info import GoodsInfo
-from utils.utils import GDict, is_number
+from utils.utils import is_number
 from utils.imageutils import BuildImage as IMG, union
 from configs.path_config import IMAGE_PATH
 
 
 icon_path = IMAGE_PATH / 'shop' / 'icon'
-GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN goods_effect TEXT default '' NOT NULL;")
-GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN daily_limit integer DEFAULT 0 NOT NULL;")
-GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN daily_purchase_limit json DEFAULT '{}' NOT NULL;")
-GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN is_passive boolean DEFAULT False NOT NULL;")
-GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN icon VARCHAR(255);")
-GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN is_show boolean DEFAULT True NOT NULL;")
+# GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN goods_effect TEXT default '' NOT NULL;")
+# GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN daily_limit integer DEFAULT 0 NOT NULL;")
+# GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN daily_purchase_limit json DEFAULT '{}' NOT NULL;")
+# GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN is_passive boolean DEFAULT False NOT NULL;")
+# GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN icon VARCHAR(255);")
+# GDict['run_sql'].append("ALTER TABLE goods_info ADD COLUMN is_show boolean DEFAULT True NOT NULL;")
 
 
 async def _init_goods(goods: List[GoodsInfo], limit_height: int) -> Optional['Image']:

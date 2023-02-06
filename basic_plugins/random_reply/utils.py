@@ -2,6 +2,8 @@ import re
 import random
 from datetime import timedelta, datetime
 from nonebot import require
+
+from models.bag_user import BagUser
 from models.group_member_info import GroupInfoUser
 from models.sign_group_user import SignGroupUser
 from .models import UserInfo
@@ -17,7 +19,7 @@ except ModuleNotFoundError:
 
 require('sign_in')
 
-from plugins.sign_in.config import lik2level
+from basic_plugins.sign_in.config import lik2level
 
 
 class ReplyBank(db.Model):
@@ -43,16 +45,13 @@ class ReplyBank(db.Model):
         flag = 1: 文本+图片
         flag = 2: 语音+文本
         flag = 3: 语音+文本+图片
+        :returns:元组形式(格式化后的文本信息，文本包含的消息类型标识)
         """
         if r'[user]' in text:
             if user.level != 0:
                 user_name = user.nickname if user.nickname else user.name
-                if user.level < 2 and user.level != -1:
-                    user_name += '桑'
-                elif user.level < 4:
-                    user_name += '先生' if user.gender == 'male' else '小姐'
             else:
-                user_name = "豆腐桑"
+                user_name = "豆腐"
             text = text.replace('[user]', user_name)
         if r'[ta]' in text:
             text = text.replace('[ta]', "他" if user.gender == "male" else "她")
@@ -65,6 +64,19 @@ class ReplyBank(db.Model):
         if "[-]" in text:
             text = text.replace("[-]", "")
             await SignGroupUser.sub_property(user.qq, user.group, "互动加成")
+        # 生日礼物特殊判断
+        if "[souvenir1]" in text:
+            text = text.replace("[souvenir1]", "")
+            await BagUser.add_property(user.qq, user.group, "康乃馨")
+            await BagUser.delete_property(user.qq, user.group, "生日礼物2")
+        if "[souvenir2]" in text:
+            text = text.replace("[souvenir2]", "")
+            await BagUser.add_property(user.qq, user.group, "八音盒")
+            await BagUser.delete_property(user.qq, user.group, "生日礼物2")
+        if "[souvenir3]" in text:
+            text = text.replace("[souvenir3]", "")
+            await BagUser.add_property(user.qq, user.group, "合成器")
+            await BagUser.delete_property(user.qq, user.group, "生日礼物2")
         flag = 0
         while True:
             if r'[image' in text:
@@ -107,6 +119,7 @@ class ReplyBank(db.Model):
         :param catagory: 回复消息类型[image,text,record]
         :param type: 回复消息好坏程度[good,normal,bad,special,ex,none]
         :param user: 用户信息
+        :returns: 元组列表list((当前状态的回复[未格式化]，下一个会话状态),...)
         """
         tmp = []
         q = await cls.query.where(
@@ -214,14 +227,14 @@ class ReplyBank(db.Model):
         return None, -1
 
 
-# none与-1搭配
 # ex与多轮对话搭配
+# none也与多轮对话搭配，优先度低于ex
 def reply_handler(f):
     @wraps(f)
-    async def decorated(user: UserInfo, cid: int, isn_level: bool = False):
+    async def decorated(user: UserInfo, cid: int, isn_level: bool = False, *args, **kwargs):
         # 一轮对话: 随机回复不同类型文案
         if user.state == 0:
-            return await f(user, cid)
+            return await f(user, cid, *args, **kwargs)
         # 多轮对话: 回复对应状态的文案
         else:
             # ex: 无关参数，回复内容具体看用户状态
@@ -231,7 +244,7 @@ def reply_handler(f):
                 return reply, state
             # none: 无回复，特殊处理(多轮对话中得到无法处理的用户回复时的处理)
             else:
-                user.state = -1  # 用户状态临时变更
+                user.state = -1  # 用户状态保持多轮对话的状态
                 reply, state = await ReplyBank.get_user_mutil_reply(cid, "none", user, isn_level=isn_level)
                 # 特殊处理得到回复：
                 if reply:

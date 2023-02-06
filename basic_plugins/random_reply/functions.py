@@ -3,6 +3,8 @@ import os
 import random
 from datetime import datetime
 from nonebot.adapters.onebot.v11 import Message
+
+from models.bag_user import BagUser
 from models.ban_info import BanInfo
 from services import logger
 from utils.message_builder import image, at, poke
@@ -70,17 +72,17 @@ async def knd_zwa(user: UserInfo, *args, **kwargs):
                 if sw in user.text:
                     text_type = zwa_text_dict[sw]
                     break
-            # 两种回复类型不一致，判断为乱打招呼
+            # 判断两种回复类型是否一致
             if not func_type.startswith(text_type):
-                # 排除晚安
-                if text_type != "sleep":
-                    _zwa_fqlmt.start_cd(inner_user.qq)
+                if _zwa_fqlmt.count_check(inner_user.qq):
+                    if text_type != "sleep":
+                        _zwa_fqlmt.start_cd(inner_user.qq)
+                    func_type += f"_{text_type}"
                 # 多次乱打招呼，被拉黑3分钟
-                if not _zwa_fqlmt.count_check(inner_user.qq):
+                else:
                     reply, state = await ReplyBank.get_user_mutil_reply(cid, "special", inner_user, 0.7, 1, True)
                     await BanInfo.ban(9, 180, user_id=inner_user.qq, group_id=inner_user.group)
                     return reply, state
-                func_type += f"_{text_type}"
             reply, state = await ReplyBank.get_user_mutil_reply(cid, func_type, inner_user, 0.7, 1, True)
             return reply, state
         return await zwa_func(user, 5, True)
@@ -169,7 +171,7 @@ async def my_wife(user: UserInfo, *args, **kwargs):
             reply, state = await ReplyBank.get_user_mutil_reply(cid, "other", inner_user, 1, 0.2)
             return reply, state
         if not re.search(r".*(老婆).*$", user.text):
-            if re.search(r".*(爱你|爱死你|喜欢你|suki).*", user.text):
+            if re.search(r".*(爱你|爱死你|喜欢你).*", user.text):
                 reply, state = await ReplyBank.get_user_mutil_reply(cid, "other", inner_user, 1, 0.2)
                 return reply, state
             return None, -1
@@ -243,6 +245,8 @@ pjsk_chara_dict = {
     "len": ["len", "连", "镜音连"],
     "hnm": ["hnm", "穗波", "望月穗波", "honami"],
     "mnr": ["mnr", "实乃理", "花里实乃理", "minori"],
+    "ick": ["ick", "一歌", "星乃一歌", "ichika"],
+    "nene":["nene", "宁宁", "草薙宁宁"],
 }
 
 
@@ -267,6 +271,46 @@ async def other_reactions(user: UserInfo, *args, **kwargs):
         reply, state = await ReplyBank.get_user_mutil_reply(cid, "normal", inner_user, 0.5, 0.5)
         return reply, state
     return await other_func(user, 7)
+
+
+async def birthday(user: UserInfo, *args, **kwargs):
+    # 检测当前时间，在生日前后一天内有回复信息
+    nowdate = datetime.now()
+    # 生日前一天
+    if nowdate.month == 2 and nowdate.day == 9 and nowdate.hour < 23:
+        _type = 'pre'
+    # 生日后一天
+    elif nowdate.month == 2 and nowdate.day == 11:
+        _type = 'post'
+    # 生日当天
+    elif nowdate.month == 2 and (nowdate.day == 10 or nowdate.day == 9 and nowdate.hour == 23):
+        # 因为生日当天发放了道具，先检查用户是否有生日礼物道具。
+        props = await BagUser.get_property(user.qq, user.group, True)
+        for prop in props.keys():
+            # 对话无视好感等级，只需要注意礼物类型
+            if prop == "生日礼物1":
+                _type = 'gift1'
+                break
+            elif prop == '生日礼物2':
+                _type = 'gift2'
+                break
+        # 没有道具时正常回复
+        else:
+            _type = 'curr'
+    else:
+        return "", 0
+    if _type in ['pre', 'post', 'curr']:
+        @reply_handler
+        async def func_other(inner_user: UserInfo, cid: int, inner_type: str):
+            reply, state = await ReplyBank.get_user_mutil_reply(cid, inner_type, inner_user, 0.5, 0.5)
+            return reply, state
+        return await func_other(user, 9, _type)
+    else:
+        @reply_handler
+        async def func_gift(inner_user: UserInfo, cid: int, inner_type: str):
+            reply, state = await ReplyBank.get_user_mutil_reply(cid, inner_type, inner_user, 0.5, 0.5, True)
+            return reply, state
+        return await func_gift(user, 9, True, _type)
 
 
 async def pa_reg(user: UserInfo, *args, **kwargs):
