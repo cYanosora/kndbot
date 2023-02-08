@@ -68,6 +68,7 @@ tts_gal = eval(plugin_config.tts_gal if plugin_config.tts_gal else '{():[""]}')
 valid_names = []
 driver = get_driver()
 
+
 @driver.on_startup
 def _():
     logger.info("正在检查目录是否存在...")
@@ -102,32 +103,19 @@ async def voicHandler(
     if lang.startswith('pjsk'):
         lang = 'ja'
     # 文本处理
-    # print('type',type)
-    # print('raw_text',text)
     text = changeE2C(text) if lang == "zh-CHS" else changeC2E(text)
     if not text:
         await voice.finish('中文转换失败，请稍后再试')
-    # print('符号处理_text',text)
     if type == '中文':
         text = await translate_youdao(text, 'zh-CHS')
-        # print('中文_text', text)
         text = await translate_katakana(text)
-        # print('片假_text', text)
         if lang != 'ja':
             text = await translate_youdao(text, lang)
-            # print('日文_text', text)
     else:
         text = await translate_youdao(text, lang)
-        # print('日文_text', text)
     if not text:
         await voice.finish('网络不太好，请稍后再试')
-    # print('config',config_file)
-    # print('model',model_file)
-    # print('lang',lang)
-    # print('symbols',symbols)
-    # print('aft_text',text)
     text = get_text(text, hps_ms, symbols, lang, False)
-    # print('tensor_text',text)
     # 加载模型
     try:
         net_g_ms = SynthesizerTrn(
@@ -142,12 +130,11 @@ async def voicHandler(
         traceback.print_exc()
         limit = f"{event.group_id}_{event.user_id}"
         ignore_mute(limit)
-        ignore_cd(limit)
+        ignore_cd(limit,event)
         await voice.finish("加载模型失败")
         return
     # 随机文件名
     filename = "".join(random.sample([x for x in string.ascii_letters + string.digits], 8)) + ".wav"
-    # print('filename',filename)
     # 生成语音
     try:
         with no_grad():
@@ -162,7 +149,7 @@ async def voicHandler(
         traceback.print_exc()
         limit = f"{event.group_id}_{event.user_id}"
         ignore_mute(limit)
-        ignore_cd(limit)
+        ignore_cd(limit,event)
         await voice.finish('生成失败')
         return
     # 发送语音
@@ -172,17 +159,16 @@ async def voicHandler(
         traceback.print_exc()
         limit = f"{event.group_id}_{event.user_id}"
         ignore_mute(limit)
-        ignore_cd(limit)
+        ignore_cd(limit,event)
         await voice.send("发送失败,请重试")
     except NetworkError:
         traceback.print_exc()
         limit = f"{event.group_id}_{event.user_id}"
         ignore_mute(limit)
-        ignore_cd(limit)
+        ignore_cd(limit,event)
         await voice.send("发送超时,也许等等就好了")
     finally:
         if auto_delete_voice:
-            # print('delelte')
             (voice_path / filename).unlink()
 
 
