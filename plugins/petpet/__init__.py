@@ -51,7 +51,7 @@ __plugin_count_limit__ = {
     "rst": "今天已经玩够了吧，还请明天再继续呢[at]",
 }
 
-help_cmd = on_command("头像表情包", aliases={"图片操作指令", "改图指令"}, permission=GROUP, block=True, priority=5)
+help_cmd = on_command("头像表情包", aliases={"图片操作指令", "改图指令"}, permission=GROUP, block=True, priority=4)
 
 
 @help_cmd.handle()

@@ -24,7 +24,7 @@ except:
 
 
 __plugin_name__ = "烧烤同人图库"
-__plugin_type__ = "好康的"
+__plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：

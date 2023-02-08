@@ -304,13 +304,13 @@ async def birthday(user: UserInfo, *args, **kwargs):
         async def func_other(inner_user: UserInfo, cid: int, inner_type: str):
             reply, state = await ReplyBank.get_user_mutil_reply(cid, inner_type, inner_user, 0.5, 0.5)
             return reply, state
-        return await func_other(user, 9, _type)
+        return await func_other(user, 9, inner_type=_type)
     else:
         @reply_handler
         async def func_gift(inner_user: UserInfo, cid: int, inner_type: str):
             reply, state = await ReplyBank.get_user_mutil_reply(cid, inner_type, inner_user, 0.5, 0.5, True)
             return reply, state
-        return await func_gift(user, 9, True, _type)
+        return await func_gift(user, 9, True, inner_type=_type)
 
 
 async def pa_reg(user: UserInfo, *args, **kwargs):

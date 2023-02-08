@@ -1,4 +1,3 @@
-import math
 import random
 import secrets
 import time
@@ -6,6 +5,7 @@ from datetime import datetime
 from typing import Dict, Tuple
 from basic_plugins.shop.shop_handle import register_goods
 from basic_plugins.shop.use import register_use
+from configs.path_config import DATA_PATH
 from models.group_member_info import GroupInfoUser
 from utils.imageutils import text2image, pic2b64
 from utils.message_builder import image
@@ -16,10 +16,14 @@ import nonebot
 from models.sign_group_user import SignGroupUser
 from models.bag_user import BagUser
 from models.goods_info import GoodsInfo
+try:
+    import ujson as json
+except:
+    import json
 __plugin_name__ = "商店定时任务 [Hidden]"
 __plugin_version__ = 0.1
 driver: Driver = nonebot.get_driver()
-
+gift_data = {}
 
 # 重置每日金币
 @scheduler.scheduled_job(
@@ -79,55 +83,83 @@ async def _():
 # 2月9日22时发放全员生日礼物
 @scheduler.scheduled_job(
     'date',
-    run_date=datetime(2023, 2, 7, 3, 0, 0),
+    run_date=datetime(2023, 2, 9, 22, 0, 0),
 )
 async def _():
+    global gift_data
     bots = list(nonebot.get_bots().values())
     all_groups = []
     for bot in bots:
         gl = await bot.get_group_list()
         gl = [g["group_id"] for g in gl]
         all_groups.extend(gl.copy())
-    print('三只bot共加群：',len(all_groups))
     all_groups = list(set(all_groups))
-    print('无重复群有：',len(all_groups))
-    # bot group
     type_groups = []
     for group in all_groups:
-        group_type = 1
+        group = int(group)
         totalday = 1
         for bot in bots:
             botinfo = await GroupInfoUser.get_member_info(int(bot.self_id), group)
             if not botinfo:
                 continue
             join_group_time = botinfo.user_join_time.date()
-            totalday = (datetime.now().date() - join_group_time).days
-            group_type = 2 if totalday > 30 else group_type
-        type_groups.append((group, group_type, totalday))
+            totalday = (datetime.now().date() - join_group_time).days + 1
+        type_groups.append((group, totalday))
     for groupinfo in type_groups:
-        print(f'群{groupinfo[0]}加群超过一个月')
-        # lousign<25l
+        gift_data[groupinfo[0]] = {'days':groupinfo[1],'users':[]}
         allsignusers = await SignGroupUser.get_all_users(groupinfo[0])
-        if groupinfo[1] == 2:
-            for signuser in allsignusers:
-                gift = '生日礼物1'
-                if signuser.checkin_count / groupinfo[2] >= 0.75:
+        allsignusers.sort(key=lambda signuser: signuser.impression, reverse=True)
+        allsignusers.sort(key=lambda signuser: signuser.checkin_count, reverse=True)
+        if groupinfo[1] > 60:
+            for _id, signuser in enumerate(allsignusers):
+                if signuser.checkin_count == 0:
+                    continue
+                gift = '无'
+                _t = '无'
+                if _id < len(allsignusers) * 0.1 and signuser.checkin_count / groupinfo[1] >= 0.75:
                     gift = '生日礼物2'
-                # await BagUser.add_property(signuser.user_qq, signuser.group_id, gift, max=1)
-                logger.info(f'User{signuser.user_qq} Group{signuser.group_id} 获得礼物 {gift}')
-        # signrank<10
+                    _t = '漏签少排名高'
+                elif signuser.checkin_count >= 100:
+                    gift = '生日礼物2'
+                    _t = '天数多'
+                elif signuser.impression >= 25:
+                    gift = '生日礼物1'
+                    _t = '好感高'
+                gift_data[groupinfo[0]]['users'].append({
+                    'qq':str(signuser.user_qq),
+                    'signdays':signuser.checkin_count,
+                    'impr':signuser.impression,
+                    'rank':_id+1,
+                    'gift':gift
+                })
+                if gift != '无':
+                    await BagUser.add_property(signuser.user_qq, signuser.group_id, gift, max=1)
+                logger.info(f'User{signuser.user_qq}({_t}) Group{signuser.group_id}(天数{groupinfo[1]}) 获得礼物 {gift}')
         else:
-            print(f'群{groupinfo[0]}加群超过小于一个月')
-            allsignusers.sort(key=lambda signuser:signuser.impression, reverse=True)
-            total_signnum = len(allsignusers)
-            compare_impr = allsignusers[math.ceil(0.1*total_signnum)].impression
-            for signuser in allsignusers:
-                gift = '生日礼物1'
-                if signuser.impression > compare_impr:
+            for _id, signuser in enumerate(allsignusers):
+                if signuser.checkin_count == 0:
+                    continue
+                gift = '无'
+                _t = '无'
+                if signuser.checkin_count >= 100:
                     gift = '生日礼物2'
-                # await BagUser.add_property(signuser.user_qq, signuser.group_id, gift, max=1)
-                logger.info(f'User{signuser.user_qq} Group{signuser.group_id} 获得礼物 {gift}')
-        print('= '*25)
+                    _t = '天数多'
+                elif signuser.impression >= 25:
+                    gift = '生日礼物1'
+                    _t = '好感高'
+                gift_data[groupinfo[0]]['users'].append({
+                    'qq':str(signuser.user_qq),
+                    'signdays':signuser.checkin_count,
+                    'impr':signuser.impression,
+                    'rank':_id+1,
+                    'gift':gift
+                })
+                if gift != '无':
+                    await BagUser.add_property(signuser.user_qq, signuser.group_id, gift, max=1)
+                logger.info(f'User{signuser.user_qq}({_t}) Group{signuser.group_id}(天数{groupinfo[1]}) 获得礼物 {gift}')
+    with open(DATA_PATH / 'limit_event.json', 'w', encoding='utf-8') as f:
+        json.dump(gift_data,f)
+    logger.info(f'保存数据成功')
 
 
 # 注册新被动道具
@@ -243,7 +275,7 @@ async def _():
                 state=0,
                 cid=9
             )
-            reply, state = await ReplyBank.get_user_mutil_reply(9, 'gift1_fin', userinfo, 0.5, 0.5, True)
+            reply, state = await ReplyBank.get_user_mutil_reply(9, 'gift1_0', userinfo, 0.5, 0.5, True)
             if state != 0:
                 retry_manager.add(user_id, group_id, 9, state)
             if isinstance(reply, str):
@@ -278,20 +310,6 @@ async def _():
             (nowdate.month == 2 and nowdate.day == 9 and nowdate.hour == 23)
         ):
             # 兑换道具
-            # goods = {
-            #     '八音盒': [
-            #         '谢谢你的生日礼物，这是父亲留下的八音盒的样品，请让我当作回礼吧',
-            #         '这是给我的生日礼物吗？谢谢...请让我将这个八音盒样品给你当作回礼吧'
-            #     ],
-            #     '康乃馨': [
-            #         '谢谢你的生日礼物，这是母亲最爱的花的样品，请让我当作回礼吧',
-            #         '这是给我的生日礼物吗？谢谢...请让我将这株康乃馨样本给你当作回礼吧'
-            #     ],
-            #     '合成器': [
-            #         '谢谢你的生日礼物，这是我自己在使用着的合成器的样品，请让我当作回礼吧',
-            #         '这是给我的生日礼物吗？谢谢...请让我将这个合成器样品给你当作回礼吧'
-            #     ]
-            # }
             goods = ['康乃馨', '八音盒', '合成器']
             for good in goods:
                 if good in text:
@@ -302,7 +320,7 @@ async def _():
                     reply += '好感+{:.2f}，金币+{}\n获得道具:'.format(impression, gold)
                     for i, j in items.items():
                         reply += "{} × {}，".format(i, j)
-                    reply = reply[:-1]
+                    reply = reply[:-1] + f"\n获得纪念品道具{good}"
                     reply_ls.append(image(b64=pic2b64(text2image(reply))))
                     userinfo = UserInfo(
                         qq=user_id,
@@ -312,7 +330,8 @@ async def _():
                         cid=9
                     )
                     # 触发对话
-                    reply, state = await ReplyBank.get_user_mutil_reply(9, 'gift2_fin', userinfo, 0.5, 0.5, True)
+                    _reply_type = {'康乃馨':'gift2_1','八音盒':'gift2_2','合成器':'gift2_3'}.get(good)
+                    reply, state = await ReplyBank.get_user_mutil_reply(9, _reply_type, userinfo, 0.5, 0.5, True)
                     if state != 0:
                         retry_manager.add(user_id, group_id, 9, state)
                     if isinstance(reply, str):

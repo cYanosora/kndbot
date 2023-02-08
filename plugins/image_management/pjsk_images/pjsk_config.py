@@ -42,3 +42,13 @@ pjsk_info_all = [chara for charas in pjsk_info_dict.values() for chara in charas
                 [unit for unit in pjsk_info_dict.keys()] +\
                 [cp for cps in pjsk_cp_dict.values() for cp in cps]
 pjsk_info_all.sort(key=len, reverse=True)
+
+cpmap = {
+    "knen": "knd×ena", "knmf": "knd×mfy", "knmz": "knd×mzk", "mfen": "mfy×ena", "mfmz": "mfy×mzk", "mzen": "ena×mzk",
+    "akan": "an×akt", "akkh": "khn×akt", "akty": "akt×toya", "ankh": "khn×an", "tyan": "an×toya", "tykh": "khn×toya",
+    "armn": "mnr×airi", "hrar": "hrk×airi", "hrmn": "mnr×hrk", "hrsz": "hrk×szk", "szar": "szk×airi", "szmn": "mnr×szk",
+    "ichn": "ick×hnm", "icsh": "ick×shiho", "icsk": "ick×saki", "shhn": "shiho×hnm", "skhn": "saki×hnm", "sksh": "saki×shiho",
+    "nemu": "emu×nene", "ruiem": "emu×rui", "ruine": "nene×rui", "ruitk": "tks×rui", "tkem": "tks×emu", "tkne": "tks×nene",
+    "knhn": "hnm×knd", "mfem": "emu×mfy", "钢琴组": "saki×toya×tks", "姐弟": "akt×ena", "姐妹": "shiho×szk",
+    "类瑞": "rui×mzk", "兄妹": "saki×tks", "knic": "ick×knd", "mzan": "mzk×an", "mfsz":"szk×mfy"
+}

@@ -145,7 +145,7 @@ class BagUser(db.Model):
             )
 
     @classmethod
-    async def add_property(cls, user_qq: int, group_id: int, name: str, num: int = 1):
+    async def add_property(cls, user_qq: int, group_id: int, name: str, num: int = 1, max: int = 0):
         """
         说明：
             增加道具
@@ -154,6 +154,7 @@ class BagUser(db.Model):
             :param group_id: 所在群号
             :param name: 道具名称
             :param num: 道具增加次数
+            :param max: 所持道具数量上限, 0为无上限
         """
         query = cls.query.where((cls.user_qq == user_qq) & (cls.group_id == group_id))
         query = query.with_for_update()
@@ -162,7 +163,7 @@ class BagUser(db.Model):
             p = user.property
             if p.get(name) is None:
                 p[name] = num
-            else:
+            elif max == 0 or p[name] < max:
                 p[name] += num
             await user.update(property=p).apply()
         else:
@@ -186,18 +187,17 @@ class BagUser(db.Model):
         user = await query.gino.first()
         if user:
             property_ = user.property
-            if name in property_:
-                if property_.get(name) == num:
+            if name in property_.copy():
+                property_[name] -= num
+                if property_[name] <= 0:
                     del property_[name]
-                else:
-                    property_[name] -= num
                 await user.update(property=property_).apply()
                 return True
         return False
 
     @classmethod
     async def buy_property(
-        cls, user_qq: int, group_id: int, goods: "GoodsInfo", goods_num: int
+        cls, user_qq: int, group_id: int, goods: "GoodsInfo", goods_num: int, extra_discount: float
     ) -> bool:
         """
         说明：
@@ -207,10 +207,11 @@ class BagUser(db.Model):
             :param group_id: 所在群聊
             :param goods: 商品
             :param goods_num: 商品数量
+            :param extra_discount: 额外折扣
         """
         try:
             # 折扣后金币
-            spend_gold = goods.goods_discount * goods.goods_price * goods_num
+            spend_gold = goods.goods_discount * goods.goods_price * goods_num * extra_discount
             await BagUser.spend_gold(user_qq, group_id, spend_gold)
             for _ in range(goods_num):
                 await BagUser.add_property(user_qq, group_id, goods.goods_name)

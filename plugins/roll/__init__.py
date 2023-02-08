@@ -41,7 +41,7 @@ ban_msg = []
 replace_word = []
 not_trigger_word = ["咱", "你", "我", "他", "她", "这", "那", "它", "那个", "这个"]
 roll = on_regex(r"^roll(.*)", priority=4, permission=GROUP, block=True)
-roll3 = on_keyword({"还是"}, rule=to_me(), priority=4, block=True)
+roll3 = on_keyword({"还是"}, rule=to_me(), permission=GROUP, priority=4, block=True)
 
 
 @roll.handle()

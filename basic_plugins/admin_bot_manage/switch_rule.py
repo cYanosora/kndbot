@@ -120,11 +120,18 @@ async def _(bot: Bot, event: MessageEvent, state: T_State):
         }
         # 超管指定某些群某功能开关状态
         gl = [int(i) for i in block_type.split() if is_number(i)]
+        all_group = []
+        all_group_names = []
+        all_bots = list(get_bots().values())
+        for _bot in all_bots:
+            all_group.extend(
+                g["group_id"] for g in await _bot.get_group_list()
+            )
+            all_group_names.extend(
+                 g['group_name'] for g in await _bot.get_group_list()
+            )
         if gl:
             group_list = []
-            all_group = [
-                g["group_id"] for g in await bot.get_group_list()
-            ]
             for g in gl:
                 if g in all_group:
                     group_list.append(g)
@@ -133,13 +140,16 @@ async def _(bot: Bot, event: MessageEvent, state: T_State):
             text = f"已{_cmd[:2]}以下群聊的 {_cmd[2:].strip()} 功能：\n"
             for g in group_list:
                 await change_group_switch(_cmd, g, True)
-                group_name = (await bot.get_group_info(group_id=g))["group_name"]
+                group_name = all_group_names[all_group.index(g)]
                 text += f"{group_name}({g})\n"
-            await switch_rule_matcher.finish(image(b64=pic2b64(text2image(text))))
+            try:
+                await switch_rule_matcher.finish(text)
+            except ActionFailed:
+                await switch_rule_matcher.finish(image(b64=pic2b64(text2image(text))))
         # 超管指定私聊/群聊/全部某功能开关状态
         elif block_type in type_dic.keys():
             block_type = type_dic[block_type]
-            await set_plugin_status(bot, _cmd, block_type)
+            await set_plugin_status(all_group, _cmd, block_type)
             if block_type == "group":
                 await switch_rule_matcher.send(f"已在群聊中{_cmd[:2]}功能：{_cmd[2:].strip()}")
             elif block_type == "private":

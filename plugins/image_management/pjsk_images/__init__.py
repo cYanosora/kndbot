@@ -10,10 +10,10 @@ from utils.imageutils import Text2Image, BuildImage as IMG
 from utils.message_builder import image
 from .pjsk_alias_init import init_default_pjsk_alias
 from .pjsk_db_source import PjskAlias
-from .pjsk_config import pjsk_info_all, pjsk_info_dict, pjsk_info_mapping, pjsk_cp_dict
+from .pjsk_config import pjsk_info_all, pjsk_info_dict, pjsk_info_mapping, pjsk_cp_dict, cpmap
 
-__plugin_name__ = "角色称呼"
-__plugin_type__ = "娱乐功能"
+__plugin_name__ = "烧烤角色称呼"
+__plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
@@ -51,15 +51,7 @@ pjsk_cp_info = on_regex("^cpinfo(.*)", permission=GROUP, priority=5, block=True)
 pjsk_alias_initial = on_command("初始化称呼", permission=SUPERUSER, priority=4, block=True)
 
 map = pjsk_info_mapping
-cpmap = {
-    "knen": "knd×ena", "knmf": "knd×mfy", "knmz": "knd×mzk", "mfen": "mfy×ena", "mfmz": "mfy×mzk", "mzen": "ena×mzk",
-    "akan": "an×akt", "akkh": "khn×akt", "akty": "akt×toya", "ankh": "khn×an", "tyan": "an×toya", "tykh": "khn×toya",
-    "armn": "mnr×airi", "hrar": "hrk×airi", "hrmn": "mnr×hrk", "hrsz": "hrk×szk", "szar": "szk×airi", "szmn": "mnr×szk",
-    "ichn": "ick×hnm", "icsh": "ick×shiho", "icsk": "ick×saki", "shhn": "shiho×hnm", "skhn": "saki×hnm", "sksh": "saki×shiho",
-    "nemu": "emu×nene", "ruiem": "emu×rui", "ruine": "nene×rui", "ruitk": "tks×rui", "tkem": "tks×emu", "tkne": "tks×nene",
-    "knhn": "hnm×knd", "mfem": "emu×mfy", "钢琴组": "saki×toya×tks", "姐弟": "akt×ena", "姐妹": "shiho×szk",
-    "类瑞": "rui×mzk", "兄妹": "saki×tks", "knic": "ick×knd", "mzan": "mzk×an"
-}
+
 
 
 @pjsk_alias_add.handle()
@@ -129,7 +121,7 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
 
 @pjsk_alias_del.handle()
 async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
-    alias = reg_group[0]
+    alias = reg_group[0].strip()
     if not alias:
         return
     if alias in pjsk_info_all:
@@ -177,7 +169,7 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
     alias = reg_group[0].strip()
     # 未输入alias时，默认查询团外cp
     if not alias:
-        cps = pjsk_info_dict['cp']
+        cps = pjsk_info_dict['cp'].copy()
         cps.remove("other")
     # 当输入了alias时，查询对应团体下的所有cp名
     else:

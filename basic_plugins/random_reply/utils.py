@@ -2,10 +2,10 @@ import re
 import random
 from datetime import timedelta, datetime
 from nonebot import require
-
 from models.bag_user import BagUser
 from models.group_member_info import GroupInfoUser
 from models.sign_group_user import SignGroupUser
+from utils.imageutils import pic2b64, text2image
 from .models import UserInfo
 from services.db_context import db
 from typing import List, Tuple, Optional
@@ -18,7 +18,9 @@ except ModuleNotFoundError:
     import json
 
 require('sign_in')
-
+require('shop')
+require("shop_scheduler")
+from basic_plugins.shop.shop_scheduler import random_gift
 from basic_plugins.sign_in.config import lik2level
 
 
@@ -64,19 +66,6 @@ class ReplyBank(db.Model):
         if "[-]" in text:
             text = text.replace("[-]", "")
             await SignGroupUser.sub_property(user.qq, user.group, "互动加成")
-        # 生日礼物特殊判断
-        if "[souvenir1]" in text:
-            text = text.replace("[souvenir1]", "")
-            await BagUser.add_property(user.qq, user.group, "康乃馨")
-            await BagUser.delete_property(user.qq, user.group, "生日礼物2")
-        if "[souvenir2]" in text:
-            text = text.replace("[souvenir2]", "")
-            await BagUser.add_property(user.qq, user.group, "八音盒")
-            await BagUser.delete_property(user.qq, user.group, "生日礼物2")
-        if "[souvenir3]" in text:
-            text = text.replace("[souvenir3]", "")
-            await BagUser.add_property(user.qq, user.group, "合成器")
-            await BagUser.delete_property(user.qq, user.group, "生日礼物2")
         flag = 0
         while True:
             if r'[image' in text:
@@ -96,6 +85,55 @@ class ReplyBank(db.Model):
                     text = text.replace(rf"[record:{res.group(1)}]", rec_str)
             else:
                 break
+
+        # 生日礼物特殊判断
+        birthday_flag = False
+        souvenir = ''
+        gift = ''
+        if "[souvenir1]" in text:
+            birthday_flag = True
+            souvenir = '康乃馨'
+            gift = '生日礼物2'
+            text = text.replace("[souvenir1]", "")
+        if "[souvenir2]" in text:
+            birthday_flag = True
+            souvenir = '八音盒'
+            gift = '生日礼物2'
+            text = text.replace("[souvenir2]", "")
+        if "[souvenir3]" in text:
+            birthday_flag = True
+            souvenir = '合成器'
+            gift = '生日礼物2'
+            text = text.replace("[souvenir3]", "")
+        if "[gift]" in text:
+            birthday_flag = True
+            gift = '生日礼物1'
+            text = text.replace("[gift]", "")
+        if birthday_flag:
+            # 加纪念品道具
+            if souvenir:
+                await BagUser.add_property(user.qq, user.group, souvenir)
+            # 加好感、金币、道具
+            impression, gold, items = random_gift()
+            signuser = await SignGroupUser.ensure(user.qq, user.group)
+            await signuser.update(
+                impression=signuser.impression + impression,
+            ).apply()
+            await BagUser.add_gold(user.qq, user.group, gold)
+            for item in items.keys():
+                await BagUser.add_property(user.qq, user.group, item, items[item])
+            # 删除礼物道具
+            await BagUser.delete_property(user.qq, user.group, gift)
+            # 添加默认回复
+            firstreply = '好感+{:.2f}，金币+{}\n获得道具:'.format(impression, gold)
+            for i, j in items.items():
+                firstreply += "{} × {}，".format(i, j)
+            firstreply = firstreply[:-1]
+            if souvenir:
+                firstreply += f'\n获得纪念品道具:{souvenir}'
+            firstreply = str(image(b64=pic2b64(text2image(firstreply))))
+            text = firstreply + '||' + text
+            flag = flag if flag == 1 else 3 if flag == 2 else 0
         return text, flag
 
     @classmethod
@@ -244,7 +282,6 @@ def reply_handler(f):
                 return reply, state
             # none: 无回复，特殊处理(多轮对话中得到无法处理的用户回复时的处理)
             else:
-                user.state = -1  # 用户状态保持多轮对话的状态
                 reply, state = await ReplyBank.get_user_mutil_reply(cid, "none", user, isn_level=isn_level)
                 # 特殊处理得到回复：
                 if reply:

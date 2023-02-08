@@ -36,15 +36,16 @@ def switch_rule(event: Event, state: T_State) -> bool:
                     pass
 
         msg = get_message_text(event.json()).strip()
-        # 若为超管在私聊中使用功能开关
-        if isinstance(event, PrivateMessageEvent):
-            block_type = msg.split()[-1]
-            if is_number(block_type) or block_type in ["all", "private", "group", "a", "p", "g"]:
-                state["block_type"] = block_type
-                msg = " ".join(msg.split()[:-1])
         if res := re.search(r'^(?:开启|关闭) *(.+)', msg):
-            if res.group(1).strip() in cmd:
-                state["cmd"] = msg[:2] + msg[2:].strip()
+            result = res.group(1).strip().split()
+            if result[0] in cmd:
+                state["cmd"] = result[0]
+                # 若为超管在私聊中使用功能开关
+                if isinstance(event, PrivateMessageEvent):
+                    result.pop(0)
+                    block_type = " ".join(result)
+                    if block_type:
+                        state["block_type"] = block_type
                 return True
         return False
     except Exception as e:

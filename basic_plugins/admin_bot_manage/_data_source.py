@@ -237,10 +237,10 @@ async def change_group_switch(cmd: str, group_id: int, is_super: bool = False):
     return reply if reply else f"{status} {cmd} 功能！"
 
 
-async def set_plugin_status(bot: Bot, cmd: str, block_type: str = "all"):
+async def set_plugin_status(bot_groups: List[int], cmd: str, block_type: str = "all"):
     """
     设置插件功能限制状态（超级用户使用）
-    :param bot: Bot
+    :param bot_groups: Bot加进的群列表
     :param cmd: 功能名称
     :param block_type: 限制类型, 'all': 私聊+群聊, 'private': 私聊, 'group': 群聊
     """
@@ -265,12 +265,11 @@ async def set_plugin_status(bot: Bot, cmd: str, block_type: str = "all"):
                 file = DATA_PATH / "group_help" / file
                 file.unlink()
         else:
-            gl = [g["group_id"] for g in await bot.get_group_list()]
             if status == "开启":
-                for group_id in gl:
+                for group_id in bot_groups:
                     await group_manager.open_group_task(group_id, module)
             else:
-                for group_id in gl:
+                for group_id in bot_groups:
                     await group_manager.close_group_task(group_id, module)
 
 
