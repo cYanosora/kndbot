@@ -3,7 +3,7 @@ import time
 from typing import Tuple, Any
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from nonebot import on_regex
-from nonebot.adapters.onebot.v11 import GROUP, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import MessageEvent
 from nonebot.params import RegexGroup
 from configs.path_config import FONT_PATH
 from utils.imageutils import pic2b64
@@ -23,9 +23,10 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    查询烧烤难度排行，移植自unibot(一款功能型烧烤bot)
+    查询烧烤难度排行
+    移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
-    限制每个群1分钟只能查询2次
+    私聊可用，限制每人1分钟只能查询2次
     
     定数必须指定，难度默认为ma，不带参数ap、fc时为综合排行
     指令：
@@ -43,16 +44,16 @@ __plugin_settings__ = {
     "default_status": False,
     "cmd": ["难度排行", "烧烤相关", "uni移植"],
 }
-__plugin_cd_limit__ = {"cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "group"}
+__plugin_cd_limit__ = {"cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "user"}
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 
 # pjsk热度排行
-pjsk_hotrank = on_regex('^(.*)难度排行(.*)', permission=GROUP, priority=5, block=True)
+pjsk_hotrank = on_regex('^(.*)难度排行(.*)', priority=5, block=True)
 
 
 @pjsk_hotrank.handle()
-async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
+async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
     if not reg_group[0] and not reg_group[1]:
         level = 0
         fcap = 2

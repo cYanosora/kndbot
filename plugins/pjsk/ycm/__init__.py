@@ -13,7 +13,8 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    获取烧烤最近的推车，限制每个群1分钟只能使用2次
+    获取烧烤最近的推车，私聊可用
+    限制每人1分钟只能使用2次
     指令：
         ycm/车来/有车吗/推车
     两个好用的烧烤推车网站：
@@ -27,13 +28,13 @@ __plugin_settings__ = {
 __plugin_block_limit__ = {"rst": "别急，正在寻找推车中",}
 __plugin_cd_limit__ = {
     "cd": 60,
-    "limit_type": "group",
+    "limit_type": "user",
     "count_limit": 2,
     "rst": "别急，[cd]s后再用！"
 }
 
 # pjsk查推车
-ycm = on_command('ycm', aliases={"车来", "有车吗", "推车"}, permission=GROUP, priority=5, block=True)
+ycm = on_command('ycm', aliases={"车来", "有车吗", "推车"}, priority=5, block=True)
 
 
 @ycm.handle()

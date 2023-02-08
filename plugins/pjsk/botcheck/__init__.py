@@ -34,7 +34,6 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
     if matcher.plugin_name not in pjsk_plugins:
         return
     unibot.starttime = time.time()
-    # print('check:',unibot.starttime)
     members = await GroupInfoUser.get_group_member_id_list(event.group_id)
     # 若群内存在unibot
     try:
@@ -52,15 +51,14 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
         raise IgnoredException("群内存在unibot，忽略烧烤相关命令")
     # 若群内不存在unibot
     except:
-        pass
-        # # 检查群聊烧烤功能开关
-        # if not group_manager.get_plugin_status(matcher.plugin_name, event.group_id):
-        #     for mod in pjsk_plugins:
-        #         group_manager.unblock_plugin(mod, event.group_id)
-        #     await bot.send_group_msg(
-        #         group_id=event.group_id,
-        #         message="自动检测：群内尚未有unibot分布式，已开启烧烤相关功能(未检测成功时，请手动关闭)"
-        #     )
+        # 检查群聊烧烤功能开关
+        if not group_manager.get_plugin_status(matcher.plugin_name, event.group_id):
+            for mod in pjsk_plugins:
+                group_manager.unblock_plugin(mod, event.group_id)
+            await bot.send_group_msg(
+                group_id=event.group_id,
+                message="自动检测：群内尚未有unibot分布式，已开启烧烤相关功能(未检测成功时，请手动关闭)"
+            )
 
 bot_record = on_message(rule=check_rule(), permission=GROUP, priority=1, block=False)
 

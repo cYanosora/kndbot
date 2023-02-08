@@ -4,7 +4,7 @@ import requests
 import json
 from PIL import Image, ImageFont, ImageDraw, ImageFilter
 from nonebot import on_command
-from nonebot.adapters.onebot.v11 import GROUP, MessageEvent, Message
+from nonebot.adapters.onebot.v11 import MessageEvent, Message
 from nonebot.params import CommandArg
 from configs.path_config import FONT_PATH
 from utils.http_utils import AsyncHttpx
@@ -20,9 +20,10 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    查询烧烤b30(仅供娱乐)，移植自unibot(一款功能型烧烤bot)
+    查询烧烤b30(仅供娱乐)
+    移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
-    限制每个群1分钟只能查询2次
+    私聊可用，限制每人1分钟只能查询2次
     指令：
         烧烤b30/pjsk b30               :查看自己的b30
         烧烤b30/pjsk b30  @qq          :查看艾特用户的b30(对方必须已绑定烧烤账户)
@@ -37,13 +38,13 @@ __plugin_settings__ = {
     "default_status": False,
     "cmd": ["pjskb30", "烧烤相关", "uni移植", "烧烤b30"],
 }
-__plugin_cd_limit__ = {"cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "group"}
+__plugin_cd_limit__ = {"cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "user"}
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 # pjskb30
-pjsk_b30 = on_command('pjsk b30', aliases={'pjskb30', '烧烤b30', '烧烤 b30'}, permission=GROUP, priority=5, block=True)
+pjsk_b30 = on_command('pjsk b30', aliases={'pjskb30', '烧烤b30', '烧烤 b30'}, priority=5, block=True)
 
 # pjskr30
-pjsk_r30 = on_command('pjsk r30', aliases={'pjskr30', '烧烤r30', '烧烤 r30'}, permission=GROUP, priority=5, block=True)
+pjsk_r30 = on_command('pjsk r30', aliases={'pjskr30', '烧烤r30', '烧烤 r30'}, priority=5, block=True)
 
 
 def fcrank(playlevel, rank):

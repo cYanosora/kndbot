@@ -1,6 +1,7 @@
 import traceback
 from nonebot import on_keyword
-from nonebot.adapters.onebot.v11 import GROUP, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import MessageEvent
+
 from utils.http_utils import AsyncHttpx
 from utils.message_builder import image
 from .._config import BUG_ERROR
@@ -16,9 +17,10 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    查询烧烤谱面信息，移植自unibot(一款功能型烧烤bot)
+    查询烧烤谱面信息
+    移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
-    限制每个群半分钟只能查询2次
+    私聊可用，限制每人1分钟只能查询4次
     指令：
         谱面预览 [难度] [曲目]           : 优先获取自动生成的谱面预览
         技能预览 [难度] [曲目]           : 生成带技能生效范围的谱面预览
@@ -45,12 +47,12 @@ __plugin_settings__ = {
     "default_status": False,
     "cmd": ["谱面预览", "技能预览", "烧烤相关", "uni移植"],
 }
-__plugin_cd_limit__ = {"cd": 30, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "group"}
+__plugin_cd_limit__ = {"cd": 60, "count_limit": 4, "rst": "别急，等[cd]秒后再用！", "limit_type": "user"}
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 # preview
-map_preview = on_keyword({'谱面预览'}, permission=GROUP, priority=5, block=True)
-skill_preview = on_keyword({'技能预览'}, permission=GROUP, priority=5, block=True)
+map_preview = on_keyword({'谱面预览'}, priority=5, block=True)
+skill_preview = on_keyword({'技能预览'}, priority=5, block=True)
 
 
 async def preprocess(arg: str):
@@ -92,7 +94,7 @@ async def preprocess(arg: str):
 
 
 @map_preview.handle()
-async def _(event: GroupMessageEvent):
+async def _(event: MessageEvent):
     msg = event.get_plaintext().strip()
     try:
         _type = {'1': 1, '2': 2, '3': 3}.get(msg[msg.find('谱面预览') + 4], 0)
@@ -144,7 +146,7 @@ async def _(event: GroupMessageEvent):
 
 
 @skill_preview.handle()
-async def _(event: GroupMessageEvent):
+async def _(event: MessageEvent):
     msg = event.get_plaintext().strip()
     arg = msg.replace('技能预览', '').strip()
     if not arg:

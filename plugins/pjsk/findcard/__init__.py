@@ -1,7 +1,9 @@
 import os
+from typing import Optional
+
 from PIL import Image
 from nonebot import on_command, require
-from nonebot.adapters.onebot.v11 import GROUP, Message, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import Message, MessageEvent
 from nonebot.params import CommandArg
 from .._config import data_path
 from .._card_utils import cardidtopic, findcardsingle
@@ -25,9 +27,10 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    查询烧烤卡面信息，移植自unibot(一款功能型烧烤bot)
+    查询烧烤卡面信息
+    移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
-    限制每个群半分钟只能查询2次
+    私聊可用，限制每人1分钟只能查询4次
     指令：
         findcard [角色名]                                : 查看角色名对应卡面概览
         findcard [角色名] [一星/1/二星/2/三星/3/生日/四星/4] : 查看角色名对应类型的卡面概览
@@ -41,17 +44,17 @@ __plugin_settings__ = {
     "default_status": False,
     "cmd": ["findcard", "烧烤相关", "uni移植",  "卡面查询"],
 }
-__plugin_cd_limit__ = {"cd": 30, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "group"}
+__plugin_cd_limit__ = {"cd": 60, "count_limit": 4, "rst": "别急，等[cd]秒后再用！", "limit_type": "user"}
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 
 # findcard
-findcard = on_command('findcard', aliases={"查卡", "查询卡面"}, permission=GROUP, priority=5, block=True)
-card = on_command('card', permission=GROUP, priority=5, block=True)
-cardinfo = on_command('cardinfo', permission=GROUP, priority=4, block=True)
+findcard = on_command('findcard', aliases={"查卡", "查询卡面"}, priority=5, block=True)
+card = on_command('card', priority=5, block=True)
+cardinfo = on_command('cardinfo', priority=4, block=True)
 
 
-async def alias2id(alias: str, group_id: int):
+async def alias2id(alias: str, group_id: Optional[int] = None):
     dic = {
         'ick': 1, 'saki': 2, 'hnm': 3, 'shiho': 4,
         'mnr': 5, 'hrk': 6, 'airi': 7, 'szk': 8,
@@ -69,7 +72,7 @@ async def alias2id(alias: str, group_id: int):
 
 
 @findcard.handle()
-async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
+async def _(event: MessageEvent, arg: Message = CommandArg()):
     alias = arg.extract_plain_text().strip()
     if alias.isdigit():
         await _cardinfo(arg)
@@ -92,7 +95,10 @@ async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
             break
     else:
         cardRarityType = None
-    charaid = await alias2id(alias, event.group_id)
+    group_id = None
+    if hasattr(event, 'group_id'):
+        group_id = event.group_id
+    charaid = await alias2id(alias, group_id)
     if charaid == 0:
         await findcard.finish('找不到你说的角色哦')
     # 识别到角色，发送卡图

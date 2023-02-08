@@ -1,7 +1,7 @@
 import json
 from PIL import Image, ImageFont, ImageDraw
 from nonebot import on_command
-from nonebot.adapters.onebot.v11 import GROUP, MessageEvent, Message
+from nonebot.adapters.onebot.v11 import MessageEvent, Message
 from nonebot.params import CommandArg
 from configs.path_config import FONT_PATH
 from utils.imageutils import pic2b64
@@ -16,9 +16,10 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    查询烧烤档案，移植自unibot(一款功能型烧烤bot)
+    查询烧烤档案
+    移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
-    限制每个群1分钟只能查询2次
+    私聊可用，限制每人1分钟只能查询2次
     指令：
         烧烤档案/个人消息/profile/pjskprofile              :查看自己的收歌情况
         烧烤档案/个人消息/profile/pjskprofile @qq          :查看艾特用户的收歌情况(对方必须已绑定烧烤账户)
@@ -33,13 +34,13 @@ __plugin_settings__ = {
     "cmd": ["pjskprofile", "烧烤相关", "烧烤档案", "profile", "个人信息"],
 }
 __plugin_cd_limit__ = {
-    "cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "group"
+    "cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "user"
 }
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 
 # pjsk个人档案
-pjsk_profile = on_command('烧烤档案', aliases={"profile", "pjskprofile", "个人信息"}, permission=GROUP, priority=5, block=True)
+pjsk_profile = on_command('烧烤档案', aliases={"profile", "pjskprofile", "个人信息"}, priority=5, block=True)
 
 
 @pjsk_profile.handle()

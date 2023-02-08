@@ -1,7 +1,7 @@
 import base64
 from io import BytesIO
 from nonebot import on_command
-from nonebot.adapters.onebot.v11 import GROUP, MessageEvent, Message
+from nonebot.adapters.onebot.v11 import MessageEvent, Message
 from PIL import Image, ImageFont, ImageDraw
 from nonebot.params import CommandArg
 from configs.path_config import FONT_PATH
@@ -22,9 +22,10 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    查询烧烤收歌进度，移植自unibot(一款功能型烧烤bot)
+    查询烧烤收歌进度
+    移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
-    限制每个群1分钟只能查询2次
+    私聊可用，限制每人1分钟只能查询2次
 
     默认难度为master，若带参数ex、expert可以查询expert谱面收歌进度
     指令：
@@ -39,11 +40,11 @@ __plugin_settings__ = {
     "default_status": False,
     "cmd": ["pjsk进度", "烧烤进度", "烧烤相关"],
 }
-__plugin_cd_limit__ = {"cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "group"}
+__plugin_cd_limit__ = {"cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "user"}
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 # pjsk进度
-pjsk_progress = on_command('pjsk进度', aliases={'pjskrop', "烧烤进度"}, permission=GROUP, priority=5, block=True)
+pjsk_progress = on_command('pjsk进度', aliases={'pjskrop', "烧烤进度"}, priority=5, block=True)
 
 
 @pjsk_progress.handle()

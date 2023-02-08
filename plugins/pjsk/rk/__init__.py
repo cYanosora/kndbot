@@ -2,7 +2,7 @@ import random
 import re
 from nonebot import on_command
 from nonebot.params import CommandArg
-from nonebot.adapters.onebot.v11 import GROUP, Message, MessageEvent, ActionFailed
+from nonebot.adapters.onebot.v11 import Message, MessageEvent, ActionFailed
 from utils.http_utils import AsyncHttpx
 from utils.imageutils import text2image, pic2b64
 from utils.message_builder import image
@@ -21,6 +21,9 @@ __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
     pjsk排位查询，仅限日服
+    移植自unibot(一款功能型烧烤bot)
+    若群内已有unibot请勿开启此bot该功能
+    私聊可用，限制每人1分钟只能查询2次
     指令：
         rk [排名]          查询此排名玩家的排位成绩
         rk [id]           查询此id玩家的排位成绩
@@ -39,7 +42,7 @@ __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 
 # pjsk查排位
-pjsk_rk = on_command('rk', permission=GROUP, priority=5, block=True)
+pjsk_rk = on_command('rk', priority=5, block=True)
 
 
 @pjsk_rk.handle()

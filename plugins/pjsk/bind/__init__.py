@@ -3,7 +3,7 @@ import time
 from typing import Tuple
 from nonebot import on_command
 from nonebot.params import CommandArg, Command
-from nonebot.adapters.onebot.v11 import GROUP, Message, MessageEvent
+from nonebot.adapters.onebot.v11 import Message, MessageEvent
 from .._config import BUG_ERROR, NOT_BIND_ERROR, REFUSED_ERROR, ID_ERROR
 from .._utils import verifyid, get_userid_preprocess
 from .._models import PjskBind
@@ -17,7 +17,9 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    pjsk绑定账号，仅限日服
+    pjsk绑定账号，私聊可用
+    移植自unibot(一款功能型烧烤bot)
+    若群内已有unibot请勿开启此bot该功能
     指令：
         绑定/bind [id]           绑定烧烤id
         解绑/unbind              解绑烧烤id
@@ -31,16 +33,16 @@ __plugin_settings__ = {
 
 
 # pjsk绑定
-pjsk_bind = on_command('bind', aliases={"绑定"}, permission=GROUP, priority=5, block=True)
+pjsk_bind = on_command('bind', aliases={"绑定"}, priority=5, block=True)
 
 # pjsk解绑
-pjsk_unbind = on_command('unbind', aliases={"解绑"}, permission=GROUP, priority=5, block=True)
+pjsk_unbind = on_command('unbind', aliases={"解绑"}, priority=5, block=True)
 
 #pjsk给看
-pjsk_look = on_command('给看', aliases={"不给看"}, permission=GROUP, priority=5, block=True)
+pjsk_look = on_command('给看', aliases={"不给看"}, priority=5, block=True)
 
 #pjsk查时间
-pjsk_ctime = on_command('查时间', permission=GROUP, priority=5, block=True)
+pjsk_ctime = on_command('查时间', priority=5, block=True)
 
 
 @pjsk_bind.handle()

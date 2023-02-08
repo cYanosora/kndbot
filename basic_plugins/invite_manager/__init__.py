@@ -47,7 +47,7 @@ async def _(bot: Bot, event: FriendAddNoticeEvent):
         await bot.send_private_msg(
             user_id=event.user_id,
             message="已通过你的好友申请啦，这里是奏宝一号机\n"
-                    "咱的功能只能在群聊中使用哦\n"
+                    "咱的大部分功能只能在群聊中使用哦\n"
                     "由于一些不可抗力因素，咱目前已经停止接受新群的邀请了~\n"
                     "如果需要拉群，并且是pjsk群(必须)，那么请找三号机878536923(好友验证填 拉群)\n"
                     "如需咨询咱的master请通过指令沟通👉👉发送格式：滴滴滴 这里是你想说的话"
@@ -57,7 +57,7 @@ async def _(bot: Bot, event: FriendAddNoticeEvent):
         await bot.send_private_msg(
             user_id=event.user_id,
             message="已通过你的好友申请啦，这里是奏宝二号机\n"
-                    "咱的功能只能在群聊中使用哦\n"
+                    "咱的大部分功能只能在群聊中使用哦\n"
                     "由于一些不可抗力因素，咱目前已经停止接受新群的邀请了~\n"
                     "如果需要拉群，并且是pjsk群(必须)，那么请找三号机878536923(好友验证填 拉群)\n"
                     "如需咨询咱的master请务必使用指令沟通👉👉发送格式：滴滴滴 这里是你想说的话"
@@ -67,7 +67,7 @@ async def _(bot: Bot, event: FriendAddNoticeEvent):
         await bot.send_private_msg(
             user_id=event.user_id,
             message="已通过你的好友申请啦，这里是奏宝三号机\n"
-                    "咱的功能只能在群聊中使用哦\n"
+                    "咱的大部分功能只能在群聊中使用哦\n"
                     "如果需要拉群，请先发送 入群条件 获取当前的拉群注意事项\n"
                     "如需咨询咱的master请务必使用指令沟通👉👉发送格式：滴滴滴 这里是你想说的话"
         )

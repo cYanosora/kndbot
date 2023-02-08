@@ -1,7 +1,6 @@
 import re
 from typing import Any, Tuple
 from nonebot import on_regex
-from nonebot.adapters.onebot.v11 import GROUP
 from nonebot.params import RegexGroup
 from ._data_source import fakegacha, getcurrentgacha
 from .._config import BUG_ERROR
@@ -16,10 +15,11 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    pjsk假抽卡，移植自unibot(一款功能型烧烤bot)
-    由于功能容易刷屏，仅在特定群开放
+    pjsk假抽卡
+    移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
-    限制每个群1分钟只能抽卡2次，每人一天只能抽10次
+    由于功能容易刷屏，仅在特定群开放
+    私聊可用，限制每人1分钟只能抽2次
     指令：
         sekai抽卡/pjsk抽卡         ?[卡池id]    ：进行一次假十连
         sekai十连/pjsk十连         ?[卡池id]    ：同上
@@ -33,8 +33,8 @@ __plugin_settings__ = {
     "default_status": False,
     "cmd": ["pjsk抽卡", "sekai抽卡", "烧烤相关", "uni移植"],
 }
-__plugin_cd_limit__ = {"cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "group"}
-__plugin_block_limit__ = {"rst": "别急，抽卡正在进行中！", "limit_type": "group"}
+__plugin_cd_limit__ = {"cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "user"}
+__plugin_block_limit__ = {"rst": "别急，抽卡正在进行中！", "limit_type": "user"}
 __plugin_count_limit__ = {
     "max_count": 10,
     "limit_type": "user",
@@ -42,7 +42,7 @@ __plugin_count_limit__ = {
 }
 
 # pjsk抽卡
-pjsk_gacha = on_regex(r'^(?:pjsk|sekai) *(反向?)? *(抽卡|十连抽?|\d+连抽?) *(\d+)?$', permission=GROUP, priority=5, block=True)
+pjsk_gacha = on_regex(r'^(?:pjsk|sekai) *(反向?)? *(抽卡|十连抽?|\d+连抽?) *(\d+)?$', priority=5, block=True)
 
 
 @pjsk_gacha.handle()

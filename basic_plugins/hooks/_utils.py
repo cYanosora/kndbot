@@ -25,6 +25,11 @@ oppose_cd_modules = oppose_count_modules = [
 ignore_module = [
     "dialogue",  # 联系管理员
     "invite_manager"  # 邀请入群
+    # 烧烤相关
+    "sk","rk","bind","ycm",
+    "rop","profile","b30","arrest",
+    "mappreview","pjskinfo","findcard","event",
+    "hotrank","diffrank","gacha",
 ]
 
 

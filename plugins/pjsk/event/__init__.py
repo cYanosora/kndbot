@@ -3,9 +3,8 @@ import os
 import re
 from hashlib import md5
 from typing import Tuple, List
-
 from nonebot import on_command, require
-from nonebot.adapters.onebot.v11 import GROUP, Message
+from nonebot.adapters.onebot.v11 import Message
 from nonebot.params import CommandArg, Command
 from .._config import data_path, BUG_ERROR
 from .._utils import currentevent
@@ -22,9 +21,10 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    查询烧烤活动信息，移植自unibot(一款功能型烧烤bot)
+    查询烧烤活动信息
+    移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
-    限制每个群半分钟只能查询2次
+    私聊可用，限制每人1分钟只能查询4次
     指令：
         event ?[活动id]                     : 查看对应活动id的活动信息，无参数时默认为当前活动
         findevent/查活动/查询活动 [关键字]     : 通过关键字筛选活动概要信息
@@ -38,16 +38,15 @@ __plugin_settings__ = {
     "default_status": False,
     "cmd": ["event", "烧烤相关", "uni移植", "活动查询"],
 }
-__plugin_cd_limit__ = {"cd": 30, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "group"}
+__plugin_cd_limit__ = {"cd": 60, "count_limit": 4, "rst": "别急，等[cd]秒后再用！", "limit_type": "user"}
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 
-eventinfo = on_command('event', permission=GROUP, priority=5, block=True)
+eventinfo = on_command('event', priority=5, block=True)
 
 findevent = on_command(
     'findevent',
     aliases={"查活动", "查询活动", "活动图鉴", "活动总览", "活动手册", "活动列表"},
-    permission=GROUP,
     priority=4,
     block=True
 )
@@ -259,7 +258,6 @@ async def _findevent(cmd: Tuple = Command(),arg: Message = CommandArg()):
             pic = await draweventall(events=events, **params)
         except Exception as e:
             raise e
-            await findevent.finish(BUG_ERROR)
         else:
             if pic:
                 pic = pic.convert('RGB')

@@ -7,7 +7,7 @@ from PIL import ImageDraw, Image, ImageFont
 from nonebot import on_command
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
-from nonebot.adapters.onebot.v11 import GROUP, Message, MessageEvent
+from nonebot.adapters.onebot.v11 import Message, MessageEvent
 from configs.path_config import FONT_PATH
 from utils.http_utils import AsyncHttpx
 from utils.imageutils import text2image, pic2b64
@@ -26,6 +26,9 @@ __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
     pjsk活动查分，仅限日服
+    移植自unibot(一款功能型烧烤bot)
+    若群内已有unibot请勿开启此bot该功能
+    私聊可用，一分钟内每人最多查询3次
     指令：
         sk [排名]                查询此排名玩家的活动分数
         sk [id]                 查询此id玩家的活动分数
@@ -48,21 +51,21 @@ __plugin_settings__ = {
     "default_status": False,
     "cmd": ['sk', "活动查分", "烧烤相关"],
 }
-__plugin_cd_limit__ = {"cd": 15, "rst": "别急，你才刚查完呢", "limit_type": "group"}
+__plugin_cd_limit__ = {"cd": 60, "count_limit": 3, "rst": "别急，你才刚查完呢", "limit_type": "user"}
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 
 # pjsk查分
-pjsk_sk = on_command('sk', permission=GROUP, priority=5, block=True)
+pjsk_sk = on_command('sk', priority=5, block=True)
 
 # pjsk活动号更新
 pjsk_event_update = on_command('pjsk活动更新', permission=SUPERUSER, priority=1, block=True)
 
 # pjsk榜线查询
-pjsk_pred_query = on_command('sk预测', aliases={"活动预测", 'ycx'}, permission=GROUP, priority=4, block=True)
+pjsk_pred_query = on_command('sk预测', aliases={"活动预测", 'ycx'}, priority=4, block=True)
 
 # pjsk 5v5人数查询
-pjsk_5v5_query = on_command('5v5人数', permission=GROUP, priority=5, block=True)
+pjsk_5v5_query = on_command('5v5人数', priority=5, block=True)
 
 
 @pjsk_sk.handle()
@@ -72,8 +75,6 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     global event_id
     # 初始化活动号
     event_data = currentevent()
-    # print('event_data:', event_data)
-    # print('event_id:', event_id)
     event_id = event_data["id"] if int(event_data["id"]) > event_id else event_id
     # 初始化预测线
     if not pred_score_json.get('data'):

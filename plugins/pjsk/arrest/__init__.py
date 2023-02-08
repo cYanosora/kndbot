@@ -1,9 +1,8 @@
 import json
 import random
 import traceback
-
 from nonebot import on_command
-from nonebot.adapters.onebot.v11 import GROUP, MessageEvent, Message, ActionFailed
+from nonebot.adapters.onebot.v11 import MessageEvent, Message, ActionFailed
 from nonebot.params import CommandArg
 from utils.http_utils import AsyncHttpx
 from utils.imageutils import text2image, pic2b64
@@ -17,9 +16,10 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    查询烧烤收歌情况，移植自unibot(一款功能型烧烤bot)
+    查询烧烤收歌情况
+    移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
-    限制每个群半分钟只能查询2次
+    私聊可用，限制每人1分钟只能查询2次
     指令：
         逮捕              :查看自己的收歌情况
         逮捕 @qq          :查看艾特用户的收歌情况(对方必须已绑定烧烤账户)
@@ -33,11 +33,11 @@ __plugin_settings__ = {
     "default_status": False,
     "cmd": ["逮捕", "烧烤相关", "uni移植"],
 }
-__plugin_cd_limit__ = {"cd": 30, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "group"}
+__plugin_cd_limit__ = {"cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "user"}
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 # pjsk逮捕
-pjsk_assest = on_command('逮捕', permission=GROUP, priority=5, block=True)
+pjsk_assest = on_command('逮捕', priority=5, block=True)
 
 
 @pjsk_assest.handle()

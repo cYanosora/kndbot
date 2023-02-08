@@ -1,7 +1,7 @@
 import datetime
 from typing import Any, Tuple
 from nonebot import on_command, on_regex
-from nonebot.adapters.onebot.v11 import GROUP, Message, GroupMessageEvent, ActionFailed
+from nonebot.adapters.onebot.v11 import Message, ActionFailed, MessageEvent
 from nonebot.params import CommandArg, RegexGroup
 from services import logger
 from utils.http_utils import AsyncHttpx
@@ -17,9 +17,10 @@ __plugin_type__ = "烧烤相关&uni移植"
 __plugin_version__ = 0.1
 __plugin_usage__ = f"""
 usage：
-    查询烧烤曲目信息，移植自unibot(一款功能型烧烤bot)
+    查询烧烤曲目信息
+    移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
-    限制每个群半分钟只能查询2次
+    私聊可用，限制每人1分钟只能查询4次
     指令：
         pjskinfo/song [曲目]                : 查看曲目详细信息
         pjskset [曲目别称] to [曲目]          : 给对应曲目添加别称
@@ -36,27 +37,27 @@ __plugin_settings__ = {
     "cmd": ["pjskinfo", "烧烤相关", "uni移植", "歌曲查询"],
 }
 __plugin_cd_limit__ = {
-    "cd": 30, "count_limit": 2, "rst": "别急，等[cd]秒后再用！", "limit_type": "group"
+    "cd": 60, "count_limit": 4, "rst": "别急，等[cd]秒后再用！", "limit_type": "user"
 }
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 # pjskinfo
-pjskinfo = on_command('pjskinfo', aliases={"song"}, permission=GROUP, priority=5, block=True)
+pjskinfo = on_command('pjskinfo', aliases={"song"}, priority=5, block=True)
 
 # pjskset
-pjskset = on_regex(r'^pjskset(.+to.+)', permission=GROUP, priority=5, block=True)
+pjskset = on_regex(r'^pjskset(.+to.+)', priority=5, block=True)
 
 # pjskdel
-pjskdel = on_command('pjskdel', permission=GROUP, priority=5, block=True)
+pjskdel = on_command('pjskdel', priority=5, block=True)
 
 # pjskalias
-pjskalias = on_command('pjskalias', permission=GROUP, priority=5, block=True)
+pjskalias = on_command('pjskalias', priority=5, block=True)
 
 # pjskbpm
-pjskbpm = on_command('pjskbpm', aliases={'bpm'}, permission=GROUP, priority=5, block=True)
+pjskbpm = on_command('pjskbpm', aliases={'bpm'}, priority=5, block=True)
 
 # 查物量
-pjsknotecount = on_command('查物量', permission=GROUP, priority=5, block=True)
+pjsknotecount = on_command('查物量', priority=5, block=True)
 
 
 @pjskinfo.handle()
@@ -138,7 +139,7 @@ async def _(msg: Message = CommandArg()):
 
 
 @pjskset.handle()
-async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
+async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
     msg = reg_group[0].strip()
     # 对别名和称呼做特殊处理，以防别名中本身含有关键词to
     index = 0
@@ -158,8 +159,11 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
         await pjskset.finish("添加失败，可能是找不到对应称呼", at_sender=True)
     elif oldalias == newalias:
         await pjskset.finish("添加失败，新称呼与旧称呼相同", at_sender=True)
+    group_id = -1
+    if hasattr(event, 'group_id'):
+        group_id = event.group_id
     if await PjskSongsAlias.add_alias(
-        oldsid, newalias, event.user_id, event.group_id, datetime.datetime.now(), False
+        oldsid, newalias, event.user_id, group_id, datetime.datetime.now(), False
     ):
         with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -183,7 +187,7 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
 
 
 @pjskdel.handle()
-async def _(event: GroupMessageEvent, msg: Message = CommandArg()):
+async def _(event: MessageEvent, msg: Message = CommandArg()):
     arg = msg.extract_plain_text().strip()
     sid = await PjskSongsAlias.query_sid(arg)
     with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
@@ -201,7 +205,9 @@ async def _(event: GroupMessageEvent, msg: Message = CommandArg()):
             at_sender=True
         )
         qq = event.user_id
-        group = event.group_id
+        group = -1
+        if hasattr(event, 'group_id'):
+            group= event.group_id
         logger.info(f"USER {qq} GROUP {group} 删除了{songname}的称呼 {arg} ！")
     else:
         await pjskdel.finish(f"删除失败，找不到歌曲", at_sender=True)
