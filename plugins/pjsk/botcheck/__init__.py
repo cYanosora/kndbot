@@ -35,10 +35,13 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
         return
     unibot.starttime = time.time()
     members = await GroupInfoUser.get_group_member_id_list(event.group_id)
-    # 若群内存在unibot
     try:
         next(filter(lambda x: unibot.get(x), members))
-        print('真的有unibot')
+        is_exist = True
+    except:
+        is_exist = False
+    # 若群内存在unibot
+    if is_exist:
         # 检查群聊烧烤功能开关
         if group_manager.get_plugin_status(matcher.plugin_name, event.group_id):
             for mod in pjsk_plugins:
@@ -50,7 +53,7 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
             )
         raise IgnoredException("群内存在unibot，忽略烧烤相关命令")
     # 若群内不存在unibot
-    except:
+    else:
         # 检查群聊烧烤功能开关
         if not group_manager.get_plugin_status(matcher.plugin_name, event.group_id):
             for mod in pjsk_plugins:

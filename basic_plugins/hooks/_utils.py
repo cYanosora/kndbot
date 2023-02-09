@@ -24,7 +24,7 @@ oppose_cd_modules = oppose_count_modules = [
 # 以下插件私聊中可用
 ignore_module = [
     "dialogue",  # 联系管理员
-    "invite_manager"  # 邀请入群
+    "invite_manager",  # 邀请入群
     # 烧烤相关
     "sk","rk","bind","ycm",
     "rop","profile","b30","arrest",

@@ -163,7 +163,7 @@ async def change_group_switch(cmd: str, group_id: int, is_super: bool = False):
     修改群功能状态
     :param cmd: 功能名称
     :param group_id: 群号
-    :param is_super: 是否位超级用户，超级用户用于私聊开关某群功能状态
+    :param is_super: 是否为超级用户，超级用户用于私聊开关某群功能状态
     """
     global task_data
     if not task_data:
@@ -209,7 +209,7 @@ async def change_group_switch(cmd: str, group_id: int, is_super: bool = False):
                 else:
                     await group_manager.open_group_task(group_id, module)
             else:
-                if group_manager.get_plugin_status(module, group_id):
+                if group_manager.get_plugin_status(module, group_id, is_super):
                     cnt += 1
                     reply = f"功能 {cmd} 正处于开启状态！不要重复开启."
                 else:
@@ -224,7 +224,7 @@ async def change_group_switch(cmd: str, group_id: int, is_super: bool = False):
                 else:
                     await group_manager.close_group_task(group_id, module)
             else:
-                if not group_manager.get_plugin_status(module, group_id):
+                if not group_manager.get_plugin_status(module, group_id, is_super):
                     cnt += 1
                     reply = f"功能 {cmd} 正处于关闭状态！不要重复关闭."
                 else:

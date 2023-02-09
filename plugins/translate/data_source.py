@@ -55,7 +55,7 @@ def _parse_language(language_type: str):
 
 async def translate_msg(cmd: str, text: str):
     lang = _parse_language(cmd)
-    result = _translate_youdao(text, lang)
+    result = await _translate_youdao(text, lang)
     if result:
         return result
     return "翻译失败惹.."

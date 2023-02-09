@@ -39,7 +39,8 @@ def switch_rule(event: Event, state: T_State) -> bool:
         if res := re.search(r'^(?:开启|关闭) *(.+)', msg):
             result = res.group(1).strip().split()
             if result[0] in cmd:
-                state["cmd"] = result[0]
+                block_type = msg[:2]
+                state["cmd"] = block_type + result[0]
                 # 若为超管在私聊中使用功能开关
                 if isinstance(event, PrivateMessageEvent):
                     result.pop(0)
