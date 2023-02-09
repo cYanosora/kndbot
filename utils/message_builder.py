@@ -187,3 +187,23 @@ def custom_forward_msg(
         }
         mes_list.append(data)
     return mes_list
+
+
+def custom_friend_forward_msg(
+    msg_list: List[Union[str, MessageSegment, Message]], uin: Union[int, str], name: str = f"✨{NICKNAME}です✨"
+) -> Message:
+    """
+    生成自定义合并消息
+    :param msg_list: 消息列表
+    :param uin: 发送者 QQ
+    :param name: 自定义名称
+    """
+    uin = int(uin)
+    msg = Message()
+    for each in msg_list:
+        node = MessageSegment.node_custom(
+            uin, name,
+            each
+        )
+        msg += node
+    return msg

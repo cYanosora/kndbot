@@ -27,7 +27,8 @@ usage：
         pjskdel [曲目别称]                   : 删除曲目的对应别称
         pjskalias [曲目]                    : 查询曲目所有别称
         bpm/pjskbpm [曲目]                  : 查询曲目bpm
-        查物量  [总combo数]                  : 查询对应物量的曲目    数据来源：
+        查物量  [总combo数]                  : 查询对应物量的曲目
+        查bpm  [bpm]                       : 查询对应bpm的曲目
     数据来源：
         pjsekai.moe
         unipjsk.com
@@ -58,6 +59,9 @@ pjskbpm = on_command('pjskbpm', aliases={'bpm'}, priority=5, block=True)
 
 # 查物量
 pjsknotecount = on_command('查物量', priority=5, block=True)
+
+# 查bpm
+pjskbpmfind = on_command('查bpm', priority=5, block=True)
 
 
 @pjskinfo.handle()
@@ -249,13 +253,40 @@ async def _(msg: Message = CommandArg()):
     except:
         await pjsknotecount.finish("请输入数字！")
     text = ''
-    with open(data_path / 'musicDifficulties.json', 'r', encoding='utf-8') as f:
+    with open(data_path / 'realtime/musicDifficulties.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
     with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
         musics = json.load(f)
     for i in data:
-        if i['noteCount'] == notes:
+        if i['totalNoteCount'] == notes:
             text += f"{idtoname(i['musicId'], musics)}[{(i['musicDifficulty'].upper())} {i['playLevel']}]\n"
     if text == '':
         text = '没有找到'
     await pjsknotecount.finish(text)
+
+
+@pjskbpmfind.handle()
+async def _(msg: Message = CommandArg()):
+    targetbpm = msg.extract_plain_text().strip()
+    try:
+        targetbpm = int(targetbpm)
+    except:
+        await pjskbpmfind.finish("请输入数字！")
+    bpm = {}
+    text = ''
+    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    for music in data:
+        bpm[music['id']] = await parse_bpm(music['id'])[1]
+    for musicid in bpm:
+        for i in bpm[musicid]:
+            if int(i['bpm']) == targetbpm:
+                bpmtext = ''
+                for bpms in bpm[musicid]:
+                    bpmtext += ' - ' + str(bpms['bpm']).replace('.0', '')
+                text += f"{idtoname(musicid)}: {bpmtext[3:]}\n"
+                break
+    if text == '':
+        text = '没有找到'
+    await pjskbpmfind.finish(text)
+

@@ -12,6 +12,8 @@ from manager import withdraw_message_manager, plugins2count_manager
 from .rule import rule
 import random
 import os
+from .._model import ImageUpload
+
 try:
     import ujson as json
 except ModuleNotFoundError:
@@ -115,37 +117,48 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
     img_ids = state['sendpic_imgid']
     # 优先在默认图库中匹配
     if gallery in Config.get_config("image_management", "IMAGE_DIR_LIST"):
-        path = _path / cn2py(gallery)
-        if gallery in Config.get_config("image_management", "IMAGE_DIR_LIST"):
-            if not path.exists() and (path.parent.parent / cn2py(gallery)).exists():
-                path = IMAGE_PATH / cn2py(gallery)
-            else:
-                path.mkdir(parents=True, exist_ok=True)
+        _gall = cn2py(gallery)
+        path = _path / _gall
+        if not path.exists() and (path.parent.parent / _gall).exists():
+            path = IMAGE_PATH / _gall
+        else:
+            path.mkdir(parents=True, exist_ok=True)
+        # 获取图库容量
         length = len(os.listdir(path))
         if length == 0:
-            logger.warning(f'图库 {cn2py(gallery)} 为空，调用取消！')
+            logger.warning(f'图库 {gallery} 为空，调用取消！')
             await send_img.finish("该图库中没有图片噢")
+        # 若没有提供id，随机抽取
         if not img_ids:
             img_ids = [random.randint(0, length - 1)]
+        # 格式化id
         for index in img_ids:
             if int(index) > length - 1:
                 img_ids[img_ids.index(index)] = length - 1
             elif int(index) < 0:
                 img_ids[img_ids.index(index)] = 0
         img_ids = sorted(set(img_ids))
+        # 记录功能使用次数、cd
         access_count(matcher.plugin_name, event, len(img_ids))
         access_cd(matcher.plugin_name, event, len(img_ids))
+        # 发送单张图片
         if len(img_ids) == 1:
             index = img_ids[0]
-            result = image(path / f"{index}.jpg")
+            record_flag = False
+            file = path / f"{index}.jpg"
+            if await ImageUpload.check_record(_gall, index):
+                record_flag = True
+            result = image(file)
             if result:
                 logger.info(
                     f"(USER {event.user_id}, GROUP {event.group_id}) "
-                    f"发送{cn2py(gallery)}"
+                    f"发送{gallery}"
                     f"图片序号: {index}"
+                    f"是否收录：{record_flag}"
                 )
+                prefix = f"id：{index}(已收录至pjsk同人图库)\n" if record_flag else f"id：{index}\n"
                 msg_id = await send_img.send(
-                    f"id：{index}" + result
+                    prefix + result
                     if Config.get_config("image_management", "SHOW_ID")
                     else "" + result
                 )
@@ -157,27 +170,36 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
             else:
                 logger.info(
                     f"(USER {event.user_id}, GROUP {event.group_id}) "
-                    f"发送 {cn2py(gallery)} 失败"
+                    f"发送 {gallery} 失败"
                 )
                 await send_img.finish(f"不知道为什么，总之不想给你看OvO", at_sender=True)
+        # 发送多张图片
         else:
+            # 检测功能剩余次数
             end = count_check(matcher.plugin_name, event, bot, len(img_ids))
             if end:
                 await send_img.send("指定张数超过当日上限，只有部分图片可以发送")
                 img_ids = img_ids[:end]
+            # 发送图片
             await send_img.send("正在整理图片中，请耐心等待(－ω－)", at_sender=True)
             mes_list = []
             for index in img_ids:
-                result = image(path / f"{index}.jpg")
+                record_flag = False
+                file = path / f"{index}.jpg"
+                if await ImageUpload.check_record(_gall, index):
+                    record_flag = True
+                result = image(file)
                 if result:
+                    prefix = f"id：{index}(已收录至pjsk同人图库)\n" if record_flag else f"id：{index}\n"
                     mes_list.append(
-                        f"id：{index}" + result
+                        prefix + result
                         if Config.get_config("image_management", "SHOW_ID")
                         else "" + result
                     )
                 else:
+                    prefix = f"id：{index}(已收录至pjsk同人图库)\n" if record_flag else f"id：{index}\n"
                     mes_list.append(
-                        f"id：{index}\n这张图片出错了，可能是不想给你看OvO"
+                        prefix + "这张图片出错了，可能是不想给你看OvO"
                         if Config.get_config("image_management", "SHOW_ID")
                         else "这张图片出错了，可能是不想给你看OvO"
                     )
@@ -186,7 +208,7 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
             msg_id = await bot.send_group_forward_msg(group_id=event.group_id, messages=mes_list)
             logger.info(
                 f"(USER {event.user_id}, GROUP {event.group_id}) "
-                f"发送{cn2py(gallery)}"
+                f"发送{gallery}"
                 f"一共{len(img_ids)}张：{img_ids}"
             )
             withdraw_message_manager.withdraw_message(
@@ -194,6 +216,7 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
                 msg_id,
                 Config.get_config("image_management", "WITHDRAW_IMAGE_MESSAGE"),
             )
+        await send_img.finish()
     # 排除是特殊词汇的图库
     else:
         for each in Config.get_config("pjsk_alias", "BANWORDS"):
