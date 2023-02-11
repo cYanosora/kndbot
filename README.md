@@ -25,19 +25,16 @@
 
 ### 关于搭建
 自用bot，经测试可以正常搭建运行。想搭建此项目<del>(虽然100%肯定没人搭)</del>，首先需要一台24h不关机的linux或window主机，
-然后只要具有一点点命令行基础知识、数据库基础、nonebot2的使用经验balabala...即可轻松获得一只自己的kndbot<del>(改改资源就是另一只bot了.jpg)<del>
+然后只要具有一点点命令行基础知识、数据库基础、nonebot2的使用经验balabala...即可轻松获得一只自己的kndbot<del>(改改资源就是另一只bot了.jpg)</del>
 <br><br>
-这里不提供搭建教程，无经验者可以尝试参照[**小真寻的文档**](https://hibikier.github.io/zhenxun_bot/)
-实现此项目的部署<del>(这里没有文档，源码就是文档.jpg)</del>
-
-### 关于使用
-请直接在有此bot的群内发送kndhelp获取使用说明，**拉群请先加bot好友**
+这里不提供搭建教程、开发教程，无经验者可以尝试参照[**小真寻的文档**](https://hibikier.github.io/zhenxun_bot/)
+实现此项目的部署以及后续开发<del>(这里没有文档，源码就是文档.jpg)</del>
 
 ## 功能列表
 ***
 已实现的功能**基本**都是从真寻、
 <b>[Nonebot插件商店](https://v2.nonebot.dev/store) </b>
-以及别的大佬那里获取并修改后的，与原功能的使用效果可能有一些差异，此处附上项目内使用到的插件repo
+以及别的大佬那里获取并修改后的，与原功能的使用效果可能有亿些差异，此处附上项目内使用到的插件repo
 <details>
 <summary>插件来源列表</summary>
 
@@ -55,7 +52,9 @@
 * epic免费游戏 — [monsterxcn](https://github.com/monsterxcn/nonebot_plugin_epicfree)
 * 天气查询 — [kexue-z](https://github.com/kexue-z/nonebot-plugin-heweather)
 * 摸鱼日历 — [A-kirami](https://github.com/A-kirami/nonebot-plugin-moyu)
-* 其余未提及的可以在真寻本体及其插件库中寻找，如词库问答、刷屏禁言
+* 其余未提及的可以在真寻本体及其插件库中寻找，包括但不限于<br>
+  用户群组信息权限管理、插件功能图展示与开关管理、插件使用限制器<br>
+  词库问答、刷屏禁言、功能调用统计等等...
 </details>
 
 ## 其他说明
