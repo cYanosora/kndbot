@@ -10,7 +10,7 @@ pjsk_info_dict = {
     "ln": ["ick", "saki", "hnm", "shiho"],
     "ws": ["tks", "emu", "nene", "rui"],
     "vs": ["miku", "rin", "len", "luka", "meiko", "kaito"],
-    "cp": ["knhn", "knic", "mfem", "mzan", "other", "钢琴组", "姐弟", "姐妹", "类瑞", "兄妹", "mfsz"]
+    "cp": ["knhn", "ickn", "mfem", "mzan", "other", "钢琴组", "姐弟", "姐妹", "类瑞", "兄妹", "mfsz"]
 }
 
 pjsk_cp_dict = {
@@ -30,7 +30,7 @@ pjsk_info_mapping = {
     "ws":"Wonderlands × Showtime","tks":"天马司","emu":"凤绘梦","nene":"草薙宁宁",'rui':"神代类",
     "vs":"虚拟歌手","miku":"初音未来","rin":"镜音铃","len":"镜音连","luka":"巡音流歌","meiko":"MEIKO","kaito":"KAITO",
     "other":"杂图","姐弟":"东云姐弟","兄妹":"天马兄妹","姐妹":"日野森姐妹", "mzan": "瑞杏",
-    "类瑞": "天台组","mfem":"真冬凤","钢琴组":"钢琴", "knhn": "奏穗", "knic": "头发组","mfsz": "弓道组",
+    "类瑞": "天台组","mfem":"真冬凤","钢琴组":"钢琴", "knhn": "奏穗", "ickn": "头发组","mfsz": "弓道组",
     "knen": "奏绘", "knmf": "宵朝", "knmz": "奏瑞", "mfen": "朝绘", "mfmz": "朝瑞", "mzen": "绘瑞",
     "akan": "彰杏", "akkh": "彰豆", "akty": "彰冬", "ankh": "杏豆", "tyan": "冬杏", "tykh": "冬豆",
     "armn": "爱实", "hrar": "遥爱", "hrmn": "遥实", "hrsz": "遥雫", "szar": "爱雫", "szmn": "雫实",
@@ -50,5 +50,5 @@ cpmap = {
     "ichn": "ick×hnm", "icsh": "ick×shiho", "icsk": "ick×saki", "shhn": "shiho×hnm", "skhn": "saki×hnm", "sksh": "saki×shiho",
     "nemu": "emu×nene", "ruiem": "emu×rui", "ruine": "nene×rui", "ruitk": "tks×rui", "tkem": "tks×emu", "tkne": "tks×nene",
     "knhn": "hnm×knd", "mfem": "emu×mfy", "钢琴组": "saki×toya×tks", "姐弟": "akt×ena", "姐妹": "shiho×szk",
-    "类瑞": "rui×mzk", "兄妹": "saki×tks", "knic": "ick×knd", "mzan": "mzk×an", "mfsz":"szk×mfy"
+    "类瑞": "rui×mzk", "兄妹": "saki×tks", "ickn": "ick×knd", "mzan": "mzk×an", "mfsz":"szk×mfy"
 }
