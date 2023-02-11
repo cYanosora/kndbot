@@ -117,7 +117,6 @@ async def event_argparse(args: List = None):
         'theme_park': [13,14,15,16],
         'school_refusal': [17,18,19,20]
     }
-    print('args:',args)
     for arg in args:
         # 参数是否指定了箱活或混活
         if arg in team_dict.keys():
@@ -217,9 +216,7 @@ async def _findevent(cmd: Tuple = Command(),arg: Message = CommandArg()):
     else:
         args = args.split()
     params = await event_argparse(args)
-    print('params',params)
     if not params['islegal']:
-        print('为什么捏？')
         tip_path = data_path / 'pics/findevent_tips.jpg'
         await findevent.finish(image(tip_path))
     # 没有参数但是指令不是活动图鉴
@@ -263,7 +260,7 @@ async def _findevent(cmd: Tuple = Command(),arg: Message = CommandArg()):
                 pic = pic.convert('RGB')
                 pic.show()
                 pic.save(save_path, quality=70)
-                # await findevent.finish(image(save_path))
+                await findevent.finish(image(save_path))
             else:
                 tip_path = data_path / 'pics/findevent_tips.jpg'
                 await findevent.finish(image(tip_path))
