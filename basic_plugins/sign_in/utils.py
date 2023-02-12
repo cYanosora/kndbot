@@ -245,6 +245,8 @@ async def _generate_card_render(
             total += extra_items_text + items_text + touch_text
         elif is_double:
             total += extra_items_text + "(触发双倍)"
+        else:
+            total += extra_items_text
         _isSign = True
 
     # 生成时间数据
