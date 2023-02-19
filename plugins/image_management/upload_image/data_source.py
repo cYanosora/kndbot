@@ -1,6 +1,6 @@
+import imghdr
 import hashlib
 from pathlib import Path
-
 from nonebot.adapters.onebot.v11 import MessageSegment, Message
 from configs.config import NICKNAME
 from typing import List, Tuple, Union, Optional
@@ -41,10 +41,13 @@ async def record_local_images(target_gall: str, target_imgs: List[int]) -> str:
     path = _path / _gall
     resolve_ids = []
     fail_ids = []
-    for img_id in target_imgs:
-        file = path / f"{img_id}.jpg"
+    all_ids_suffixs = map(lambda x: os.path.splitext(x), os.listdir(path))
+    all_ids_suffixs = filter(lambda x: x[0].isdigit() and int(x[0]) in target_imgs, all_ids_suffixs)
+    for idsuf in all_ids_suffixs:
+        img_id, suffix = idsuf
+        file = path / f"{img_id}.{suffix}"
         if file.exists():
-            record = await ImageUpload.get_record(_gall, img_id)
+            record = await ImageUpload.get_record(_gall, int(img_id))
             if record:
                 await ImageUpload.update_record(record, is_record=True)
                 resolve_ids.append(str(img_id))
@@ -77,9 +80,10 @@ async def upload_image_to_local(
     repeat_list = []
     mes_list = []
     for img_url in img_list:
-        save_file = path / f"{curr_img_id}.jpg"
         # 下载图片
         resp = await AsyncHttpx.get(img_url)
+        suffix = imghdr.what(None, resp.content)
+        save_file = path / f"{curr_img_id}.{suffix}"
         if resp.status_code == 200:
             content = resp.content
             # 简单去重
@@ -101,7 +105,7 @@ async def upload_image_to_local(
             # 记录进数据库
             await ImageUpload.add_record(_path_name, curr_img_id, user_id, group_id)
             # 放入消息列表中
-            mes_list.append(image(f"{_path_name}/{curr_img_id}.jpg", "image_management"))
+            mes_list.append(image(f"{_path_name}/{curr_img_id}.{suffix}", "image_management"))
             curr_img_id += 1
         # 下载失败
         else:
