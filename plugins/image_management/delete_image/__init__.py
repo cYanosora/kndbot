@@ -42,7 +42,7 @@ async def _(state: T_State, arg: Message = CommandArg()):
     if args:
         if args[0] in Config.get_config("image_management", "IMAGE_DIR_LIST"):
             state["path"] = args[0]
-        if len(args) > 1 and is_number(args[1]):
+        if len(args) > 1 and args[1].isdigit():
             state["id"] = args[1]
 
 
@@ -69,36 +69,44 @@ async def arg_handle(
     if not path.exists() and (path.parent.parent / gallery).exists():
         path = path.parent.parent / gallery
     # 检查图片id是否超出图库总量
-    max_id = len(os.listdir(path)) - 1
-    if int(img_id) > max_id or int(img_id) < 0:
+    max_id = str(len(os.listdir(path)))
+    if int(img_id) > int(max_id) or int(img_id) <= 0:
         await delete_img.finish(f"Id超过上下限，上限：{max_id}", at_sender=True)
-    # 删除临时图片
+    # 筛选文件名和后缀名
+    all_ids_suffixs = list(map(lambda x: os.path.splitext(x), os.listdir(path)))
+    del_ids_suffix = filter(lambda x: x[0].isdigit() and x[0] == img_id, all_ids_suffixs)
+    max_ids_suffix = filter(lambda x: x[0].isdigit() and x[0] == max_id, all_ids_suffixs)
+    _, del_suffix = next(del_ids_suffix)
+    _, max_suffix = next(max_ids_suffix)
+    # 删除之前的临时图片
     try:
-        if (TEMP_PATH / "delete.jpg").exists():
-            (TEMP_PATH / "delete.jpg").unlink()
-        logger.info(f"删除{cn2py(state['path'])}图片 {img_id}.jpg 成功")
+        if (TEMP_PATH / f"{event.user_id}_delete.jpg").exists():
+            (TEMP_PATH / f"{event.user_id}_delete.jpg").unlink()
+        logger.info(f"删除 {event.user_id}_delete.jpg 图片成功")
     except Exception as e:
-        logger.warning(f"删除图片 delete.jpg 失败 e{e}")
+        logger.warning(f"删除图片 {event.user_id}_delete.jpg 失败 e{e}")
     # 将原图库图片移动至临时文件夹等待自动删除
     try:
-        os.rename(path / f"{img_id}.jpg", TEMP_PATH / f"{event.user_id}_delete.jpg")
+        os.rename(path / f"{img_id}{del_suffix}", TEMP_PATH / f"{event.user_id}_delete.jpg")
         await ImageUpload.del_record(gallery, int(img_id))
-        logger.info(f"移动 {path}/{img_id}.jpg 移动成功")
+        logger.info(f"移动 {path}/{img_id}{del_suffix} 移动成功")
     except Exception as e:
-        logger.warning(f"{path}/{img_id}.jpg --> 移动失败 e:{e}")
+        logger.warning(f"{path}/{img_id}{del_suffix} --> 移动失败 e:{e}")
     # 若图库内不存在此图片，代表上述操作成功
-    if not os.path.exists(path / f"{img_id}.jpg"):
+    if not os.path.exists(path / f"{img_id}{del_suffix}"):
         # 将最大id的图片替换为当前图片id
         try:
-            if int(img_id) != max_id:
-                os.rename(path / f"{max_id}.jpg", path / f"{img_id}.jpg")
-                record = await ImageUpload.get_record(gallery, int(max_id))
-                if record:
+            if img_id != max_id:
+                os.rename(path / f"{max_id}{max_suffix}", path / f"{img_id}{max_suffix}")
+                if await ImageUpload.check_exists(gallery, int(max_id)):
+                    record = await ImageUpload.get_record(gallery, int(max_id))
                     await ImageUpload.update_record(record, gallery, int(img_id))
+                else:
+                    await ImageUpload.get_record(gallery, int(img_id))
         except FileExistsError as e:
-            logger.error(f"{path}/{max_id}.jpg 替换 {path}/{img_id}.jpg 失败 e:{e}")
+            logger.error(f"{path}/{max_id}{max_suffix} 替换 {path}/{img_id}{max_suffix} 失败 e:{e}")
         else:
-            logger.info(f"{path}/{max_id}.jpg 替换 {path}/{img_id}.jpg 成功")
+            logger.info(f"{path}/{max_id}{max_suffix} 替换 {path}/{img_id}{max_suffix} 成功")
         logger.info(
             f"USER {event.user_id} GROUP {event.group_id if isinstance(event, GroupMessageEvent) else 'private'}"
             f" -> id: {img_id} 删除成功"

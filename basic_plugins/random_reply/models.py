@@ -57,7 +57,7 @@ class RetryManager:
         self.data = {}
 
     def exist(self, qq: int, group: int):
-        if self.data.get(f"{qq}_{group}") and self.data[f"{qq}_{group}"]["run"] == True:
+        if self.data.get(f"{qq}_{group}") and self.data[f"{qq}_{group}"]["run"] is True:
             return True
         return False
 
@@ -90,18 +90,17 @@ class RetryManager:
         _data = self.data
         for each in _data.copy():
             data = self.data.get(each)
-            if data and data['time'] + 30 < time.time():
+            if data and data['time'] + 60 < time.time():
                 self.data.pop(each)
 
 
 retry_manager = RetryManager()
 
 
-# 定时清除超时retry名单(会话超过30s无响应)
+# 定时清除超时retry名单(会话超过60s无响应)
 @scheduler.scheduled_job(
     "interval",
-    minutes=1,
-    seconds=30
+    minutes=3
 )
 async def _():
     retry_manager.clear_data()

@@ -70,7 +70,6 @@ async def _(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
     retry_info = retry_manager.get(event.user_id, event.group_id)
     args = retry_info['args']
     kwargs = retry_info['kwargs']
-    print(retry_manager.data)
     user = UserInfo(
         qq=event.user_id,
         group=event.group_id,

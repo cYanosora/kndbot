@@ -45,7 +45,7 @@ async def _(state: T_State, arg: Message = CommandArg()):
         if n > 1:
             if args[1] in Config.get_config("image_management", "IMAGE_DIR_LIST"):
                 state["destination_path"] = args[1]
-        if n > 2 and is_number(args[2]):
+        if n > 2 and args[2].isdigit():
             state["id"] = args[2]
 
 
@@ -70,7 +70,7 @@ async def _(
         await move_img.reject_arg("source_path", "移除目录不正确，请重新输入！")
     if destination_path not in Config.get_config("image_management", "IMAGE_DIR_LIST"):
         await move_img.reject_arg("destination_path", "移入目录不正确，请重新输入！")
-    if not is_number(img_id):
+    if not img_id.isdigit():
         await move_img.reject_arg("id", "id不正确！请重新输入数字...")
     # 检查目录
     source_gall = cn2py(source_path)
@@ -88,40 +88,53 @@ async def _(
     # 检查源图库总量
     if not len(os.listdir(source_path)):
         await move_img.finish(f"{source_path}图库中没有任何图片，移动失败。")
-    src_max_id = len(os.listdir(source_path)) - 1
-    des_max_id = len(os.listdir(destination_path))
+    src_max_id = str(len(os.listdir(source_path)))
+    des_max_id = str(len(os.listdir(destination_path)) + 1)
     # 检查源图库图片id是否超总量
-    if int(img_id) > src_max_id or int(img_id) < 0:
+    if int(img_id) > int(src_max_id) or int(img_id) <= 0:
         await move_img.finish(f"Id超过上下限，上限：{src_max_id}", at_sender=True)
+    # 筛选文件名和后缀名
+    all_ids_suffixs = list(map(lambda x: os.path.splitext(x), os.listdir(source_path)))
+    src_ids_suffix = filter(lambda x: x[0].isdigit() and x[0] == img_id, all_ids_suffixs)
+    max_ids_suffix = filter(lambda x: x[0].isdigit() and x[0] == src_max_id, all_ids_suffixs)
+    _, src_suffix = next(src_ids_suffix)
+    _, max_suffix = next(max_ids_suffix)
     # 移动图片
     try:
-        move_file = source_path / f"{img_id}.jpg"
-        move_file.rename(destination_path / f"{des_max_id}.jpg")
-        record = await ImageUpload.get_record(source_gall, int(img_id))
-        if record:
+        move_file = source_path / f"{img_id}{src_suffix}"
+        move_file.rename(destination_path / f"{des_max_id}{src_suffix}")
+        if await ImageUpload.check_exists(source_gall, int(img_id)):
+            record = await ImageUpload.get_record(source_gall, int(img_id))
             await ImageUpload.update_record(record, destination_gall, int(des_max_id))
+        else:
+            await ImageUpload.get_record(destination_gall, int(des_max_id))
         logger.info(
-            f"移动 {source_path}/{img_id}.jpg ---> {destination_path}/{des_max_id} 移动成功"
+            f"移动 {source_path}/{img_id}{src_suffix} ---> {destination_path}/{des_max_id}{src_suffix} 移动成功"
         )
     except Exception as e:
         logger.warning(
-            f"移动 {source_path}/{img_id}.jpg ---> {destination_path}/{des_max_id} 移动失败 e:{e}"
+            f"移动 {source_path}/{img_id}{src_suffix} ---> {destination_path}/{des_max_id}{src_suffix} 移动失败 e:{e}"
         )
         await move_img.finish(f"移动图片id：{img_id} 失败了...", at_sender=True)
     # 若源图库有其他图片
-    if src_max_id > 0:
+    if src_max_id != img_id:
         try:
-            rep_file = source_path / f"{src_max_id}.jpg"
-            rep_file.rename(source_path / f"{img_id}.jpg")
-            record = await ImageUpload.get_record(source_gall, int(src_max_id))
-            if record:
+            rep_file = source_path / f"{src_max_id}{max_suffix}"
+            rep_file.rename(source_path / f"{img_id}{max_suffix}")
+            if await ImageUpload.check_exists(source_gall, int(src_max_id)):
+                record = await ImageUpload.get_record(source_gall, int(src_max_id))
                 await ImageUpload.update_record(record, source_gall, int(img_id))
-            logger.info(f"{source_path}/{src_max_id}.jpg 替换 {source_path}/{img_id}.jpg 成功")
+            else:
+                await ImageUpload.get_record(source_gall, int(img_id))
+            logger.info(f"{source_path}/{src_max_id}{max_suffix} 替换 {source_path}/{img_id}{max_suffix} 成功")
         except Exception as e:
             logger.warning(
-                f"{source_path}/{src_max_id}.jpg 替换 {source_path}/{img_id}.jpg 失败 e:{e}"
+                f"{source_path}/{src_max_id}{max_suffix} 替换 {source_path}/{img_id}{max_suffix} 失败 e:{e}"
             )
             await move_img.finish(f"替换图片id：{src_max_id} -> {img_id} 失败了...", at_sender=True)
+    # 源图库只有一张图片
+    else:
+        await ImageUpload.del_record(source_gall, int(img_id))
     logger.info(
         f"USER {event.user_id} GROUP {event.group_id if isinstance(event, GroupMessageEvent) else 'private'} ->"
         f" {source_path} --> {destination_path} (id：{img_id}) 移动图片成功"

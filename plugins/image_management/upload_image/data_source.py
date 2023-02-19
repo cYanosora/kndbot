@@ -40,24 +40,18 @@ async def record_local_images(target_gall: str, target_imgs: List[int]) -> str:
     _gall = cn2py(target_gall)
     path = _path / _gall
     resolve_ids = []
-    fail_ids = []
     all_ids_suffixs = map(lambda x: os.path.splitext(x), os.listdir(path))
     all_ids_suffixs = filter(lambda x: x[0].isdigit() and int(x[0]) in target_imgs, all_ids_suffixs)
     for idsuf in all_ids_suffixs:
         img_id, suffix = idsuf
-        file = path / f"{img_id}.{suffix}"
+        file = path / f"{img_id}{suffix}"
         if file.exists():
             record = await ImageUpload.get_record(_gall, int(img_id))
-            if record:
-                await ImageUpload.update_record(record, is_record=True)
-                resolve_ids.append(str(img_id))
-            else:
-                fail_ids.append(str(img_id))
+            await ImageUpload.update_record(record, is_record=True)
+            resolve_ids.append(str(img_id))
     reply = ''
     if resolve_ids:
         reply += f'收录成功{len(resolve_ids)}张图(id:' + ','.join(resolve_ids) + ')'
-    if fail_ids:
-        reply += f'收录失败{len(fail_ids)}张图(id:' + ','.join(fail_ids) + ')'
     if not reply:
         max_id = len(os.listdir(path))
         reply = f'没有有效图片id，当前{target_gall}图库共有{max_id}张图'
@@ -74,7 +68,7 @@ async def upload_image_to_local(
         path = path.parent.parent / _path_name
     path.mkdir(parents=True, exist_ok=True)
     all_files = os.listdir(path)
-    curr_img_id = len(all_files)
+    curr_img_id = len(all_files) + 1
     success_list = []
     failed_list = []
     repeat_list = []
@@ -116,7 +110,7 @@ async def upload_image_to_local(
     # 日志记录
     log_info = f"用户({user_id}) 群({group_id}) 为 {_path_name}库 添加了{len(success_list)} 张图片"
     # 用户回显
-    result = f"这次一共为 {_path_name}库 添加了{len(success_list)} 张图片"
+    result = f"这次一共为 {path_}库 添加了{len(success_list)} 张图片"
     if success_list:
         result += f"\n依次的Id为：{','.join(success_list)}"
         log_info += f"\n依次的Id为：{','.join(success_list)}"

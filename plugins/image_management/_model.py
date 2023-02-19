@@ -28,7 +28,7 @@ class ImageUpload(db.Model):
     ) -> bool:
         """
         说明：
-            添加记录
+            添加记录，若id已存在则不添加
         参数：
             :param gallery: 图库名
             :param image_id: 图片id
@@ -91,19 +91,24 @@ class ImageUpload(db.Model):
     async def get_record(cls, gallery: str, image_id: int) -> Optional["ImageUpload"]:
         """
         说明：
-            获取记录
+            获取记录，没有id则创建记录
         参数：
             :param gallery: 图库名
             :param image_id: 图片id
         返回：
-            :returns: 若记录存在，返回True
+            :returns: 返回True
         """
         query = await cls.query.where(
             (cls.gallery == gallery) & (cls.image_id == image_id)
         ).gino.first()
-        if query:
-            return query
-        return None
+        return query or await cls.create(
+            gallery=gallery,
+            image_id=image_id,
+            user_qq=114514,
+            group_id=114514,
+            join_time=datetime.now(),
+            is_record=False
+        )
 
     @classmethod
     async def update_record(

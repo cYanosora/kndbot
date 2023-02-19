@@ -3,7 +3,7 @@ from nonebot.internal.matcher import Matcher
 from nonebot.typing import T_State
 from configs.path_config import IMAGE_PATH
 from utils.limit_utils import access_count, access_cd
-from utils.message_builder import image, custom_forward_msg
+from utils.message_builder import image, custom_forward_msg, custom_friend_forward_msg
 from services.log import logger
 from nonebot.adapters.onebot.v11 import MessageEvent, GroupMessageEvent, GROUP, Bot, NetworkError
 from utils.utils import cn2py
@@ -130,23 +130,27 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
             await send_img.finish("该图库中没有图片噢")
         # 若没有提供id，随机抽取
         if not img_ids:
-            img_ids = [random.randint(0, length - 1)]
+            img_ids = [random.randint(1, length)]
         # 格式化id
         for index in img_ids:
-            if int(index) > length - 1:
-                img_ids[img_ids.index(index)] = length - 1
+            if int(index) > length:
+                img_ids[img_ids.index(index)] = length
             elif int(index) < 0:
-                img_ids[img_ids.index(index)] = 0
-        img_ids = sorted(set(img_ids))
+                img_ids[img_ids.index(index)] = 1
+        img_ids = set(img_ids)
         # 记录功能使用次数、cd
         access_count(matcher.plugin_name, event, len(img_ids))
         access_cd(matcher.plugin_name, event, len(img_ids))
+        # 筛选文件名和后缀名
+        all_ids_suffixs = map(lambda x: os.path.splitext(x), os.listdir(path))
+        all_ids_suffixs = list(filter(lambda x: x[0].isdigit() and int(x[0]) in img_ids, all_ids_suffixs))
+        all_ids_suffixs.sort(key=lambda x: int(x[0]))
         # 发送单张图片
-        if len(img_ids) == 1:
-            index = img_ids[0]
+        if len(all_ids_suffixs) == 1:
+            index, suffix = all_ids_suffixs[0]
             record_flag = False
-            file = path / f"{index}.jpg"
-            if await ImageUpload.check_record(_gall, index):
+            file = path / f"{index}{suffix}"
+            if await ImageUpload.check_record(_gall, int(index)):
                 record_flag = True
             result = image(file)
             if result:
@@ -183,10 +187,11 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
             # 发送图片
             await send_img.send("正在整理图片中，请耐心等待(－ω－)", at_sender=True)
             mes_list = []
-            for index in img_ids:
+            for idsuf in all_ids_suffixs:
+                index, suffix = idsuf
                 record_flag = False
-                file = path / f"{index}.jpg"
-                if await ImageUpload.check_record(_gall, index):
+                file = path / f"{index}{suffix}"
+                if await ImageUpload.check_record(_gall, int(index)):
                     record_flag = True
                 result = image(file)
                 if result:
@@ -204,7 +209,6 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
                         else "这张图片出错了，可能是不想给你看OvO"
                     )
             mes_list = custom_forward_msg(mes_list, bot.self_id)
-            await send_img.send("图片整理完毕(｡･ω･)", at_sender=True)
             msg_id = await bot.send_group_forward_msg(group_id=event.group_id, messages=mes_list)
             logger.info(
                 f"(USER {event.user_id}, GROUP {event.group_id}) "

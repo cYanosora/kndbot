@@ -3,7 +3,7 @@ from nonebot.permission import SUPERUSER
 from nonebot.typing import T_State
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent, GroupMessageEvent, Message, GROUP, ActionFailed
 from manager import Config
-from utils.message_builder import custom_forward_msg, custom_friend_forward_msg
+from utils.message_builder import custom_forward_msg
 from utils.utils import get_message_img
 from .data_source import upload_image_to_local, record_local_images, get_local_record
 from nonebot.params import CommandArg, Arg, ArgStr
@@ -111,14 +111,13 @@ async def _(
     result, mes_list = await upload_image_to_local(img_list, path, event.user_id, group_id)
     await upload_img.send(result)
     superuser = int(list(bot.config.superusers)[0])
-    upload_msg = custom_friend_forward_msg(mes_list, bot.self_id)
+    upload_msg = custom_forward_msg(mes_list, bot.self_id)
     try:
         await bot.call_api(
             'send_private_forward_msg',
             user_id=superuser,
             messages=upload_msg
         )
-        await bot.send_private_forward_msg(user_id=superuser, message=upload_msg)
     except ActionFailed:
         pass
 
@@ -159,13 +158,12 @@ async def _(
     result, mes_list = await upload_image_to_local(img_list, path, event.user_id, group_id)
     await continuous_upload_img.send(result)
     superuser = int(list(bot.config.superusers)[0])
-    upload_msg = custom_friend_forward_msg(mes_list, bot.self_id)
+    upload_msg = custom_forward_msg(mes_list, bot.self_id)
     try:
         await bot.call_api(
             'send_private_forward_msg',
             user_id=superuser,
             messages=upload_msg
         )
-        await bot.send_private_forward_msg(user_id=superuser, message=upload_msg)
     except ActionFailed:
         pass
