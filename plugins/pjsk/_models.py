@@ -85,7 +85,7 @@ class PjskGuessRank(db.Model):
             daily_count=daily_count,
             last_guess_time=datetime.datetime.now()
         ).apply()
-        return False if await cls._check_today_count(user_qq, group_id) else True
+        return False if await cls.check_today_count(user_qq, group_id) else True
 
     @classmethod
     async def _get_user_info(cls,user_qq: int, group_id: int, game_type: str):
@@ -110,7 +110,7 @@ class PjskGuessRank(db.Model):
         )
 
     @classmethod
-    async def _check_today_count(cls, user_qq: int, group_id: int) -> bool:
+    async def check_today_count(cls, user_qq: int, group_id: int) -> bool:
         """
         说明：
             检查用户是否达到游戏获取金币上限
@@ -377,14 +377,10 @@ class UserProfile(object):
     async def getprofile(self, userid: str):
         try:
             url = f'{random.choice(api_base_url_list)}/user/{userid}/profile'
-            print(url)
             resp = await AsyncHttpx.get(url, timeout=10)
-            print(resp.status_code)
         except:
             url = f'{random.choice(api_base_url_list)}/user/{userid}/profile'
-            print(url)
             resp = requests.get(url, timeout=10)
-            print(resp.status_code)
         data = json.loads(resp.content)
         if data == {'status': 'maintenance_in'}:
             raise Exception('服务器正在维护')

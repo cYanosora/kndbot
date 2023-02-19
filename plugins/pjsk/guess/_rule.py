@@ -13,7 +13,7 @@ def check_reply() -> T_RuleChecker:
                 ):
                     state[PJSK_GUESS] = guess
                     if answer := event.raw_message.replace(f"[CQ:at,qq={event.self_id}]", "").strip():
-                        state[PJSK_ANSWER] = answer
+                        state[PJSK_ANSWER] = answer.lower()
                         return True
         return False
     return check_args
@@ -26,6 +26,7 @@ def check_rule() -> T_RuleChecker:
                 event.group_id in pjskguess[guess] and
                 pjskguess[guess][event.group_id].get('isgoing', False)
             ):
+                print('通过rule')
                 state[PJSK_GUESS] = guess
                 return True
         return False

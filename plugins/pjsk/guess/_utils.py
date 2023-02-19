@@ -13,7 +13,6 @@ except:
 
 
 def pre_check(gid: int):
-    global pjskguess
     try:
         if pjskguess[GUESS_CARD][gid].get('isgoing', False):
             return '猜卡面已经开始，请等待这轮结束！(开启者发送 结束猜卡面 可以提前结束)'

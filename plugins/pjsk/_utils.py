@@ -186,6 +186,7 @@ async def getEventId(url: str):
 
 # 生成牌子信息
 async def generatehonor(honor, ismain=True):
+    pic = None
     star = False
     backgroundAssetbundleName = ''
     assetbundleName = ''
@@ -213,6 +214,13 @@ async def generatehonor(honor, ismain=True):
                             backgroundAssetbundleName = ''
                         honorType = j['honorType']
                         break
+        filename = 'honor'
+        mainname = 'rank_main.png'
+        subname = 'rank_sub.png'
+        if honorType == 'rank_match':
+            filename = 'rank_live/honor'
+            mainname = 'main.png'
+            subname = 'sub.png'
         # 数据读取完成
         if ismain:
             # 大图
@@ -220,26 +228,35 @@ async def generatehonor(honor, ismain=True):
                 frame = Image.open(data_path / r'pics/frame_degree_m_1.png')
             elif honorRarity == 'middle':
                 frame = Image.open(data_path / r'pics/frame_degree_m_2.png')
-            elif honorRarity == 'middle':
+            elif honorRarity == 'high':
                 frame = Image.open(data_path / r'pics/frame_degree_m_3.png')
             else:
                 frame = Image.open(data_path / r'pics/frame_degree_m_4.png')
             if backgroundAssetbundleName == '':
-                # rankpic = None
+                rankpic = None
                 pic = await pjsk_update_manager.get_asset(
-                    rf'startapp/honor/{assetbundleName}', rf'degree_main.png'
+                    rf'startapp/{filename}/{assetbundleName}', rf'degree_main.png'
                 )
+                try:
+                    rankpic = await pjsk_update_manager.get_asset(
+                        f'startapp/{filename}/{assetbundleName}', mainname
+                    )
+                except:
+                    pass
                 r, g, b, mask = frame.split()
                 if honorRarity == 'low':
                     pic.paste(frame, (8, 0), mask)
                 else:
                     pic.paste(frame, (0, 0), mask)
+                if rankpic is not None:
+                    r, g, b, mask = rankpic.split()
+                    pic.paste(rankpic, (190, 0), mask)
             else:
                 pic = await pjsk_update_manager.get_asset(
-                    rf'startapp/honor/{backgroundAssetbundleName}', rf'degree_main.png'
+                    rf'startapp/{filename}/{backgroundAssetbundleName}', rf'degree_main.png'
                 )
                 rankpic = await pjsk_update_manager.get_asset(
-                    rf'startapp/honor/{assetbundleName}', rf'rank_main.png'
+                    rf'startapp/{filename}/{assetbundleName}', mainname
                 )
                 r, g, b, mask = frame.split()
                 if honorRarity == 'low':
@@ -250,36 +267,58 @@ async def generatehonor(honor, ismain=True):
                 pic.paste(rankpic, (190, 0), mask)
             if honorType == 'character' or honorType == 'achievement':
                 if star is True:
-                    for i in range(0, honor['honorLevel']):
-                        lv = Image.open(data_path / r'pics/icon_degreeLv.png')
-                        r, g, b, mask = lv.split()
-                        pic.paste(lv, (54 + 16 * i, 63), mask)
+                    honorlevel = honor['honorLevel']
+                    if honorlevel > 10:
+                        honorlevel = honorlevel - 10
+                    if honorlevel < 5:
+                        for i in range(0, honorlevel):
+                            lv = Image.open(data_path / 'pics/icon_degreeLv.png')
+                            r, g, b, mask = lv.split()
+                            pic.paste(lv, (54 + 16 * i, 63), mask)
+                    else:
+                        for i in range(0, 5):
+                            lv = Image.open(data_path / 'pics/icon_degreeLv.png')
+                            r, g, b, mask = lv.split()
+                            pic.paste(lv, (54 + 16 * i, 63), mask)
+                        for i in range(0, honorlevel - 5):
+                            lv = Image.open(data_path / 'pics/icon_degreeLv6.png')
+                            r, g, b, mask = lv.split()
+                            pic.paste(lv, (54 + 16 * i, 63), mask)
         else:
             # 小图
             if honorRarity == 'low':
                 frame = Image.open(data_path / r'pics/frame_degree_s_1.png')
             elif honorRarity == 'middle':
                 frame = Image.open(data_path / r'pics/frame_degree_s_2.png')
-            elif honorRarity == 'middle':
+            elif honorRarity == 'high':
                 frame = Image.open(data_path / r'pics/frame_degree_s_3.png')
             else:
                 frame = Image.open(data_path / r'pics/frame_degree_s_4.png')
             if backgroundAssetbundleName == '':
-                # rankpic = None
+                rankpic = None
                 pic = await pjsk_update_manager.get_asset(
-                    rf'startapp/honor/{assetbundleName}', rf'degree_sub.png'
+                    rf'startapp/{filename}/{assetbundleName}', rf'degree_sub.png'
                 )
+                try:
+                    rankpic = await pjsk_update_manager.get_asset(
+                        f'/startapp/{filename}/{assetbundleName}', subname
+                    )
+                except:
+                    pass
                 r, g, b, mask = frame.split()
                 if honorRarity == 'low':
                     pic.paste(frame, (8, 0), mask)
                 else:
                     pic.paste(frame, (0, 0), mask)
+                if rankpic is not None:
+                    r, g, b, mask = rankpic.split()
+                    pic.paste(rankpic, (34, 42), mask)
             else:
                 pic = await pjsk_update_manager.get_asset(
-                    rf'startapp/honor/{backgroundAssetbundleName}', rf'degree_sub.png'
+                    rf'startapp/{filename}/{backgroundAssetbundleName}', rf'degree_sub.png'
                 )
                 rankpic = await pjsk_update_manager.get_asset(
-                    rf'startapp/honor/{assetbundleName}', rf'rank_sub.png'
+                    rf'startapp/{filename}/{assetbundleName}', subname
                 )
                 r, g, b, mask = frame.split()
                 if honorRarity == 'low':
@@ -290,21 +329,24 @@ async def generatehonor(honor, ismain=True):
                 pic.paste(rankpic, (34, 42), mask)
             if honorType == 'character' or honorType == 'achievement':
                 if star is True:
-                    if honor['honorLevel'] < 5:
-                        for i in range(0, honor['honorLevel']):
-                            lv = Image.open(data_path / r'pics/icon_degreeLv.png')
+                    honorlevel = honor['honorLevel']
+                    if honorlevel > 10:
+                        honorlevel = honorlevel - 10
+                    if honorlevel < 5:
+                        for i in range(0, honorlevel):
+                            lv = Image.open(data_path / 'pics/icon_degreeLv.png')
                             r, g, b, mask = lv.split()
                             pic.paste(lv, (54 + 16 * i, 63), mask)
                     else:
                         for i in range(0, 5):
-                            lv = Image.open(data_path / r'pics/icon_degreeLv.png')
+                            lv = Image.open(data_path / 'pics/icon_degreeLv.png')
                             r, g, b, mask = lv.split()
                             pic.paste(lv, (54 + 16 * i, 63), mask)
-                        for i in range(0, honor['honorLevel'] - 5):
-                            lv = Image.open(data_path / r'pics/icon_degreeLv6.png')
+                        for i in range(0, honorlevel - 5):
+                            lv = Image.open(data_path / 'pics/icon_degreeLv6.png')
                             r, g, b, mask = lv.split()
                             pic.paste(lv, (54 + 16 * i, 63), mask)
-    else:
+    elif honor['profileHonorType'] == 'bonds':
         # cp牌子
         with open(data_path / r'bondsHonors.json', 'r', encoding='utf-8') as f:
             bondsHonors = json.load(f)
@@ -336,7 +378,7 @@ async def generatehonor(honor, ismain=True):
                 frame = Image.open(data_path / r'pics/frame_degree_m_1.png')
             elif honorRarity == 'middle':
                 frame = Image.open(data_path / r'pics/frame_degree_m_2.png')
-            elif honorRarity == 'middle':
+            elif honorRarity == 'high':
                 frame = Image.open(data_path / r'pics/frame_degree_m_3.png')
             else:
                 frame = Image.open(data_path / r'pics/frame_degree_m_4.png')
@@ -357,8 +399,18 @@ async def generatehonor(honor, ismain=True):
             if word is not None:
                 r, g, b, mask = word.split()
                 pic.paste(word, (int(190-(word.size[0]/2)), int(40-(word.size[1]/2))), mask)
+            if honor['honorLevel'] < 5:
                 for i in range(0, honor['honorLevel']):
-                    lv = Image.open(data_path / r'pics/icon_degreeLv.png')
+                    lv = Image.open(data_path / 'pics/icon_degreeLv.png')
+                    r, g, b, mask = lv.split()
+                    pic.paste(lv, (54 + 16 * i, 63), mask)
+            else:
+                for i in range(0, 5):
+                    lv = Image.open(data_path / 'pics/icon_degreeLv.png')
+                    r, g, b, mask = lv.split()
+                    pic.paste(lv, (54 + 16 * i, 63), mask)
+                for i in range(0, honor['honorLevel'] - 5):
+                    lv = Image.open(data_path / 'pics/icon_degreeLv6.png')
                     r, g, b, mask = lv.split()
                     pic.paste(lv, (54 + 16 * i, 63), mask)
         else:
@@ -381,11 +433,14 @@ async def generatehonor(honor, ismain=True):
             chara2 = chara2.resize((120, 102))
             r, g, b, mask = chara2.split()
             pic.paste(chara2, (60, -20), mask)
+            maskimg = Image.open(data_path / 'pics/mask_degree_sub.png')
+            r, g, b, mask = maskimg.split()
+            pic.putalpha(mask)
             if honorRarity == 'low':
                 frame = Image.open(data_path / r'pics/frame_degree_s_1.png')
             elif honorRarity == 'middle':
                 frame = Image.open(data_path / r'pics/frame_degree_s_2.png')
-            elif honorRarity == 'middle':
+            elif honorRarity == 'high':
                 frame = Image.open(data_path / r'pics/frame_degree_s_3.png')
             else:
                 frame = Image.open(data_path / r'pics/frame_degree_s_4.png')

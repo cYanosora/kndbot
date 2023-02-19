@@ -185,11 +185,13 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     # 添加文字
     draw.text((952, 141), f'{profile.mvpCount}回', fill=(0, 0, 0), font=font_style)
     draw.text((1259, 141), f'{profile.superStarCount}回', fill=(0, 0, 0), font=font_style)
-
-    chara = Image.open(data_path / 'chara' / f'chr_ts_{profile.characterId}.png')
-    chara = chara.resize((70, 70))
-    r, g, b, mask = chara.split()
-    img.paste(chara, (952, 293), mask)
-    draw.text((1032, 315), str(profile.highScore), fill=(0, 0, 0), font=font_style)
+    try:
+        chara = Image.open(data_path / 'chara' / f'chr_ts_{profile.characterId}.png')
+        chara = chara.resize((70, 70))
+        r, g, b, mask = chara.split()
+        img.paste(chara, (952, 293), mask)
+        draw.text((1032, 315), str(profile.highScore), fill=(0, 0, 0), font=font_style)
+    except:
+        pass
 
     await pjsk_profile.finish(image(b64=pic2b64(img)))
