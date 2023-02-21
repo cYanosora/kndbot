@@ -120,31 +120,43 @@ async def _(matcher: Matcher, event: GroupMessageEvent, state: T_State):
     if max_guess_count <= pjskguess[game_type][event.group_id]['gameusers'].get(event.user_id, 0):
         return
     # 玩家回答次数加一
-    pjskguess[game_type][event.group_id]['gameusers'][event.user_id] = \
-        pjskguess[game_type][event.group_id]['gameusers'].get(event.user_id, 0) + 1
+    guessed_count = pjskguess[game_type][event.group_id]['gameusers'].get(event.user_id, 0)
+    pjskguess[game_type][event.group_id]['gameusers'][event.user_id] = guessed_count + 1
     # 判断游戏类型
     if game_type == GUESS_CARD:
         charaid, name = await aliasToCharaId(answer, event.group_id)
         if charaid == 0:
-            await pjsk_guessreply.finish('没有找到你说的角色哦', at_sender=True)
+            await pjsk_guessreply.finish(
+                f'没有找到你说的角色哦\n(剩余作答次数:{max_guess_count-guessed_count-1}/{max_guess_count})',
+                at_sender=True
+            )
         elif charaid == pjskguess[game_type][event.group_id]['charaid']:
             await endgame(
                 event.group_id, event.self_id, GUESS_CARD, event.user_id, True,
                 plugin_name=matcher.plugin_name, event=event
             )
         else:
-            await pjsk_guessreply.finish(f'您猜错了，答案不是{name}哦', at_sender=True)
+            await pjsk_guessreply.finish(
+                f'您猜错了，答案不是{name}哦\n(剩余作答次数:{max_guess_count-guessed_count-1}/{max_guess_count})',
+                at_sender=True
+            )
     else:
         musicid, name = await aliasToMusicId(answer)
         if musicid == 0:
-            await pjsk_guessreply.finish('没有找到你说的歌曲哦', at_sender=True)
+            await pjsk_guessreply.finish(
+                f'没有找到你说的歌曲哦\n(剩余作答次数:{max_guess_count-guessed_count-1}/{max_guess_count})',
+                at_sender=True
+            )
         elif musicid == pjskguess[game_type][event.group_id]['musicid']:
             await endgame(
                 event.group_id, event.self_id, GUESS_MUSIC, event.user_id, True,
                 plugin_name=matcher.plugin_name, event=event
             )
         else:
-            await pjsk_guessreply.finish(f'您猜错了，答案不是{name}哦', at_sender=True)
+            await pjsk_guessreply.finish(
+                f'您猜错了，答案不是{name}哦\n(剩余作答次数:{max_guess_count-guessed_count-1}/{max_guess_count})',
+                at_sender=True
+            )
 
 
 @pjsk_guesscard.handle()
