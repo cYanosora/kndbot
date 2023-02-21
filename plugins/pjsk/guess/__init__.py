@@ -180,8 +180,8 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
         return
     file, endfile = cutCard(asset, rarity, event.group_id, size, isbw)
     msgs.append(image(b64=pic2b64(text2image(
-        f'PJSK{text}卡面竞猜 （随机裁切）\n艾特我+你的答案以参加猜曲（不要使用回复）\n'
-        f'\n你有{guess_time}秒的时间回答\n可手动发送“结束猜卡面”来结束猜曲'
+        f'PJSK{text}卡面竞猜 （随机裁切）\n艾特我+你的答案以参加猜卡面（不要使用回复）\n'
+        f'\n你有{guess_time}秒的时间回答\n可手动发送“结束猜卡面”来结束猜卡面'
     ))))
     msgs.append(MessageSegment.image(f"file:///{file.absolute()}"))
     for msg in msgs:

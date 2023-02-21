@@ -175,6 +175,7 @@ class Chatbot:
                     return "网站处理的请求过多，请之后再来尝试吧"
                 if response.status == 403:
                     await self.get_cf_cookies(page)
+                    await page.close()
                     return await self.get_chat_response(prompt)
                 if response.status != 200:
                     try:
@@ -189,13 +190,22 @@ class Chatbot:
                     return f"ChatGPT 服务器返回了非预期的内容: HTTP{response.status}\n{response.text}"
                 # 正常响应，返回chatgpt的回复
                 logger.info('ChatGPT 正确返回了请求')
-                lines = await response.text()
+                lines = None
+                error = None
+                for _ in range(2):
+                    try:
+                        lines = await response.text()
+                        if lines is not None:
+                            break
+                    except Exception as e:
+                        error = e
+                if lines is None:
+                    raise error
                 lines = lines.splitlines()
-                data = lines[-4][6:]
+                data = lines[-4][6:]  # 最后一次收到的文本数据，去掉开头6个字符(data: )
                 response = json.loads(data)
                 self.parent_id = response["message"]["id"]
                 self.conversation_id = response["conversation_id"]
-                logger.debug("发送请求结束")
         return response["message"]["content"]["parts"][0]
 
     async def refresh_session(self) -> None:

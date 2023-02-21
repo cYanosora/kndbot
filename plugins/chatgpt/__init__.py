@@ -25,7 +25,7 @@ __plugin_version__ = 0.1
 __plugin_usage__ = """
 usage：
     使用OpenAI的ChatGPT进行沟通，因服务器性能有限，仅在特定群开放
-    此bot使用的是免费版，所以回复需要耐心等待(近一分钟生成回复的时间，慢的要死，Plus版快2倍以上且稳定，但20$/mo)
+    此bot使用的是免费版，所以回复需要耐心等待(约20字/s)，慢的要死，Plus版快2倍以上且稳定，但20$/mo
     受网络环境和chatGPT负载影响，请求可能会经常失败，并且有时回复只有一半而没有下文了，不要期待这个功能的可用性
     指令：
         chat/Chat/CHAT [文本]                 ： 请求ChatGPT的回复
@@ -136,6 +136,11 @@ async def ai_chat(event: MessageEvent, arg: Message = CommandArg()) -> None:
             msg += "\n可能的原因是请求时遇到了无法通过的验证码校验等。"
         await matcher.finish(msg)
         return
+    logger.info(
+        f'User{event.user_id} Group {event.group_id if hasattr(event, "group_id") else 0}\n'
+        f'问题：{text}\n'
+        f'回复：{msg}'
+    )
     # 若设置使用图片回复or文字超过回复上限自动使用图片发送
     if config.chatgpt_image or len(msg) > config.chatgpt_max_textlength:
         if msg.count("```") % 2 != 0:

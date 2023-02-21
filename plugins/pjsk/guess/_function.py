@@ -10,7 +10,7 @@ def getSongLevel(musicid: int, diff: str = 'master') -> str:
     """
     with open(data_path / 'musicDifficulties.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
-    target = filter(lambda x: x['musicId'] == musicid and x['musicDifficulty'] == diff, data)
+    target = filter(lambda x:x['musicId'] == musicid and x['musicDifficulty'] == diff, data)
     try:
         music = next(target)
         level = music['playLevel']
@@ -23,7 +23,7 @@ def getSongLevel(musicid: int, diff: str = 'master') -> str:
 def getSongSinger(musicid: int) -> str:
     with open(data_path / 'musicVocals.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
-    target = filter(lambda x:x['musicId'] == musicid, data)
+    target = filter(lambda x: x['musicId'] == musicid, data)
     ver = ''
     charainfos = []
     for vocal in target:
@@ -53,13 +53,22 @@ def getSongSinger(musicid: int) -> str:
     if not charainfos:
         reply = f'此歌曲只有{ver}'
     else:
-        with open(data_path / 'gameCharacters.json', 'r', encoding='utf-8') as f:
-            gameCharacters = json.load(f)
         charainfo = random.choice(charainfos)
-        charaname = ''
-        for gamechara in gameCharacters:
-            if gamechara['id'] == charainfo['characterId']:
-                charaname = gamechara.get('firstName', '') + gamechara.get('givenName', '')
+        charaname = '-'
+        if charainfo['characterType'] == 'game_character':
+            with open(data_path / 'gameCharacters.json', 'r', encoding='utf-8') as f:
+                gameCharacters = json.load(f)
+            for gamechara in gameCharacters:
+                if gamechara['id'] == charainfo['characterId']:
+                    charaname = gamechara.get('firstName', '') + gamechara.get('givenName', '')
+        elif charainfo['characterType'] == 'game_character':
+            charaname = {
+                1: "GUMI", 2: "IA", 3: "flower",
+                4: "VY2V3", 5: "音街ウナ", 6: "歌爱ユキ",
+                7: "ネネロボ", 8: "ミクダヨー", 9: "可不",
+                10: "神威がくぽ", 11: "星界", 12: "東北きりたん",
+                13: "ゲキヤク"
+            }.get(charainfo['characterId'], '-')
         if len(charainfos) == 1:
             reply = f'{charaname}是此曲{ver}的歌手'
         else:
@@ -116,7 +125,7 @@ def getCharaInfo(charaid: int) -> str:
         sex = '男性' if gender == 'male' else '女性'
         info.append(f'此角色是{sex}')
     if height.isdigit():
-        mean = (int(height)-1)//10*10+5
+        mean = (int(height)-1)//10+5
         info.append(f'此角色的身高为{mean-5}~{mean+5}cm')
     return random.choice(info)
 
