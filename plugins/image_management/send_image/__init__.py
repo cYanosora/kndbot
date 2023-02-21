@@ -146,7 +146,7 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
         all_ids_suffixs = list(filter(lambda x: x[0].isdigit() and int(x[0]) in img_ids, all_ids_suffixs))
         all_ids_suffixs.sort(key=lambda x: int(x[0]))
         # 发送单张图片
-        if len(all_ids_suffixs) == 1:
+        if len(img_ids) == 1:
             index, suffix = all_ids_suffixs[0]
             record_flag = False
             file = path / f"{index}{suffix}"

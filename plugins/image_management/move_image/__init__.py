@@ -1,3 +1,5 @@
+from nonebot.permission import SUPERUSER
+
 from services.log import logger
 from nonebot import on_command
 from nonebot.rule import to_me
@@ -29,7 +31,7 @@ __plugin_settings__ = {
 }
 
 
-move_img = on_command("移动图片", priority=5, rule=to_me(), permission=GROUP, block=True)
+move_img = on_command("移动图片", priority=5, permission=GROUP | SUPERUSER, block=True)
 
 
 _path = IMAGE_PATH / "image_management"
