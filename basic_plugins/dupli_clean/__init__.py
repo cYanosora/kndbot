@@ -1,8 +1,9 @@
 from typing import Any, Dict
 from nonebot.adapters.onebot.v11 import Event, Bot
-from nonebot.exception import FinishedException
+from nonebot.exception import IgnoredException
 from nonebot.internal.matcher import Matcher
 from nonebot.message import run_preprocessor
+from configs.config import MAIN_BOT, SUB_BOT, AUX_BOT
 from utils.utils import get_message_at
 
 recent_event: Dict[str, Any] = {}
@@ -13,7 +14,10 @@ recent_event: Dict[str, Any] = {}
 async def _(matcher: Matcher, bot: Bot, event: Event):
     global recent_event
     selfid = bot.self_id
-
+    bot_ids = [MAIN_BOT, SUB_BOT, AUX_BOT]
+    bot_ids.remove(int(selfid))
+    if int(selfid) in bot_ids:
+        raise IgnoredException('忽略bot触发的指令')
     if hasattr(event, "raw_message"):
         ats = get_message_at(event.raw_message)
         if int(selfid) in ats and matcher.plugin_name != 'petpet':
@@ -27,6 +31,6 @@ async def _(matcher: Matcher, bot: Bot, event: Event):
         if any(map(lambda each_event: each_event == combine, recent_event[each_bot])):
             recent_event[selfid].clear()
             matcher.stop_propagation()
-            raise FinishedException()
+            raise IgnoredException("相同事件")
     recent_event[selfid].clear()
     recent_event[selfid].append(combine)
