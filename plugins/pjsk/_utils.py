@@ -1,9 +1,11 @@
 import random
 import re
 import time
+import urllib.parse
 import requests
 import yaml
-from typing import List, Dict
+from datetime import datetime
+from typing import List, Dict, Optional, Any
 from PIL import Image
 from nonebot.adapters.onebot.v11 import MessageEvent, Message
 from nonebot.params import CommandArg
@@ -18,8 +20,9 @@ from ._config import (
     TIMEOUT_ERROR,
     ID_ERROR,
     REFUSED_ERROR,
-    api_base_url_list
+    api_base_url_list, ONLY_TOP100_ERROR
 )
+from ._errors import maintenanceIn, userIdBan, apiCallError
 from ._models import PjskBind
 try:
     import ujson as json
@@ -138,49 +141,95 @@ def near_rank(rank: int) -> List:
     return tmp
 
 
+# 通用api查询
+async def callapi(url: str, param: Optional[Dict] = None) -> Dict[str, Any]:
+    if param is not None:
+        q = urllib.parse.urlencode(param)
+        url = url + '?' + q
+    # 处理sk和rk的api
+    json_path = None
+    if r'/event/' in url:
+        json_path = data_path / 'sktop100.json'
+    elif r'/rank-match-season/' in url:
+        json_path = data_path / 'rktop100.json'
+    if 'targetRank' in url and json_path:
+        targetRank = int(url[url.find('targetRank=') + len('targetRank='):])
+        with open(json_path, 'r', encoding='utf-8') as f:
+            top100 = json.load(f)
+        updatetime = json_path.stat().st_mtime
+        for single in top100["rankings"]:
+            if single["rank"] == targetRank:
+                return {
+                    "rankings": [single],
+                    'updateTime': datetime.fromtimestamp(updatetime).strftime("%m-%d %H:%M:%S")
+                }
+        else:
+            raise apiCallError(ONLY_TOP100_ERROR)
+    elif 'targetUserId' in url and json_path:
+        targetUserId = int(url[url.find('targetUserId=') + len('targetUserId='):])
+        with open(json_path, 'r', encoding='utf-8') as f:
+            jptop100 = json.load(f)
+        updatetime = json_path.stat().st_mtime
+        for single in jptop100["rankings"]:
+            if single["userId"] == targetUserId:
+                return {
+                    "rankings": [single],
+                    'updateTime': datetime.fromtimestamp(updatetime).strftime("%m-%d %H:%M:%S")
+                }
+        else:
+            raise apiCallError(ONLY_TOP100_ERROR)
+    # 处理其他api
+    try:
+        data = (await AsyncHttpx.get(url, timeout=4)).json()
+    except:
+        data = requests.get(url).json()
+    try:
+        if data == {'status': 'maintenance_in'}:
+            raise maintenanceIn
+        elif data == {'status': 'user_id_ban'}:
+            raise userIdBan
+        return data
+    except:
+        raise apiCallError
+
+
 # 获取用户当期活动信息
 async def getUserData(url: str, param: dict) -> Dict:
-    try:
-        data_json = json.loads((await AsyncHttpx.get(url, params=param, timeout=4)).text)
-    except:
-        data_json = requests.get(url, params=param).json()
+    data_json = await callapi(url, param)
     result = data_json['rankings']
-    userdata = {}
+    userdata = {
+        'id':result[0]['userId'],
+        'name': result[0]['name'],
+        'score': result[0]['score'],
+        'rank': result[0]['rank'],
+        'teaminfo': None,
+        'assetbundleName': None,
+        'updateTime': data_json['updateTime']
+    }
+    # 5v5活动额外获取队伍信息
     try:
-        userdata['id'] = result[0]['userId']
-        userdata['name'] = result[0]['name']
-        userdata['score'] = result[0]['score']
-        userdata['rank'] = result[0]['rank']
-        userdata['teaminfo'] = None
-        userdata['assetbundleName'] = None
-        # 5v5活动额外获取队伍信息
+        TeamId = result[0]['userCheerfulCarnival']['cheerfulCarnivalTeamId']
+        with open(data_path / 'cheerfulCarnivalTeams.json', 'r', encoding='utf-8') as f:
+            Teams = json.load(f)
+        with open(data_path / 'translate.yaml', encoding='utf-8') as f:
+            trans = yaml.load(f, Loader=yaml.FullLoader)
         try:
-            TeamId = result[0]['userCheerfulCarnival']['cheerfulCarnivalTeamId']
-            with open(data_path / 'cheerfulCarnivalTeams.json', 'r', encoding='utf-8') as f:
-                Teams = json.load(f)
-            with open(data_path / 'translate.yaml', encoding='utf-8') as f:
-                trans = yaml.load(f, Loader=yaml.FullLoader)
-            try:
-                translate = f"({trans['cheerfulCarnivalTeams'][TeamId]})"
-            except KeyError:
-                translate = ''
-            for i in Teams:
-                if i['id'] == TeamId:
-                    userdata['teaminfo'] = i['teamName'], translate
-                    userdata['assetbundleName'] = i['assetbundleName']
-                    break
-        except:
-            pass
-        return userdata
-    except IndexError:
-        raise IndexError
-    except ConnectionError:
-        raise ConnectionError
+            translate = f"({trans['cheerfulCarnivalTeams'][TeamId]})"
+        except KeyError:
+            translate = ''
+        for i in Teams:
+            if i['id'] == TeamId:
+                userdata['teaminfo'] = i['teamName'], translate
+                userdata['assetbundleName'] = i['assetbundleName']
+                break
+    except:
+        pass
+    return userdata
 
 
 # 获取活动id
 async def getEventId(url: str):
-    data_json = json.loads((await AsyncHttpx.get(url, headers=headers)).text)
+    data_json = (await AsyncHttpx.get(url)).json()
     return data_json
 
 

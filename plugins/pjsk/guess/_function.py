@@ -125,7 +125,7 @@ def getCharaInfo(charaid: int) -> str:
         sex = '男性' if gender == 'male' else '女性'
         info.append(f'此角色是{sex}')
     if height.isdigit():
-        mean = (int(height)-1)//10+5
+        mean = (int(height)-1)//10*10+5
         info.append(f'此角色的身高为{mean-5}~{mean+5}cm')
     return random.choice(info)
 

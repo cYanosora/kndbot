@@ -7,6 +7,11 @@ BUG_ERROR = "出错了，可能是バグ捏"
 REFUSED_ERROR = "查不到捏，可能是不给看"
 NOT_PLAYER_ERROR = "未找到玩家"
 NOT_IMAGE_ERROR = "部分资源加载失败，重新发送中..."
+MAINTAIN_ERROR = "出错了，可能是游戏正在维护"
+USER_BAN_ERROR = "出错了，可能是用户已被封禁"
+NOT_SERVER_ERROR = "出错了，不支持此服务器"
+QUERY_BAN_ERROR = "该用户已被拉黑，禁止使用此功能"
+ONLY_TOP100_ERROR = "出错了，目前查分仅支持前百的玩家"
 
 # api
 base_url = r'https://api.unipjsk.com/api'

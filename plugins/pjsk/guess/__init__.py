@@ -550,7 +550,7 @@ async def endgame(
                 if tips is None:
                     addflag = await PjskGuessRank.add_count(qq, group_id, game_type, int(diff))
                 else:
-                    addflag = await PjskGuessRank.check_today_count(qq, group_id)
+                    addflag = not await PjskGuessRank.check_today_count(qq, group_id)
                 if addflag:
                     msgs[0] = at(qq) + f"您猜对了，奖励{gold}金币！\n" + msgs[0]
                     await BagUser.add_gold(qq, group_id, gold)

@@ -1,13 +1,16 @@
 import random
 import re
 import time
+from typing import Dict, Optional, List, Union
+
 import requests
 import yaml
 from PIL import ImageDraw, Image, ImageFont
-from nonebot import on_command
+from nonebot import on_command, get_driver
+from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
-from nonebot.adapters.onebot.v11 import Message, MessageEvent
+from nonebot.adapters.onebot.v11 import Message, MessageEvent, ActionFailed
 from configs.path_config import FONT_PATH
 from utils.http_utils import AsyncHttpx
 from utils.imageutils import text2image, pic2b64
@@ -15,10 +18,12 @@ from utils.message_builder import image
 from utils.utils import scheduler, is_number, get_message_at
 from services import logger
 from .._autoask import pjsk_update_manager
-from .._utils import currentevent, getEventId, near_rank, getUserData
+from .._errors import apiCallError, maintenanceIn, userIdBan
+from .._utils import currentevent, getEventId, near_rank, getUserData, callapi
 from .._models import PjskBind
 from .._config import *
 import json
+driver = get_driver()
 
 __plugin_name__ = "活动查分/sk"
 __plugin_type__ = "烧烤相关&uni移植"
@@ -29,11 +34,13 @@ usage：
     移植自unibot(一款功能型烧烤bot)
     若群内已有unibot请勿开启此bot该功能
     私聊可用，一分钟内每人最多查询3次
+    因为sbga的原因，今后只能查前百的分数
     指令：
-        sk [排名]                查询此排名玩家的活动分数
-        sk [id]                 查询此id玩家的活动分数
-        sk @qq                  查看艾特用户的活动分数(对方必须已绑定烧烤账户) 
-        sk                      查询自己的活动分数
+        sk [排名]               查询此排名玩家的活动分数，仅限前百
+        sk *[多个排名]            查询给出的排名玩家的活动分数，排名用空格隔开，仅限前百
+        sk [id]                 查询此id玩家的活动分数，仅限前百
+        sk @qq                  查看艾特用户的活动分数(对方必须已绑定烧烤账户且排名前百) 
+        sk                      查询自己的活动分数，仅限前百
         sk预测/活动预测/ycx        查看烧烤当前日服活动预测线
         5v5人数                  查看当前5v5活动的两队人数
     数据来源：
@@ -69,146 +76,201 @@ pjsk_5v5_query = on_command('5v5人数', priority=5, block=True)
 
 
 @pjsk_sk.handle()
-async def _(event: MessageEvent, msg: Message = CommandArg()):
+async def _(matcher: Matcher, event: MessageEvent, msg: Message = CommandArg()):
     # 获取活动号，预测线
     global pred_score_json
-    global event_id
     # 初始化活动号
     event_data = currentevent()
-    event_id = event_data["id"] if int(event_data["id"]) > event_id else event_id
     # 初始化预测线
     if not pred_score_json.get('data'):
         await pjsk_pred_update()
-    url_list = [i + '/user/{user_id}/event/' + str(event_id) + '/ranking' for i in api_base_url_list]
     if event_data.get('status', 'going') == 'counting':
         await pjsk_sk.finish('活动分数统计中，不要着急哦！', at_sender=True)
     # 处理用户参数
-    arg = re.sub(r'\D', "", msg.extract_plain_text().strip())
+    ranks = None
+    arg = re.sub(r'\D', " ", msg.extract_plain_text().strip())
+    if all(i.isdigit() for i in arg.split()):
+        ranks = [i.strip() for i in arg.split()]
+    else:
+        arg = arg.replace(" ", "")
     isprivate = False
-    # 若无参数，尝试获取用户绑定的id
-    if not arg:
-        qq_ls = get_message_at(event.raw_message)
-        qid = qq_ls[0] if qq_ls and qq_ls[0] != event.self_id else event.user_id
-        arg, isprivate = await PjskBind.get_user_bind(qid)
+    # 输入的参数并不是多个排名
+    if not ranks or len(ranks) == 1:
+        # 若无参数，尝试获取用户绑定的id
         if not arg:
-            await pjsk_sk.finish(
-                f"{'你' if event.user_id == qid else '用户'}还没有绑定哦",
-                at_sender=True
-            )
-        if isprivate and qid != event.user_id:
-            await pjsk_sk.finish("查不到捏，可能是不给看", at_sender=True)
-        param = {'targetUserId': arg}
-    # 若有参数，区别处理
-    # 输入的是用户id或者排名
-    elif arg.isdigit():
-        search_type = 'targetUserId' if len(arg) > 8 else 'targetRank'
-        param = {search_type: arg}
-    # 若获取玩家信息失败
-    else:
-        await pjsk_sk.finish("你这ID有问题啊", at_sender=True)
-        return
-    # 获取自己排名信息
-    try:
-        url = random.choice(url_list)
-        userdata = await getUserData(url, param)
-        myid = userdata['id']
-        myname = userdata['name']
-        myscore = userdata['score']
-        myrank = userdata['rank']
-        myteaminfo = userdata['teaminfo']
-        assetbundleName = userdata['assetbundleName']
-    except IndexError:
-        await pjsk_sk.finish('查不到数据捏，可能这期活动没打', at_sender=True)
-        return
-    except Exception as e:
-        await pjsk_sk.finish('出错了，可能是bot网不好', at_sender=True)
-        logger.warning(f"pjsk查分失败。Error：{e}")
-        return
-    # 制作排名图片
-    img = Image.new('RGB', (600, 600), (255, 255, 255))
-    draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), 25)
-    if not isprivate:
-        myid = f' - {myid}'
-    else:
-        myid = ''
-    pos = 20
-    draw.text((20, pos), myname + myid, '#000000', font)
-    pos += 35
-    # 添加5v5队伍信息
-    if myteaminfo:
-        try:
-            team = await pjsk_update_manager.get_asset(
-                f'ondemand/event/{event_data["assetbundleName"]}/team_image', f'{assetbundleName}.png', block=True
-            )
-            team = team.resize((45, 45))
-            r, g, b, mask = team.split()
-            img.paste(team, (20, 63), mask)
-            team_pos = (70, 65)
-        except AttributeError:
-            team_pos = (20, 65)
-            pass
-        draw.text(
-            team_pos,
-            myteaminfo[0] + ('('+myteaminfo[1]+')' if myteaminfo[1] else ''),
-            '#000000',
-            font
-        )
-        pos += 50
-    # 添加自己排名信息
-    font2 = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), 38)
-    draw.text((20, pos), f'分数{myscore / 10000}W，排名{myrank}', '#000000', font2)
-    pos += 60
-    # 获取附近排名信息
-    mynear_rank = near_rank(myrank)
-    try:
-        for eachrank in mynear_rank:
-            try:
-                url = random.choice(url_list)
-                param = {'targetRank': eachrank['rank']}
-                user_data = json.loads((await AsyncHttpx.get(url, params=param)).text)
-                score = user_data['rankings'][0]['score']
-                deviation = abs(score - myscore) / 10000
-                draw.text(
-                    (20, pos),
-                    f'{eachrank["rank"]}名分数 {score / 10000}W  '
-                    f'{eachrank["tag"]}{deviation}W ',
-                    '#000000',
-                    font
+            qq_ls = get_message_at(event.raw_message)
+            qid = qq_ls[0] if qq_ls and qq_ls[0] != event.self_id else event.user_id
+            arg, isprivate = await PjskBind.get_user_bind(qid)
+            if not arg:
+                await pjsk_sk.finish(
+                    f"{'你' if event.user_id == qid else '用户'}还没有绑定哦",
+                    at_sender=True
                 )
-                pos += 38
-            except:
+            if isprivate and qid != event.user_id:
+                await pjsk_sk.finish("查不到捏，可能是不给看", at_sender=True)
+            param = {'targetUserId': arg}
+        # 若有参数，区别处理
+        # 输入的是用户id或者排名
+        elif arg.isdigit():
+            search_type = 'targetUserId' if len(arg) > 8 else 'targetRank'
+            param = {search_type: arg}
+        # 若获取玩家信息失败
+        else:
+            await pjsk_sk.finish("你这ID有问题啊", at_sender=True)
+            return
+    # 输入的参数是多个排名
+    else:
+        param = {'targetRank': ranks}
+        isprivate = True
+    await send_msg(matcher, param, isprivate, event_data)
+
+
+async def send_msg(
+    matcher: Matcher,
+    param: Dict[str, Union[str, List[str]]],
+    isprivate: bool,
+    event_data: Optional[Dict] = None
+):
+    global event_id
+    if event_data is None:
+        event_data = currentevent()
+    event_id = event_data["id"] if int(event_data["id"]) > event_id else event_id
+    url_list = [i + '/user/{user_id}/event/' + str(event_id) + '/ranking' for i in api_base_url_list]
+    # 单排名图片
+    is_simple = any(isinstance(i, List) for i in param.values())
+    if not is_simple:
+        # 获取自己排名信息
+        try:
+            url = random.choice(url_list)
+            userdata = await getUserData(url, param)
+            myid = userdata['id']
+            myname = userdata['name']
+            myscore = userdata['score']
+            myrank = userdata['rank']
+            myteaminfo = userdata['teaminfo']
+            assetbundleName = userdata['assetbundleName']
+        except IndexError:
+            await matcher.finish('查不到数据捏，可能这期活动没打', at_sender=True)
+            return
+        except (maintenanceIn, apiCallError, userIdBan) as e:
+            await matcher.finish(str(e), at_sender=True)
+            return
+        except Exception as e:
+            await matcher.finish(BUG_ERROR, at_sender=True)
+            logger.warning(f"pjsk查分失败。Error：{e}")
+            return
+        # 制作排名图片
+        img = Image.new('RGB', (600, 600), (255, 255, 255))
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), 25)
+        if not isprivate:
+            myid = f' - {myid}'
+        else:
+            myid = ''
+        pos = 20
+        draw.text((20, pos), myname + myid, '#000000', font)
+        pos += 35
+        # 添加5v5队伍信息
+        if myteaminfo:
+            try:
+                team = await pjsk_update_manager.get_asset(
+                    f'ondemand/event/{event_data["assetbundleName"]}/team_image', f'{assetbundleName}.png',
+                    block=True
+                )
+                team = team.resize((45, 45))
+                r, g, b, mask = team.split()
+                img.paste(team, (20, 63), mask)
+                team_pos = (70, 65)
+            except AttributeError:
+                team_pos = (20, 65)
                 pass
-    except Exception as e:
-        logger.warning(f'获取附近排名玩家信息错误，Error:{e}')
-        pass
-    pos += 10
-    # 补充预测线数据&活动剩余时间
-    if event_data['status'] == 'going':
-        # 补充预测线数据
-        if pred_score_json['id'] == event_id:
+            draw.text(
+                team_pos,
+                myteaminfo[0] + ('(' + myteaminfo[1] + ')' if myteaminfo[1] else ''),
+                '#000000',
+                font
+            )
+            pos += 50
+        # 添加自己排名信息
+        font2 = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), 38)
+        draw.text((20, pos), f'分数{myscore / 10000}W，排名{myrank}', '#000000', font2)
+        pos += 60
+        # 获取附近排名信息
+        mynear_rank = near_rank(myrank)
+        try:
             for eachrank in mynear_rank:
-                if pred_score_json['id'] == event_id and event_data['status'] == 'going':
-                    pred = pred_score_json['data'].get(str(eachrank['rank']))
-                else:
-                    pred = None
-                if pred:
+                try:
+                    url = random.choice(url_list)
+                    param = {'targetRank': eachrank['rank']}
+                    user_data = await getUserData(url, param)
+                    score = user_data['score']
+                    deviation = abs(score - myscore) / 10000
                     draw.text(
                         (20, pos),
-                        f'{eachrank["rank"]}名 预测{pred / 10000}W',
+                        f'{eachrank["rank"]}名分数 {score / 10000}W  '
+                        f'{eachrank["tag"]}{deviation}W ',
                         '#000000',
                         font
                     )
                     pos += 38
-            font3 = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), 16)
-            draw.text((400, pos + 11), '预测线来自33（3-3.dev）', (150, 150, 150), font3)
-        # 活动剩余时间
-        if event_data["id"] == event_id:
-            draw.text((20, pos), '活动还剩' + event_data['remain'], '#000000', font)
-            pos += 38
-    # 发送排名图片
-    img = img.crop((0, 0, 600, pos + 20))
-    await pjsk_sk.finish(image(b64=pic2b64(img)))
+                except:
+                    pass
+        except Exception as e:
+            logger.warning(f'获取附近排名玩家信息错误，Error:{e}')
+            pass
+        pos += 10
+        # 补充预测线数据&活动剩余时间
+        if event_data['status'] == 'going':
+            # 补充预测线数据
+            if pred_score_json['id'] == event_id:
+                for eachrank in mynear_rank:
+                    if pred_score_json['id'] == event_id and event_data['status'] == 'going':
+                        pred = pred_score_json['data'].get(str(eachrank['rank']))
+                    else:
+                        pred = None
+                    if pred:
+                        draw.text(
+                            (20, pos),
+                            f'{eachrank["rank"]}名 预测{pred / 10000}W',
+                            '#000000',
+                            font
+                        )
+                        pos += 38
+                font3 = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), 16)
+                draw.text((400, pos + 11), '预测线来自33（3-3.dev）', (150, 150, 150), font3)
+            # 活动剩余时间
+            if event_data["id"] == event_id:
+                draw.text((20, pos), '活动还剩' + event_data['remain'], '#000000', font)
+                pos += 38
+        # 发送排名图片
+        img = img.crop((0, 0, 600, pos + 20))
+        await matcher.finish(image(b64=pic2b64(img)))
+    # 多排名图片
+    else:
+        result = ''
+        for q in param.keys():
+            for userid in param[q]:
+                try:
+                    url = random.choice(url_list)
+                    userdata = await getUserData(url, {q: userid})
+                    userId = userdata['id']
+                    name = userdata['name']
+                    score = userdata['score']
+                    rank = userdata['rank']
+                    teaminfo = userdata['teaminfo']
+                    teamname = teaminfo[1] or teaminfo[0] if teaminfo else ''
+                except Exception:
+                    continue
+                else:
+                    msg = f'{name}{userId}\n{teamname}分数{score / 10000}W，排名{rank}'
+                    result += f'{msg}\n\n'
+        if result:
+            try:
+                await matcher.finish(result[:-2])
+            except ActionFailed:
+                await matcher.finish(image(b64=pic2b64(text2image(result[:-2]))))
+        else:
+            await matcher.finish(BUG_ERROR + '\n查分仅支持前百！')
 
 
 @pjsk_event_update.handle()
@@ -379,3 +441,22 @@ async def _():
     except Exception as e:
         logger.warning(f"pjsk更新活动号失败！Error:{e}")
 
+
+# 自动更新前百分数
+@scheduler.scheduled_job(
+    "interval",
+    minutes=30
+)
+async def _():
+    global event_id
+    try:
+        tmp_id = (await getEventId(current_event_url_bak))['eventId']
+        event_id = int(tmp_id) if int(tmp_id) > int(event_id) else event_id
+        url_list = [i + '/user/{user_id}/event/' + str(tmp_id) + '/ranking' for i in api_base_url_list]
+        url = random.choice(url_list) + '?rankingViewType=top100'
+        ranking = await callapi(url)
+        with open(data_path / 'sktop100.json', 'w', encoding='utf-8') as f:
+            f.write(json.dumps(ranking, sort_keys=True, indent=4))
+        logger.info(f"pjsk更新前百活动分数成功！")
+    except Exception as e:
+        logger.warning(f"pjsk更新前百活动分数失败！Error:{e}")

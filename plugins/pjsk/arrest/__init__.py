@@ -4,10 +4,11 @@ import traceback
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import MessageEvent, Message, ActionFailed
 from nonebot.params import CommandArg
-from utils.http_utils import AsyncHttpx
+from services import logger
 from utils.imageutils import text2image, pic2b64
 from utils.message_builder import image
-from .._utils import currentrankmatch, get_userid_preprocess
+from .._errors import maintenanceIn, userIdBan, apiCallError
+from .._utils import currentrankmatch, get_userid_preprocess, callapi
 from .._models import UserProfile
 from .._config import api_base_url_list, rankmatchgrades, BUG_ERROR, TIMEOUT_ERROR, NOT_PLAYER_ERROR
 
@@ -53,6 +54,9 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     except (json.decoder.JSONDecodeError, IndexError):
         await pjsk_assest.finish(NOT_PLAYER_ERROR)
         return
+    except (maintenanceIn, userIdBan) as e:
+        await pjsk_assest.finish(str(e))
+        return
     except:
         traceback.print_exc()
         await pjsk_assest.finish(BUG_ERROR)
@@ -78,17 +82,9 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     # 排位数据
     rankmatchid = currentrankmatch()
     try:
-        data = (
-            await AsyncHttpx.get(
-                f'{random.choice(api_base_url_list)}/user/%7Buser_id%7D/rank-match-season/{rankmatchid}/'
-                f'ranking?targetUserId={userid}'
-            )
-        ).json()
-    except:
-        await pjsk_assest.finish(TIMEOUT_ERROR)
-        return
-
-    try:
+        url = random.choice(api_base_url_list) + \
+            f'/user/%7Buser_id%7D/rank-match-season/{rankmatchid}/ranking?targetUserId={userid}'
+        data = await callapi(url)
         ranking = data['rankings'][0]['userRankMatchSeason']
         grade = int((ranking['rankMatchTierId'] - 1) / 4) + 1
         rktext = ''
@@ -114,13 +110,13 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
         rktext += f"最高连胜：{ranking['maxConsecutiveWinCount']}\n"
     except IndexError:
         rktext = '未参加当期排位赛'
-    except:
+    except (maintenanceIn, apiCallError, userIdBan) as e:
         rktext = ''
+    except Exception as e:
+        rktext = ''
+        logger.warning(f"pjsk逮捕查排位失败。Error：{e}")
     text = text + ('\n\n' + rktext if rktext else '')
     try:
-        await pjsk_assest.finish('\n' + text, at_sender=True)
+        await pjsk_assest.finish(text)
     except ActionFailed:
-        await pjsk_assest.finish(
-            image(b64=pic2b64(text2image(text))),
-            at_sender=True
-        )
+        await pjsk_assest.finish(image(b64=pic2b64(text2image(text))))

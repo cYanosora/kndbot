@@ -264,19 +264,14 @@ def _vocalimg(musicid):
 # 获取歌曲长度，调用mutagen
 async def _musiclength(musicid, fillerSec=0):
     try:
-        # print('开始获取歌曲长度')
         with open(data_path / r'musicVocals.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-        # print('开始读取歌曲长度')
         for vocal in data:
             if vocal['musicId'] == musicid:
                 path = f'ondemand/music/long/{vocal["assetbundleName"]}'
                 file = f'{vocal["assetbundleName"]}.mp3'
                 await pjsk_update_manager.update_jp_assets(path, file, True)
-                # print('下载资源完毕')
                 audio = MP3(rf'{data_path / path / file}')
-                # print('歌曲信息：', audio.info)
-                # print(f'得到歌曲长度：{audio.info.length - fillerSec}')
                 return audio.info.length - fillerSec
         return 0
     except Exception as e:
@@ -516,11 +511,21 @@ def jinduChart(score):
         del score['33+musicId']
     except KeyError:
         pass
+
+    delLevel = []
+    for level in score:
+        if score[level][3] == 0:
+            delLevel.append(level)
+
+    for level in delLevel:
+        del score[level]
+
     pic = Image.new("RGBA", (50 + 40 * len(score), 220), (0, 0, 0, 0))
     i = 0
+
     font = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Bold.otf'), 18)
+    draw = ImageDraw.Draw(pic)
     for level in score:
-        draw = ImageDraw.Draw(pic)
         draw.text((34 + 40 * i, 185), str(level), (0, 0, 0), font)
 
         # 画总曲数
@@ -528,7 +533,7 @@ def jinduChart(score):
         w = int(font.getsize(str(score[level][3]))[0] / 2)
         draw.text(
             (43 + 40 * i - w, 12), str(score[level][3]), (68, 68, 102), font,
-            stroke_width=1, stroke_fill=(255, 255, 255)
+            stroke_width=2, stroke_fill=(255, 255, 255)
         )
 
         # Clear
@@ -538,7 +543,7 @@ def jinduChart(score):
             w = int(font.getsize(str(score[level][2]))[0] / 2)
             draw.text(
                 (43 + 40 * i - w, 152 - int(140 * ratio)), str(score[level][2]), (255, 183, 77), font,
-                stroke_width=1, stroke_fill=(255, 255, 255)
+                stroke_width=2, stroke_fill=(255, 255, 255)
             )
 
         # FC
@@ -548,7 +553,7 @@ def jinduChart(score):
             w = int(font.getsize(str(score[level][1]))[0] / 2)
             draw.text(
                 (43 + 40 * i - w, 152 - int(140 * ratio)), str(score[level][1]), (240, 98, 146), font,
-                stroke_width=1, stroke_fill=(255, 255, 255)
+                stroke_width=2, stroke_fill=(255, 255, 255)
             )
 
         # AP
@@ -558,7 +563,7 @@ def jinduChart(score):
             w = int(font.getsize(str(score[level][0]))[0] / 2)
             draw.text(
                 (43 + 40 * i - w, 152 - int(140 * ratio)), str(score[level][0]), (100, 181, 246), font,
-                stroke_width=1, stroke_fill=(255, 255, 255)
+                stroke_width=2, stroke_fill=(255, 255, 255)
             )
 
         i += 1

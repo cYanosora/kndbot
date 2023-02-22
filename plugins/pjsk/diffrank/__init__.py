@@ -144,80 +144,10 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
     r,g,b,mask = userdataimg.split()
     pic.paste(userdataimg, (0, 0), mask)
     draw = ImageDraw.Draw(pic)
-    if error:
-        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 35)
-        draw.text((215, 65), '获取个人数据发生错误', fill=(0, 0, 0), font=font_style)
-        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 15)
-        draw.text((218, 114), '可能由于bot网不好或者游戏正在维护', fill=(0, 0, 0), font=font_style)
-    elif profile is not None:
-        with open(data_path / 'cards.json', 'r', encoding='utf-8') as f:
-            cards = json.load(f)
-        try:
-            assetbundleName = ''
-            for i in cards:
-                if i['id'] == profile.userDecks[0]:
-                    assetbundleName = i['assetbundleName']
-            if profile.special_training[0]:
-                cardimg = await pjsk_update_manager.get_asset(
-                    f'startapp/thumbnail/chara', f'{assetbundleName}_after_training.png'
-                )
-            else:
-                cardimg = await pjsk_update_manager.get_asset(
-                    f'startapp/thumbnail/chara', f'{assetbundleName}_normal.png'
-                )
-
-            cardimg = cardimg.resize((116, 116))
-            r, g, b, mask = cardimg.split()
-            pic.paste(cardimg, (68, 70), mask)
-        except FileNotFoundError:
-            pass
-        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 35)
-        draw.text((215, 65), profile.name, fill=(0, 0, 0), font=font_style)
-        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 15)
-        draw.text((218, 114), '发送"不给看"可隐藏打歌数据', fill=(0, 0, 0), font=font_style)
-        font_style = ImageFont.truetype(str(FONT_PATH / "FOT-RodinNTLGPro-DB.ttf"), 28)
-        draw.text((314, 150), str(profile.rank), fill=(255, 255, 255), font=font_style)
-
-        for i in profile.userProfileHonors:
-            if i['seq'] == 1:
-                try:
-                    honorpic = await generatehonor(i, True)
-                    honorpic = honorpic.resize((226, 48))
-                    r, g, b, mask = honorpic.split()
-                    pic.paste(honorpic, (59, 206), mask)
-                except:
-                    pass
-
-        for i in profile.userProfileHonors:
-            if i['seq'] == 2:
-                try:
-                    honorpic = await generatehonor(i, False)
-                    honorpic = honorpic.resize((107, 48))
-                    r, g, b, mask = honorpic.split()
-                    pic.paste(honorpic, (290, 206), mask)
-                except:
-                    pass
-
-        for i in profile.userProfileHonors:
-            if i['seq'] == 3:
-                try:
-                    honorpic = await generatehonor(i, False)
-                    honorpic = honorpic.resize((107, 48))
-                    r, g, b, mask = honorpic.split()
-                    pic.paste(honorpic, (403, 206), mask)
-                except:
-                    pass
-    elif isprivate:
-        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 35)
-        draw.text((215, 65), '成绩已隐藏', fill=(0, 0, 0), font=font_style)
-        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 15)
-        draw.text((218, 114), '发送"给看"可查看歌曲成绩', fill=(0, 0, 0), font=font_style)
-    else:
-        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 35)
-        draw.text((215, 65), '未绑定日服账号', fill=(0, 0, 0), font=font_style)
-        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 15)
-        draw.text((218, 114), '绑定后可查看歌曲成绩', fill=(0, 0, 0), font=font_style)
-
+    font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 35)
+    draw.text((215, 65), '数据已无法获取', fill=(0, 0, 0), font=font_style)
+    font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 15)
+    draw.text((218, 114), '由于日服api限制，详细打歌数据已停用', fill=(0, 0, 0), font=font_style)
     font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 30)
     draw.text((65, 264), title, fill=(0, 0, 0), font=font_style)
 

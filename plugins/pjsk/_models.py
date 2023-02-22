@@ -2,7 +2,6 @@ import math
 import requests
 import yaml
 import pytz
-import time
 import random
 import datetime
 from typing import List, Dict, Union, Optional
@@ -14,6 +13,7 @@ from ._autoask import pjsk_update_manager
 from ._card_utils import cardthumnail, cardlarge
 from ._common_utils import t2i, union
 from ._config import api_base_url_list, data_path
+from ._errors import userIdBan, maintenanceIn
 from ._event_utils import analysisunitid
 
 try:
@@ -383,8 +383,9 @@ class UserProfile(object):
             resp = requests.get(url, timeout=10)
         data = json.loads(resp.content)
         if data == {'status': 'maintenance_in'}:
-            raise Exception('服务器正在维护')
-        self.name = data['user']['userGamedata']['name']
+            raise maintenanceIn
+        elif data == {'status': 'user_id_ban'}:
+            raise userIdBan
         try:
             self.twitterId = data['userProfile']['twitterId']
         except:
@@ -397,110 +398,29 @@ class UserProfile(object):
         except:
             pass
 
-        self.rank = data['user']['userGamedata']['rank']
         try:
-            self.characterId = data['userChallengeLiveSoloResults'][0]['characterId']
-            self.highScore = data['userChallengeLiveSoloResults'][0]['highScore']
+            self.characterId = data['userChallengeLiveSoloResult']['characterId']
+            self.highScore = data['userChallengeLiveSoloResult']['highScore']
         except:
             pass
         self.characterRank = data['userCharacters']
-
         self.userProfileHonors = data['userProfileHonors']
-        with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
-            allmusic = json.load(f)
-        with open(data_path / 'realtime/musicDifficulties.json', 'r', encoding='utf-8') as f:
-            musicDifficulties = json.load(f)
-        result = {}
-        now = int(time.time() * 1000)
-        self.masterscore['33+musicId'] = []
-        for music in allmusic:
-            result[music['id']] = [0, 0, 0, 0, 0]
-            if music['publishedAt'] < now:
-                found = [0, 0]
-                for diff in musicDifficulties:
-                    if music['id'] == diff['musicId'] and diff['musicDifficulty'] == 'expert':
-                        playLevel = diff['playLevel']
-                        self.expertscore[playLevel][3] = self.expertscore[playLevel][3] + 1
-                        found[0] = 1
-                    elif music['id'] == diff['musicId'] and diff['musicDifficulty'] == 'master':
-                        playLevel = diff['playLevel']
-                        if playLevel >= 34:
-                            self.masterscore['33+musicId'].append(music['id'])
-                        self.masterscore[playLevel][3] = self.masterscore[playLevel][3] + 1
-                        found[1] = 1
-                    if found == [1, 1]:
-                        break
-        for music in data['userMusicResults']:
-            musicId = music['musicId']
-            musicDifficulty = music['musicDifficulty']
-            playResult = music['playResult']
-            self.mvpCount = self.mvpCount + music['mvpCount']
-            self.superStarCount = self.superStarCount + music['superStarCount']
-            if musicDifficulty == 'easy':
-                diffculty = 0
-            elif musicDifficulty == 'normal':
-                diffculty = 1
-            elif musicDifficulty == 'hard':
-                diffculty = 2
-            elif musicDifficulty == 'expert':
-                diffculty = 3
-            else:
-                diffculty = 4
-            try:
-                if playResult == 'full_perfect':
-                    if result[musicId][diffculty] < 3:
-                        result[musicId][diffculty] = 3
-                elif playResult == 'full_combo':
-                    if result[musicId][diffculty] < 2:
-                        result[musicId][diffculty] = 2
-                elif playResult == 'clear':
-                    if result[musicId][diffculty] < 1:
-                        result[musicId][diffculty] = 1
-            except KeyError:
-                # 韩服删除了on the rocks等歌曲 但这些歌曲成绩还保留在用户profile数据中 匹配不到歌曲会造成KeyError
-                pass
-        for music in result:
-            for i in range(0, 5):
-                if result[music][i] == 3:
-                    self.full_perfect[i] = self.full_perfect[i] + 1
-                    self.full_combo[i] = self.full_combo[i] + 1
-                    self.clear[i] = self.clear[i] + 1
-                elif result[music][i] == 2:
-                    self.full_combo[i] = self.full_combo[i] + 1
-                    self.clear[i] = self.clear[i] + 1
-                elif result[music][i] == 1:
-                    self.clear[i] = self.clear[i] + 1
-                if i == 4:
-                    for diff in musicDifficulties:
-                        if music == diff['musicId'] and diff['musicDifficulty'] == 'master':
-                            playLevel = diff['playLevel']
-                            break
-                    if result[music][i] == 3:
-                        self.masterscore[playLevel][0] += 1
-                        self.masterscore[playLevel][1] += 1
-                        self.masterscore[playLevel][2] += 1
-                    elif result[music][i] == 2:
-                        self.masterscore[playLevel][1] += 1
-                        self.masterscore[playLevel][2] += 1
-                    elif result[music][i] == 1:
-                        self.masterscore[playLevel][2] += 1
-                elif i == 3:
-                    for diff in musicDifficulties:
-                        if music == diff['musicId'] and diff['musicDifficulty'] == 'expert':
-                            playLevel = diff['playLevel']
-                            break
-                    if result[music][i] == 3:
-                        self.expertscore[playLevel][0] += 1
-                        self.expertscore[playLevel][1] += 1
-                        self.expertscore[playLevel][2] += 1
-                    elif result[music][i] == 2:
-                        self.expertscore[playLevel][1] += 1
-                        self.expertscore[playLevel][2] += 1
-                    elif result[music][i] == 1:
-                        self.expertscore[playLevel][2] += 1
-        self.musicResult = result
+
+        # 打歌数据
+        # jp
+        self.name = data['user']['name']
+        self.rank = data['user']['rank']
+        count_data = data['userMusicDifficultyClearCount']
+        self.full_perfect = ['无数据'] * 5
+        self.full_combo = [count_data[i]['fullCombo'] for i in range(5)]
+        self.clear = [count_data[i]['liveClear'] for i in range(5)]
+        self.mvpCount = data['userMultiLiveTopScoreCount']['mvp']
+        self.superStarCount = data['userMultiLiveTopScoreCount']['superStar']
         for i in range(0, 5):
-            self.userDecks[i] = data['userDecks'][0][f'member{i + 1}']
+            # jp
+            self.userDecks[i] = data['userDeck'][f'member{i + 1}']
+            # other
+            # self.userDecks[i] = data['userDecks'][0][f'member{i + 1}']
             for userCards in data['userCards']:
                 if userCards['cardId'] != self.userDecks[i]:
                     continue
