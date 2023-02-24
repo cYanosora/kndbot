@@ -143,12 +143,17 @@ def getCharaFeature(charaid: int) -> str:
         data = json.load(f)
     profile = data[str(charaid)]
     feature_lst = ['hobby', 'specialSkill', 'weak', 'favoriteFood', 'hatedFood']
+    profile = list(filter(lambda x:profile[x] in feature_lst,profile))
     key = feature_lst.pop(random.randint(0, len(feature_lst)-1))
     result = ''
     cnt = 0
     while not result:
         cnt += 1
-        cuts = list(pseg.cut(profile[key]))
+        try:
+            cuts = list(pseg.cut(profile[key]))
+        except KeyError:
+
+            continue
         res = ''
         for pair in cuts:
             if pair.flag in ['an', 'n', 'nr', 'nr1', 'nr2', 'nrj', 'nrf', 'ns', 'nsf', 'nt', 'nz', 'nl', 'ng']:

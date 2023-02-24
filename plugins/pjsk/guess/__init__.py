@@ -332,12 +332,15 @@ async def _(event: GroupMessageEvent, state: T_State):
             cardid = pjskguess[GUESS_CARD][event.group_id]['cardid']
             charaid = pjskguess[GUESS_CARD][event.group_id]['charaid']
             diff = pjskguess[GUESS_CARD][event.group_id]['diff']
-            if diff == 1:
-                _ts = random.sample(range(4), k=max_tips_count-1)
-            elif diff == 2:
-                _ts = random.sample(range(3), k=max_tips_count-1)
+            if charaid in [21, 22, 23, 24, 25, 26]:
+                _ts = [0, 2]
             else:
-                _ts = [0, 1]
+                if diff == 1:
+                    _ts = random.sample(range(4), k=max_tips_count-1)
+                elif diff == 2:
+                    _ts = random.sample(range(3), k=max_tips_count-1)
+                else:
+                    _ts = [0, 1]
             for _t in _ts:
                 content = '获取提示失败，可能是バグ'
                 if _t == 0:
@@ -470,7 +473,7 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
         total_count = int(reg_group[2]) if 10 <= int(reg_group[2]) <= 50 else 50
     else:
         total_count = 10
-    if game_type == GUESS_CARD and guess_diff > 3:
+    if game_type == GUESS_CARD and guess_diff is not None and guess_diff > 3:
         await pjsk_guessrank.finish("没有这种类型的排行榜哦！")
     users, ranks = await PjskGuessRank.get_rank(event.group_id, game_type, guess_diff)
     if len(users) == 0:

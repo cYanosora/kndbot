@@ -5,7 +5,7 @@ from ._config import GUESS_CARD, GUESS_MUSIC, pjskguess
 from .._config import data_path
 from .._song_utils import get_songs_data, save_songs_data
 require('image_management')
-from plugins.image_management.pjsk_images.pjsk_db_source import PjskAlias
+from ...image_management.pjsk_images.pjsk_db_source import PjskAlias
 try:
     import ujson as json
 except:
