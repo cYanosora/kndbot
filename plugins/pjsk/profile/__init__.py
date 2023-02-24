@@ -1,4 +1,5 @@
 import json
+import time
 from PIL import Image, ImageFont, ImageDraw
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import MessageEvent, Message
@@ -7,9 +8,10 @@ from configs.path_config import FONT_PATH
 from utils.imageutils import pic2b64
 from utils.message_builder import image
 from .._autoask import pjsk_update_manager
+from .._errors import pjskError
 from .._utils import generatehonor, get_userid_preprocess
 from .._models import UserProfile
-from .._config import data_path
+from .._config import data_path, suite_path, BUG_ERROR
 
 __plugin_name__ = "烧烤档案/pjskprofile"
 __plugin_type__ = "烧烤相关&uni移植"
@@ -45,18 +47,22 @@ pjsk_profile = on_command('烧烤档案', aliases={"profile", "pjskprofile", "�
 
 @pjsk_profile.handle()
 async def _(event: MessageEvent, msg: Message = CommandArg()):
+    # 参数解析
     state = await get_userid_preprocess(event, msg)
     if reply := state['error']:
         await pjsk_profile.finish(reply, at_sender=True)
     userid = state['userid']
     isprivate = state['private']
-    await pjsk_profile.send("收到", at_sender=True)
+    # 获取信息
     profile = UserProfile()
     try:
-        await profile.getprofile(userid)
+        await profile.getprofile(userid, 'profile')
+    except pjskError as e :
+        await pjsk_profile.finish(str(e))
     except:
-        await pjsk_profile.finish("出错了，可能是bot网不好")
-        return
+        await pjsk_profile.finish(BUG_ERROR)
+    await pjsk_profile.send("收到", at_sender=True)
+    # 生成图片
     id = '保密' if isprivate else userid
     img = Image.open(data_path / 'pics' / 'bg.png')
     with open(data_path / 'cards.json', 'r', encoding='utf-8') as f:
@@ -193,5 +199,13 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
         draw.text((1032, 315), str(profile.highScore), fill=(0, 0, 0), font=font_style)
     except:
         pass
-
+    if not profile.isNewData:
+        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 25)
+        mtime = (suite_path / f'{userid}.json').stat().st_mtime
+        updatetime = time.localtime(mtime)
+        draw.text(
+            (68, 10), '数据上传时间：' + time.strftime("%Y-%m-%d %H:%M:%S", updatetime),
+            fill=(100, 100, 100), font=font_style
+        )
+    # 发送图片
     await pjsk_profile.finish(image(b64=pic2b64(img)))

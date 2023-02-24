@@ -1,28 +1,23 @@
 import random
 import re
 import time
-import urllib.parse
-import requests
 import yaml
-from datetime import datetime
-from typing import List, Dict, Optional, Any
+from typing import List, Dict
 from PIL import Image
 from nonebot.adapters.onebot.v11 import MessageEvent, Message
 from nonebot.params import CommandArg
 from utils.http_utils import AsyncHttpx
 from utils.utils import get_message_at
 from ._autoask import pjsk_update_manager
-from ._common_utils import timeremain
+from ._common_utils import timeremain, callapi
 from ._config import (
     rank_levels,
-    headers,
     data_path,
     TIMEOUT_ERROR,
     ID_ERROR,
     REFUSED_ERROR,
-    api_base_url_list, ONLY_TOP100_ERROR
+    api_base_url_list
 )
-from ._errors import maintenanceIn, userIdBan, apiCallError
 from ._models import PjskBind
 try:
     import ujson as json
@@ -140,57 +135,6 @@ def near_rank(rank: int) -> List:
             break
     return tmp
 
-
-# 通用api查询
-async def callapi(url: str, param: Optional[Dict] = None) -> Dict[str, Any]:
-    if param is not None:
-        q = urllib.parse.urlencode(param)
-        url = url + '?' + q
-    # 处理sk和rk的api
-    json_path = None
-    if r'/event/' in url:
-        json_path = data_path / 'sktop100.json'
-    elif r'/rank-match-season/' in url:
-        json_path = data_path / 'rktop100.json'
-    if 'targetRank' in url and json_path:
-        targetRank = int(url[url.find('targetRank=') + len('targetRank='):])
-        with open(json_path, 'r', encoding='utf-8') as f:
-            top100 = json.load(f)
-        updatetime = json_path.stat().st_mtime
-        for single in top100["rankings"]:
-            if single["rank"] == targetRank:
-                return {
-                    "rankings": [single],
-                    'updateTime': datetime.fromtimestamp(updatetime).strftime("%m-%d %H:%M:%S")
-                }
-        else:
-            raise apiCallError(ONLY_TOP100_ERROR)
-    elif 'targetUserId' in url and json_path:
-        targetUserId = int(url[url.find('targetUserId=') + len('targetUserId='):])
-        with open(json_path, 'r', encoding='utf-8') as f:
-            jptop100 = json.load(f)
-        updatetime = json_path.stat().st_mtime
-        for single in jptop100["rankings"]:
-            if single["userId"] == targetUserId:
-                return {
-                    "rankings": [single],
-                    'updateTime': datetime.fromtimestamp(updatetime).strftime("%m-%d %H:%M:%S")
-                }
-        else:
-            raise apiCallError(ONLY_TOP100_ERROR)
-    # 处理其他api
-    try:
-        data = (await AsyncHttpx.get(url, timeout=4)).json()
-    except:
-        data = requests.get(url).json()
-    try:
-        if data == {'status': 'maintenance_in'}:
-            raise maintenanceIn
-        elif data == {'status': 'user_id_ban'}:
-            raise userIdBan
-        return data
-    except:
-        raise apiCallError
 
 
 # 获取用户当期活动信息

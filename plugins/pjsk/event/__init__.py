@@ -6,7 +6,7 @@ from typing import Tuple, List
 from nonebot import on_command, require
 from nonebot.adapters.onebot.v11 import Message
 from nonebot.params import CommandArg, Command
-from .._config import data_path, BUG_ERROR
+from .._config import data_path
 from .._utils import currentevent
 from .._event_utils import drawevent, draweventall
 from .._models import EventInfo
@@ -14,7 +14,7 @@ from utils.message_builder import image
 
 require('image_management')
 require('pjsk_images')
-from plugins.image_management.pjsk_images.pjsk_db_source import PjskAlias
+from ...image_management.pjsk_images.pjsk_db_source import PjskAlias
 
 __plugin_name__ = "活动查询/event"
 __plugin_type__ = "烧烤相关&uni移植"

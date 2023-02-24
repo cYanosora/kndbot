@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Optional
 from PIL import Image, ImageFont, ImageDraw
 from utils.http_utils import AsyncHttpx
-from plugins.pjsk._map_utils import chart
-from plugins.pjsk._autoask import pjsk_update_manager
-from plugins.pjsk._config import data_path
+from .._map_utils import chart
+from .._autoask import pjsk_update_manager
+from .._config import data_path
 
 # 常量定义
 alpha = 125

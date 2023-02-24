@@ -104,3 +104,10 @@ pred_score_json = {"data": {}, "time": 0, "id": event_id}
 
 # 烧烤资源存放路径
 data_path = RESOURCE_PATH / "masterdata"
+if not data_path.exists():
+    data_path.mkdir(parents=True, exist_ok=True)
+
+# 烧烤用户suite存放路径
+suite_path = data_path / "user_suites"
+if not suite_path.exists():
+    suite_path.mkdir(parents=True, exist_ok=True)

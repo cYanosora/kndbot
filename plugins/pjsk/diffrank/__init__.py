@@ -9,7 +9,7 @@ from configs.path_config import FONT_PATH
 from utils.imageutils import pic2b64
 from utils.message_builder import image
 from .._autoask import pjsk_update_manager
-from .._config import data_path
+from .._config import data_path, suite_path
 from .._models import PjskBind, UserProfile
 from .._utils import generatehonor
 
@@ -48,12 +48,13 @@ __plugin_cd_limit__ = {"cd": 60, "count_limit": 2, "rst": "别急，等[cd]秒�
 __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 
-# pjsk热度排行
-pjsk_hotrank = on_regex('^(.*)难度排行(.*)', priority=5, block=True)
+# pjsk难度排行
+pjsk_diffrank = on_regex('^(.*)难度排行(.*)', priority=5, block=True)
 
 
-@pjsk_hotrank.handle()
+@pjsk_diffrank.handle()
 async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
+    # 参数识别
     if not reg_group[0] and not reg_group[1]:
         level = 0
         fcap = 2
@@ -82,7 +83,7 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
             level = tmp_arg.strip()
         level = int(level) if level.isdigit() else 0
         if not tmp_arg.strip() and level == 0 and fcap == 0:
-            await pjsk_hotrank.finish(
+            await pjsk_diffrank.finish(
                 '参数错误，指令：难度排行 定数 难度\n'
                 '难度支持的输入: easy/ez, normal/nm, hard/hd, expert/ex, master/ma，如：难度排行 28 expert'
             )
@@ -90,6 +91,8 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
     target = []
     with open(data_path / 'realtime/musicDifficulties.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
+    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+        musics = json.load(f)
     for i in data:
         if (i['playLevel'] == level if level != 0 else True) and i['musicDifficulty'] == difficulty:
             try:
@@ -122,9 +125,10 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
     if userid and not isprivate:
         profile = UserProfile()
         try:
-            await profile.getprofile(userid=userid)
+            await profile.getprofile(userid=userid, query_type='rank')
             rankPic = await singleLevelRankPic(musicData, difficulty, profile.musicResult, oneRowCount=None if level != 0 else 5)
         except:
+            profile.isNewData = True
             rankPic = await singleLevelRankPic(musicData, difficulty, oneRowCount=None if level != 0 else 5)
             error = True
     else:
@@ -144,10 +148,77 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
     r,g,b,mask = userdataimg.split()
     pic.paste(userdataimg, (0, 0), mask)
     draw = ImageDraw.Draw(pic)
-    font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 35)
-    draw.text((215, 65), '数据已无法获取', fill=(0, 0, 0), font=font_style)
-    font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 15)
-    draw.text((218, 114), '由于日服api限制，详细打歌数据已停用', fill=(0, 0, 0), font=font_style)
+
+    if error:
+        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 35)
+        draw.text((215, 65), '数据已无法获取', fill=(0, 0, 0), font=font_style)
+        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 15)
+        draw.text((218, 114), '由于日服api限制，详细打歌数据已停用', fill=(0, 0, 0), font=font_style)
+    elif profile is not None:
+        with open(data_path / 'cards.json', 'r', encoding='utf-8') as f:
+            cards = json.load(f)
+        try:
+            assetbundleName = ''
+            for i in cards:
+                if i['id'] == profile.userDecks[0]:
+                    assetbundleName = i['assetbundleName']
+            if profile.special_training[0]:
+                cardimg = await pjsk_update_manager.get_asset(
+                    f'startapp/thumbnail/chara', f'{assetbundleName}_after_training.png'
+                )
+            else:
+                cardimg = await pjsk_update_manager.get_asset(
+                    f'startapp/thumbnail/chara', f'{assetbundleName}_normal.png'
+                )
+            cardimg = cardimg.resize((116, 116))
+            r, g, b, mask = cardimg.split()
+            pic.paste(cardimg, (68, 70), mask)
+        except FileNotFoundError:
+            pass
+
+        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 35)
+        draw.text((215, 65), profile.name, fill=(0, 0, 0), font=font_style)
+        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 15)
+        draw.text((218, 114), '发送"不给看"可隐藏打歌数据', fill=(0, 0, 0), font=font_style)
+        font_style = ImageFont.truetype(str(FONT_PATH / "FOT-RodinNTLGPro-DB.ttf"), 28)
+        draw.text((314, 150), str(profile.rank), fill=(255, 255, 255), font=font_style)
+
+        for i in profile.userProfileHonors:
+            if i['seq'] == 1:
+                try:
+                    honorpic = await generatehonor(i, True)
+                    honorpic = honorpic.resize((226, 48))
+                    r, g, b, mask = honorpic.split()
+                    pic.paste(honorpic, (59, 206), mask)
+                except:
+                    pass
+            elif i['seq'] == 2:
+                try:
+                    honorpic = await generatehonor(i, False)
+                    honorpic = honorpic.resize((107, 48))
+                    r, g, b, mask = honorpic.split()
+                    pic.paste(honorpic, (290, 206), mask)
+                except:
+                    pass
+            elif i['seq'] == 3:
+                try:
+                    honorpic = await generatehonor(i, False)
+                    honorpic = honorpic.resize((107, 48))
+                    r, g, b, mask = honorpic.split()
+                    pic.paste(honorpic, (403, 206), mask)
+                except:
+                    pass
+    elif isprivate:
+        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 35)
+        draw.text((215, 65), '成绩已隐藏', fill=(0, 0, 0), font=font_style)
+        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 15)
+        draw.text((218, 114), '发送"给看"可查看歌曲成绩', fill=(0, 0, 0), font=font_style)
+    else:
+        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 35)
+        draw.text((215, 65), '数据已无法获取', fill=(0, 0, 0), font=font_style)
+        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 15)
+        draw.text((218, 114), '由于日服api限制，详细打歌数据已停用', fill=(0, 0, 0), font=font_style)
+
     font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 30)
     draw.text((65, 264), title, fill=(0, 0, 0), font=font_style)
 
@@ -160,8 +231,17 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
               font=font_style)
     draw.text((50, pic.size[1] - 40), f'Updated in {time.strftime("%Y-%m-%d %H:%M:%S", updatetime)}        '
                                       '※定数每次统计时可能会改变', fill='#00CCBB', font=font_style)
+
+    if profile is not None:
+        if not profile.isNewData:
+            draw = ImageDraw.Draw(pic)
+            font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 25)
+            mtime = (suite_path / f'{userid}.json').stat().st_mtime
+            updatetime = time.localtime(mtime)
+            draw.text((68, 20), '数据上传时间：' + time.strftime("%Y-%m-%d %H:%M:%S", updatetime),
+                      fill=(100, 100, 100), font=font_style)
     pic = pic.convert("RGB")
-    await pjsk_hotrank.finish(image(b64=pic2b64(pic)))
+    await pjsk_diffrank.finish(image(b64=pic2b64(pic)))
 
 
 async def singleLevelRankPic(musicData, difficulty, musicResult=None, oneRowCount=None):

@@ -1,16 +1,15 @@
 import json
 import random
-import traceback
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import MessageEvent, Message, ActionFailed
 from nonebot.params import CommandArg
 from services import logger
 from utils.imageutils import text2image, pic2b64
 from utils.message_builder import image
-from .._errors import maintenanceIn, userIdBan, apiCallError
+from .._errors import maintenanceIn, userIdBan, apiCallError, pjskError
 from .._utils import currentrankmatch, get_userid_preprocess, callapi
 from .._models import UserProfile
-from .._config import api_base_url_list, rankmatchgrades, BUG_ERROR, TIMEOUT_ERROR, NOT_PLAYER_ERROR
+from .._config import api_base_url_list, rankmatchgrades, BUG_ERROR, NOT_PLAYER_ERROR
 
 __plugin_name__ = "逮捕"
 __plugin_type__ = "烧烤相关&uni移植"
@@ -48,24 +47,18 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
         await pjsk_assest.finish(reply, at_sender=True)
     userid = state['userid']
     isprivate = state['private']
+    profile = UserProfile()
     try:
-        profile = UserProfile()
-        await profile.getprofile(userid)
+        await profile.getprofile(userid, 'arrest')
     except (json.decoder.JSONDecodeError, IndexError):
         await pjsk_assest.finish(NOT_PLAYER_ERROR)
-        return
-    except (maintenanceIn, userIdBan) as e:
+    except pjskError as e:
         await pjsk_assest.finish(str(e))
-        return
     except:
-        traceback.print_exc()
         await pjsk_assest.finish(BUG_ERROR)
-        return
     text = f"{profile.name} - {userid}\n" if not isprivate else f"{profile.name}\n"
-    text += f"expert进度:FC {profile.full_combo[3]}/{profile.clear[3]}," \
-            f" AP{profile.full_perfect[3]}/{profile.clear[3]}\n" \
-            f"master进度:FC {profile.full_combo[4]}/{profile.clear[4]}," \
-            f" AP{profile.full_perfect[4]}/{profile.clear[4]}\n"
+    text += f"expert进度:FC {profile.full_combo[3]}/{profile.clear[3]}\n" \
+            f"master进度:FC {profile.full_combo[4]}/{profile.clear[4]}"
     ap33plus = profile.masterscore[33][0] + profile.masterscore[34][0] + profile.masterscore[35][0] + \
                profile.masterscore[36][0] + profile.masterscore[37][0]
     fc33plus = profile.masterscore[33][1] + profile.masterscore[34][1] + profile.masterscore[35][1] + \

@@ -1,4 +1,4 @@
-from plugins.pjsk._config import MAINTAIN_ERROR, USER_BAN_ERROR, NOT_SERVER_ERROR, TIMEOUT_ERROR, QUERY_BAN_ERROR
+from ._config import MAINTAIN_ERROR, USER_BAN_ERROR, NOT_SERVER_ERROR, TIMEOUT_ERROR, QUERY_BAN_ERROR
 
 
 class maintenanceIn(Exception):
@@ -39,3 +39,7 @@ class QueryBanned(Exception):
 
     def __str__(self):
         return self.e
+
+
+# 异常组
+pjskError = (maintenanceIn, userIdBan, apiCallError, serverNotSupported, QueryBanned)
