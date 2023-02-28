@@ -242,12 +242,15 @@ async def send_msg(
             if event_data["id"] == event_id:
                 draw.text((20, pos), '活动还剩' + event_data['remain'], '#000000', font)
                 pos += 38
+        pos += 38
+        draw.text((20, pos), f'数据生成于{userdata["updateTime"]}', '#000000', font)
         # 发送排名图片
         img = img.crop((0, 0, 600, pos + 20))
         await matcher.finish(image(b64=pic2b64(img)))
     # 多排名图片
     else:
         result = ''
+        updateTime = ''
         for q in param.keys():
             for userid in param[q]:
                 try:
@@ -258,13 +261,15 @@ async def send_msg(
                     score = userdata['score']
                     rank = userdata['rank']
                     teaminfo = userdata['teaminfo']
+                    updateTime = updateTime if updateTime else f'数据生成于{userdata["updateTime"]}'
                     teamname = teaminfo[1] or teaminfo[0] if teaminfo else ''
                 except Exception:
                     continue
                 else:
-                    msg = f'{name}{userId}\n{teamname}分数{score / 10000}W，排名{rank}'
+                    msg = f'{name} - {userId}\n{teamname}分数{score / 10000}W，排名{rank}'
                     result += f'{msg}\n\n'
         if result:
+            result = result[:-1] + updateTime
             try:
                 await matcher.finish(result[:-2])
             except ActionFailed:
@@ -349,7 +354,7 @@ async def _():
             image(b64=pic2b64(text2image(reply, fontsize=25, padding=(20, 10))))
         )
     else:
-        await pjsk_pred_query.finish("活动预测线获取出错了(>︿ <。'')")
+        await pjsk_pred_query.finish(BUG_ERROR)
 
 
 @pjsk_5v5_query.handle()
@@ -360,44 +365,37 @@ async def _():
             image(b64=pic2b64(text2image(reply, fontsize=25, padding=(20, 10))))
         )
     else:
-        await pjsk_pred_query.finish("5v5人数获取出错了(>︿ <。'')")
+        await pjsk_pred_query.finish(BUG_ERROR)
 
 
 async def pjsk_cheer_pred_update():
     global event_id
-    url = cheer_pred_url_bak + fr'/{event_id}'
     resp_text = ""
     try:
-        resp = await AsyncHttpx.get(url, headers=headers)
+        resp = requests.get(cheer_pred_url)
         data = resp.json()
-        # 因为AsyncHttpx封装的异步httpx处理不了跳转url，所以此处只能用阻塞式网络请求orz
-        resp = requests.get(cheer_pred_url, headers=headers)
-        other_data = resp.json()
-
+        if data['eventId'] != event_id:
+            return None
         with open(data_path / 'cheerfulCarnivalTeams.json', 'r', encoding='utf-8') as f:
             Teams = json.load(f)
         with open(data_path / 'translate.yaml', encoding='utf-8') as f:
             trans = yaml.load(f, Loader=yaml.FullLoader)
-        for each_team in data["cheerfulCarnivalTeamMemberCounts"]:
-            TeamId = each_team["cheerfulCarnivalTeamId"]
-            memberCount = each_team["memberCount"]
-            TeamRates = None
-            for each_TeamId in other_data['teams']:
-                if TeamId == each_TeamId:
-                    TeamRates = other_data['predictRates'][str(TeamId)]
-                    break
+        Teams.reverse()
+        for TeamId in data["members"]:
+            TeamRates = data['predictRates'].get(TeamId)
+            TeamName = data["names"].get(TeamId)
+            memberCount = data["members"][TeamId]
             try:
-                translate = f"({trans['cheerful_carnival_teams'][TeamId]})"
+                translate = f"({trans['cheerful_carnival_teams'][int(TeamId)]})"
             except KeyError:
                 translate = ''
-            for i in Teams:
-                if i['id'] == TeamId:
-                    resp_text += i['teamName'] + translate + " " + str(memberCount) + '人'
-                    if TeamRates is not None:
-                        resp_text += f' 预测胜率: {TeamRates*100:.3f}%\n'
-                    else:
-                        resp_text += '\n'
-                    break
+            if not TeamName:
+                for i in Teams:
+                    if i['id'] == int(TeamId):
+                        TeamName = i['teamName']
+                        break
+            resp_text += f"{TeamName}{translate} {memberCount}人"
+            resp_text += f' 预测胜率: {TeamRates*100:.3f}%\n' if TeamRates is not None else '\n'
         return resp_text[:-1]
     except Exception as e:
         logger.warning(f"pjsk查询5v5人数失败！Error:{e}")

@@ -142,18 +142,24 @@ def getCharaFeature(charaid: int) -> str:
     with open(data_path / 'characterProfiles.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
     profile = data[str(charaid)]
-    feature_lst = ['hobby', 'specialSkill', 'weak', 'favoriteFood', 'hatedFood']
-    profile = list(filter(lambda x:profile[x] in feature_lst,profile))
+    feature_lst = []
+    [
+        feature_lst.append(key)
+        for key in profile.keys()
+        if key in ['hobby', 'specialSkill', 'weak', 'favoriteFood', 'hatedFood']
+    ]
+    if len(feature_lst) == 0:
+        raise KeyError('此角色无任何可用特征信息')
     key = feature_lst.pop(random.randint(0, len(feature_lst)-1))
     result = ''
     cnt = 0
     while not result:
+        feature = {
+            'hobby': '爱好', 'specialSkill': '特技', 'weak': '弱点',
+            'favoriteFood': '喜欢的食物', 'hatedFood': '讨厌的食物'
+        }.get(key)
         cnt += 1
-        try:
-            cuts = list(pseg.cut(profile[key]))
-        except KeyError:
-
-            continue
+        cuts = list(pseg.cut(profile[key]))
         res = ''
         for pair in cuts:
             if pair.flag in ['an', 'n', 'nr', 'nr1', 'nr2', 'nrj', 'nrf', 'ns', 'nsf', 'nt', 'nz', 'nl', 'ng']:
@@ -161,10 +167,6 @@ def getCharaFeature(charaid: int) -> str:
             else:
                 res += ' '
         res = res.split()
-        feature = {
-            'hobby': '爱好', 'specialSkill': '特技', 'weak': '弱点',
-            'favoriteFood': '喜欢的食物', 'hatedFood': '讨厌的食物'
-        }.get(key)
         if not res:
             if cnt >= 3:
                 result = f'此角色的{feature}是{profile[key]}'

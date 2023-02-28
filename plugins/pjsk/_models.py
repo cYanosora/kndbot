@@ -852,6 +852,8 @@ class CardInfo(object):
                 for cardparams in each_card["cardParameters"]:
                     self.cardParameters[cardparams["cardParameterType"]] = cardparams["power"]
                 break
+        else:
+            raise KeyError('没有此id的卡面')
         # 日文技能效果
         with open(data_path / 'skills.json', 'r', encoding='utf-8') as f:
             skills = json.load(f)

@@ -179,7 +179,11 @@ async def _cardinfo(arg: Message = CommandArg()):
     file = path / f'id_{arg}.jpg'
     if not file.exists():
         card = CardInfo()
-        await card.getinfo(card_id)
+        try:
+            await card.getinfo(card_id)
+        except KeyError:
+            await cardinfo.finish("出错了，可能是没有此id的卡面")
+            return
         pic = await card.toimg()
         pic = pic.convert('RGB')
         pic.save(file, quality=85)
