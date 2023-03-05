@@ -26,7 +26,6 @@ def check_rule() -> T_RuleChecker:
                 event.group_id in pjskguess[guess] and
                 pjskguess[guess][event.group_id].get('isgoing', False)
             ):
-                print('通过rule')
                 state[PJSK_GUESS] = guess
                 return True
         return False

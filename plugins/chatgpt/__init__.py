@@ -245,7 +245,10 @@ async def rollback_conversation(event: MessageEvent, arg: Message = CommandArg()
 
 
 # 自动刷新token并保存
-@scheduler.scheduled_job("interval", minutes=config.chatgpt_refresh_interval)
+@scheduler.scheduled_job(
+    "interval",
+    minutes=config.chatgpt_refresh_interval
+)
 async def refresh_session() -> None:
     await chat_bot.refresh_session()
     setting.token = chat_bot.session_token

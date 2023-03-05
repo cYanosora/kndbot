@@ -2,9 +2,10 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Any, Dict, Optional
 from nonebot import get_driver
-from nonebot.log import logger
+from services import logger
 from nonebot.utils import escape_tag
 from playwright.async_api import Page, Route, async_playwright
+from playwright._impl._api_types import Error as PlaywrightAPIError
 
 driver = get_driver()
 try:
@@ -48,6 +49,7 @@ class Chatbot:
 
     async def playwright_start(self):
         """启动浏览器，在插件开始运行时调用"""
+        logger.info('插件首次运行，启动浏览器')
         playwright = await self.playwright.start()
         try:
             self.browser = await playwright.firefox.launch(
@@ -112,9 +114,13 @@ class Chatbot:
         page = await self.content.new_page()
         js = "Object.defineProperties(navigator, {webdriver:{get:()=>undefined}});"
         await page.add_init_script(js)
-        await page.goto(self.api_url + "/chat")
-        yield page
-        await page.close()
+        try:
+            await page.goto(self.api_url + "/chat")
+            yield page
+        except:
+            raise PlaywrightAPIError("无法访问chatgpt官网，可能是未正确设置代理")
+        finally:
+            await page.close()
 
     async def get_chat_response(self, prompt: str) -> str:
         """获取问题的回复"""
@@ -125,6 +131,7 @@ class Chatbot:
             if not await page.locator("text=Log out").count():
                 cf_flag = await self.get_cf_cookies(page)
             if not cf_flag:
+                await page.close()
                 return f"未能通过网站验证码校验，请重新尝试"
             logger.debug("正在发送请求")
 
@@ -143,15 +150,16 @@ class Chatbot:
             # session过期，需要重新设置session
             if await session_expired.is_visible():
                 logger.warning("检测到session过期")
+                await page.close()
                 return "token失效，请重新设置token"
             # 处理首次打开网页时会出现的弹窗
-            next_botton = page.locator(".btn.flex.justify-center.gap-2.btn-neutral.ml-auto")
+            next_botton = page.get_by_role("button", name="Next")
             await page.wait_for_timeout(1000)
             if await next_botton.is_visible():
                 logger.debug("检测到初次打开弹窗")
                 await next_botton.click()
                 await next_botton.click()
-                await page.click(".btn.flex.justify-center.gap-2.btn-primary.ml-auto")
+                await page.get_by_role("button", name="Done").click()
             # 输入问题，等待chatgpt响应
             async with page.expect_response(
                 self.api_url + "/backend-api/conversation",
@@ -206,6 +214,7 @@ class Chatbot:
                 response = json.loads(data)
                 self.parent_id = response["message"]["id"]
                 self.conversation_id = response["conversation_id"]
+        await page.close()
         return response["message"]["content"]["parts"][0]
 
     async def refresh_session(self) -> None:
@@ -231,6 +240,8 @@ class Chatbot:
                     self.session_token = i["value"]
                     break
             logger.debug("刷新会话成功")
+            await page.close()
+
 
     async def login(self) -> None:
         """

@@ -35,7 +35,8 @@ def checkRule() -> T_RuleChecker:
         ]
         # 使用烧烤图库
         if name not in name_ls and search_flag:
-            if not (name := await PjskAlias.query_name(name)):
+            name = await PjskAlias.query_name(name)
+            if not name or name not in name_ls:
                 return False
         type = type if type is not None else '日文'
         state['vits_name'] = name

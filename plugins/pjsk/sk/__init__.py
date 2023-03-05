@@ -237,15 +237,14 @@ async def send_msg(
                         )
                         pos += 38
                 font3 = ImageFont.truetype(str(FONT_PATH / 'SourceHanSansCN-Medium.otf'), 16)
-                draw.text((400, pos + 11), '预测线来自33（3-3.dev）', (150, 150, 150), font3)
+                draw.text((400, pos + 49), '预测线来自33（3-3.dev）', (150, 150, 150), font3)
             # 活动剩余时间
             if event_data["id"] == event_id:
                 draw.text((20, pos), '活动还剩' + event_data['remain'], '#000000', font)
-                pos += 38
         pos += 38
         draw.text((20, pos), f'数据生成于{userdata["updateTime"]}', '#000000', font)
         # 发送排名图片
-        img = img.crop((0, 0, 600, pos + 20))
+        img = img.crop((0, 0, 600, pos + 58))
         await matcher.finish(image(b64=pic2b64(img)))
     # 多排名图片
     else:
@@ -316,7 +315,7 @@ async def pjsk_pred_update():
         # 因为AsyncHttpx封装的异步httpx处理不了跳转url，所以此处只能用阻塞式网络请求orz
         resp = requests.get(pred_url, headers=headers)
         tmp_json = resp.json()
-        if tmp_json["status"] == "success" and tmp_json["data"]["eventId"] == event_id:
+        if tmp_json["status"] == "success" and tmp_json["event"]["id"] == event_id:
             pred_score_json = {
                 "data": tmp_json["data"],
                 "time": tmp_json["data"]["ts"] / 1000,
@@ -328,6 +327,7 @@ async def pjsk_pred_update():
                     resp_text += "{}名预测：{}\n".format(rank, format(score, ','))
             if resp_data:
                 resp_text += '\n预测数据来自 3-3.dev\n'
+                resp_text += '由于服务器限制，预测误差极大，请谨慎参考！\n'
         elif tmp_json["status"] == "success" and tmp_json["data"]["eventId"] < event_id:
             resp_text = '预测暂不可用'
         logger.info("pjsk更新预测线成功！")
@@ -342,6 +342,7 @@ async def pjsk_pred_update():
                 resp_text += f'预测线生成时间{yctime}\n'
             if resp_data:
                 resp_text += '\n预测数据来自 3-3.dev\n'
+                resp_text += '由于服务器限制，预测误差极大，请谨慎参考！\n'
         logger.warning(f"pjsk更新预测线失败！Error:{e}")
     return resp_text
 
