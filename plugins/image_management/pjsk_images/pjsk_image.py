@@ -65,7 +65,8 @@ def pjsk_get_pic(path: Union[str, Path], img_ids: List = None):
         if res:
             return time.mktime(time.strptime(res.group(1), "%Y%m%d_%H%M%S"))
         else:
-            return False
+            return os.path.getmtime(Path(path) / file)
+            # return False
     pic_list = sorted(os.listdir(Path(path)), reverse=True, key=lambda x: sort_key(path, x))
     # pic_list.sort(key=lambda x: x.split('.')[0])
     # pic_list.sort(key=lambda x: os.path.getctime(x))
@@ -80,16 +81,15 @@ def pjsk_get_pic(path: Union[str, Path], img_ids: List = None):
         id = 0
         for img_path in img_paths:
             # 显示图片来源
-            tag = re.search(r"(^\d+)(?:_p\d+)?.(jpg|png)", img_path)
-            if tag:
+            if tag := re.search(r"(^\d+)(?:_p\d+)?\.(jpg|png)", img_path):
                 tag_type = f"pixiv id:{tag.group(1)}"
+            elif tag := re.search(r"(.+)-\d+-\d+_\d+-img\d\.(jpg|png)", img_path):
+                tag_type = f"Twitter@ {tag.group(1)}"
+            elif tag := re.search(r"qq_(\d+)\.(jpg|png)", img_path):
+                tag_type = f"QQ@ {tag.group(1)}"
             else:
-                tag = re.search(r"(.+)-\d+-\d+_\d+-img\d.(jpg|png)", img_path)
-                if tag:
-                    tag_type = f"Twitter@ {tag.group(1)}"
-                else:
-                    # 图源丢了
-                    tag_type = ""
+                # 图源丢了
+                tag_type = ""
             result = path / img_path
             if not result:
                 result_list.append(f"啊咧？序号为 {img_ids[id]} 的这张图不见了？")

@@ -18,7 +18,7 @@ pjsk_info_dict = {
 
 pjsk_cp_dict = {
     "25h": ["knen", "knmf", "mzkn", "mfen", "mfmz", "mzen"],
-    "vbs": ["anak", "akkh", "akty", "ankh", "tyan", "tykh"],
+    "vbs": ["anak", "akkh", "akty", "ankh", "anty", "tykh"],
     "mmj": ["armn", "hrar", "hrmn", "hrsz", "szar", "szmn"],
     "ln": ["ichn", "icsh", "icsk", "shhn", "skhn", "sksh"],
     "ws": ["nemu", "ruiem", "ruine", "ruitk", "tkem", "tkne"],
@@ -36,7 +36,7 @@ pjsk_info_mapping = {
     "类瑞": "天台组","mfem":"真冬凤","钢琴组":"钢琴", "knhn": "奏穗", "ickn": "头发组", "mfsz": "弓道组",
     "anhr": "安遥", "nety": "冬宁", "skty": "冬咲",
     "knen": "奏绘", "knmf": "宵朝", "mzkn": "奏瑞", "mfen": "朝绘", "mfmz": "朝瑞", "mzen": "绘瑞",
-    "anak": "彰杏", "akkh": "彰豆", "akty": "彰冬", "ankh": "杏豆", "tyan": "冬杏", "tykh": "冬豆",
+    "anak": "彰杏", "akkh": "彰豆", "akty": "彰冬", "ankh": "杏豆", "anty": "冬杏", "tykh": "冬豆",
     "armn": "爱实", "hrar": "遥爱", "hrmn": "遥实", "hrsz": "遥雫", "szar": "爱雫", "szmn": "雫实",
     "ichn": "一穗", "icsh": "一志", "icsk": "一咲", "shhn": "志穗", "skhn": "咲穗", "sksh": "咲志",
     "nemu": "宁姆", "ruiem": "类姆", "ruine": "类宁", "ruitk": "类司", "tkem": "司姆", "tkne": "司宁",
@@ -49,7 +49,7 @@ pjsk_info_all.sort(key=len, reverse=True)
 
 cpmap = {
     "knen": "knd×ena", "knmf": "knd×mfy", "mzkn": "knd×mzk", "mfen": "mfy×ena", "mfmz": "mfy×mzk", "mzen": "ena×mzk",
-    "anak": "an×akt", "akkh": "khn×akt", "akty": "akt×toya", "ankh": "khn×an", "tyan": "an×toya", "tykh": "khn×toya",
+    "anak": "an×akt", "akkh": "khn×akt", "akty": "akt×toya", "ankh": "khn×an", "anty": "an×toya", "tykh": "khn×toya",
     "armn": "mnr×airi", "hrar": "hrk×airi", "hrmn": "mnr×hrk", "hrsz": "hrk×szk", "szar": "szk×airi", "szmn": "mnr×szk",
     "ichn": "ick×hnm", "icsh": "ick×shiho", "icsk": "ick×saki", "shhn": "shiho×hnm", "skhn": "saki×hnm", "sksh": "saki×shiho",
     "nemu": "emu×nene", "ruiem": "emu×rui", "ruine": "nene×rui", "ruitk": "tks×rui", "tkem": "tks×emu", "tkne": "tks×nene",
