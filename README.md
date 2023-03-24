@@ -45,7 +45,7 @@
 * 表情包制作 — [MeetWq](https://github.com/noneplugin/nonebot-plugin-memes)
 * 表情合成 — [MeetWq](https://github.com/noneplugin/nonebot-plugin-emojimix)
 * VITS — [dpm12345](https://github.com/dpm12345/nonebot_plugin_tts_gal) / [Kanade-nya](https://github.com/Kanade-nya/PJSK-Vits-Uni)
-* ChatGPT — [A-kirami](https://github.com/A-kirami/nonebot-plugin-chatgpt)
+* ChatGPT — [A-kirami](https://github.com/A-kirami/nonebot-plugin-chatgpt) / [chrisyy2003](https://github.com/chrisyy2003/nonebot-plugin-gpt3)
 * 疯狂星期四 — [KafCoppelia](https://github.com/MinatoAquaCrews/nonebot_plugin_crazy_thursday)
 * 今天吃什么 — [KafCoppelia](https://github.com/MinatoAquaCrews/nonebot_plugin_what2eat)
 * 语句抽象化 — [CherryCherries](https://github.com/CherryCherries/nonebot-plugin-abstract)
