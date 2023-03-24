@@ -218,6 +218,7 @@ async def generate_statistics_img(
                 background=[
                     f"{IMAGE_PATH}/background/create_mat/{x}"
                     for x in os.listdir(f"{IMAGE_PATH}/background/create_mat")
+                    if not x.startswith('rank')
                 ],
                 bar_color=["*"],
             )
@@ -242,6 +243,7 @@ async def generate_statistics_img(
                 background=[
                     f"{IMAGE_PATH}/background/create_mat/{x}"
                     for x in os.listdir(f"{IMAGE_PATH}/background/create_mat")
+                    if not x.startswith('rank')
                 ],
                 bar_color=["*"],
             )
@@ -267,6 +269,7 @@ def _init_bar_graph(data: dict, title: str) -> BuildMat:
         background=[
             f"{IMAGE_PATH}/background/create_mat/{x}"
             for x in os.listdir(f"{IMAGE_PATH}/background/create_mat")
+            if not x.startswith('rank')
         ],
         bar_color=["*"],
     )

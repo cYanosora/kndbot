@@ -198,7 +198,7 @@ async def downloadviewerchart(musicid, difficulty) -> bool:
 
 # sdvx内使用：歌曲id->time
 def idtotime(musicid):
-    with open(data_path / r'realtime/musics.json', 'r', encoding='utf-8') as f:
+    with open(data_path / r'musics.json', 'r', encoding='utf-8') as f:
         musics = json.load(f)
     musics.sort(key=lambda x: x["publishedAt"])
     for i in range(0, len(musics)):

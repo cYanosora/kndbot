@@ -40,16 +40,16 @@ async def get_userid_preprocess(event: MessageEvent, msg: Message = CommandArg()
             reply = REFUSED_ERROR
     elif arg.isdigit() and verifyid(arg):
         pass
-    elif arg.isdigit() and int(arg) < 10000000:
-        eventid = currentevent()['id']
-        try:
-            resp = await AsyncHttpx.get(
-                f'{random.choice(api_base_url_list)}/user/%7Buser_id%7D/event/{eventid}/ranking?targetRank={arg}')
-            ranking = json.loads(resp.content)
-            arg = ranking['rankings'][0]['userId']
-            isprivate = True
-        except:
-            reply = TIMEOUT_ERROR
+    # elif arg.isdigit() and int(arg) < 10000000:
+    #     eventid = currentevent()['id']
+    #     try:
+    #         resp = await AsyncHttpx.get(
+    #             f'{random.choice(api_base_url_list)}/user/%7Buser_id%7D/event/{eventid}/ranking?targetRank={arg}')
+    #         ranking = json.loads(resp.content)
+    #         arg = ranking['rankings'][0]['userId']
+    #         isprivate = True
+    #     except:
+    #         reply = TIMEOUT_ERROR
     else:
         reply = ID_ERROR
     return {

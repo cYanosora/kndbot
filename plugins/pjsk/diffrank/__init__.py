@@ -2,17 +2,19 @@ import os
 import time
 from typing import Tuple, Any
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
-from nonebot import on_regex
+from nonebot import on_regex, on_command
 from nonebot.adapters.onebot.v11 import MessageEvent
-from nonebot.params import RegexGroup
+from nonebot.params import RegexGroup, Command
+from nonebot.permission import SUPERUSER
 from configs.path_config import FONT_PATH
 from utils.imageutils import pic2b64
 from utils.message_builder import image
 from .._autoask import pjsk_update_manager
 from .._config import data_path, suite_path
 from .._models import PjskBind, UserProfile
+from .._song_utils import isleak
 from .._utils import generatehonor
-
+from .data_source import generate_diff_json, generate_diff_csv
 try:
     import ujson as json
 except:
@@ -40,6 +42,13 @@ usage：
     数据来源：
         pjsekai.moe
 """.strip()
+__plugin_superuser_usage__ = f"""
+usage：
+    手动更新歌曲难度定数，难度定数基本依靠手动修改csv文件
+    指令：
+        生成难度csv     ：根据json资源生成csv
+        生成难度json    ：根据csv生成json资源
+""".strip()
 __plugin_settings__ = {
     "default_status": False,
     "cmd": ["难度排行", "烧烤相关", "uni移植"],
@@ -50,6 +59,7 @@ __plugin_block_limit__ = {"rst": "别急，还在查！"}
 
 # pjsk难度排行
 pjsk_diffrank = on_regex('^(.*)难度排行(.*)', priority=5, block=True)
+pjsk_gene_diffrank = on_command('生成难度csv', aliases={"生成难度json"}, priority=5, permission=SUPERUSER, block=True)
 
 
 @pjsk_diffrank.handle()
@@ -91,15 +101,16 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
     target = []
     with open(data_path / 'realtime/musicDifficulties.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
-    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+    with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
         musics = json.load(f)
     for i in data:
+        if isleak(i['musicId'], musics):
+            continue
         if (i['playLevel'] == level if level != 0 else True) and i['musicDifficulty'] == difficulty:
-            try:
-                i['playLevelAdjust']
-                target.append(i)
-            except KeyError:
-                pass
+            if not i.get('playLevelAdjust'):
+                for playLevelKey in ["playLevelAdjust", "fullComboAdjust", "fullPerfectAdjust"]:
+                    i[playLevelKey] = 0
+            target.append(i)
 
     if fcap == 0:
         title = f'{difficulty.upper()} {level if level != 0 else ""} 难度表（仅供参考）'
@@ -114,7 +125,10 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
     target.sort(key=lambda x: x['playLevel'] + x[playLevelKey], reverse=True)
     musicData = {}
     for music in target:
-        levelRound = str(round(music['playLevel'] + music[playLevelKey], 1))
+        if music[playLevelKey] == 0:
+            levelRound = str(music['playLevel']) + '.?'
+        else:
+            levelRound = str(round(music['playLevel'] + music[playLevelKey], 1))
         try:
             musicData[levelRound].append(music['musicId'])
         except KeyError:
@@ -242,6 +256,16 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
                       fill=(100, 100, 100), font=font_style)
     pic = pic.convert("RGB")
     await pjsk_diffrank.finish(image(b64=pic2b64(pic)))
+
+
+@pjsk_gene_diffrank.handle()
+async def _(cmd: Tuple[str, ...] = Command()):
+    if cmd[0] == '生成难度csv':
+        generate_diff_csv()
+    else:
+        generate_diff_json()
+    await pjsk_gene_diffrank.finish(f"成功{cmd[0]}")
+
 
 
 async def singleLevelRankPic(musicData, difficulty, musicResult=None, oneRowCount=None):

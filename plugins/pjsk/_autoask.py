@@ -26,7 +26,7 @@ class PjskDataUpdate:
 
     async def update_music_data(self, raw: str, block: bool = False):
         try:
-            url = f'https://gitlab.com/pjsekai/database/musics/-/raw/main/{raw}'
+            url = f'https://raw.fastgit.org/watagashi-uni/Unibot/main/masterdata/realtime/{raw}'
             if block:
                 jsondata = requests.get(url, headers=lab_headers).content
             else:

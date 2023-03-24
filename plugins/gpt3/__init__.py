@@ -171,7 +171,7 @@ async def _(matcher: Matcher, event: MessageEvent, bot: Bot, arg: Message = Comm
         f"Group {event.group_id if hasattr(event, 'group_id') else '无'}\n"
         f"设置人格: {now_preset}"
     )
-    await matcher.finish(f"人格设置成功，当前人格是：{now_preset}")
+    await matcher.finish(f"你设定的新人格为：{now_preset}")
 
 
 @list_chat.handle()

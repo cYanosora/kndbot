@@ -374,9 +374,19 @@ class UserProfile(object):
         for i in range(21, 32):
             self.expertscore[i] = [0, 0, 0, 0]
 
-    async def getprofile(self, userid: str, query_type: str = 'unknown', data: Optional[Dict] = None):
+    async def getprofile(
+        self,
+        userid: str,
+        query_type: str = 'unknown',
+        data: Optional[Dict] = None,
+        is_force_update: bool = False
+    ):
         if data is None:
-            data = await callapi(random.choice(api_base_url_list) + f'/user/{userid}/profile', query_type=query_type)
+            data = await callapi(
+                random.choice(api_base_url_list) + f'/user/{userid}/profile',
+                query_type=query_type,
+                is_force_update=is_force_update
+            )
 
         # 有totalPower字段说明是日服新数据
         try:

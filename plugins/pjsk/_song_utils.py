@@ -60,7 +60,7 @@ async def save_songs_data(song_id: int):
 # 模糊搜索曲名的具体函数
 def _matchname(alias):
     match = {'match': 0, 'musicId': 0, 'status': 'false', 'title': '', 'translate': ''}
-    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+    with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
     with open(data_path / 'translate.yaml', encoding='utf-8') as f:
         trans = yaml.load(f, Loader=yaml.FullLoader)['music_titles']
@@ -105,7 +105,7 @@ def _matchname(alias):
 async def get_songs_data(alias: str, isfuzzy: bool = False):
     sid = await PjskSongsAlias.query_sid(alias)
     if sid:
-        with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+        with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
         for musics in data:
             if musics['id'] == sid:
@@ -129,7 +129,11 @@ async def get_songs_data(alias: str, isfuzzy: bool = False):
 
 
 # 获取歌曲演奏者信息
-def _vocalimg(musicid):
+def _vocalimg(musicid, alpha):
+    if alpha:
+        color = (255, 255, 255)
+    else:
+        color = (67, 70, 101)
     with open(data_path / 'musicVocals.json', 'r', encoding='utf-8') as f:
         musicVocals = json.load(f)
     with open(data_path / 'outsideCharacters.json', 'r', encoding='utf-8') as f:
@@ -222,7 +226,7 @@ def _vocalimg(musicid):
                 else:
                     text = vocal['musicVocalType']
                 innerpos = 25 + font_style.getsize(str(text))[0]
-                draw.text((20, 20), text, fill=(67, 70, 101), font=font_style)
+                draw.text((20, 20), text, fill=color, font=font_style)
                 for chara in vocal['characters']:
                     if chara['characterType'] == 'game_character':
                         chara = Image.open(data_path / f'chara/chr_ts_{chara["characterId"]}.png').resize((60, 60))
@@ -282,22 +286,17 @@ async def _musiclength(musicid, fillerSec=0):
 # 获取歌曲pjskinfo的具体函数
 async def _drawpjskinfo(musicid: int) -> Tuple[bool, str]:
     info = MusicInfo()
-    with open(data_path / r'realtime/musics.json', 'r', encoding='utf-8') as f:
+    with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
     for music in data:
-        if music['id'] == musicid:
-            info.title = music['title']
-            info.lyricist = music['lyricist']
-            info.composer = music['composer']
-            info.arranger = music['arranger']
-            info.publishedAt = music['publishedAt']
-            info.fillerSec = music['fillerSec']
-            try:
-                info.hot = music['hot']
-                info.hotAdjust = music['hotAdjust']
-            except KeyError:
-                pass
-            break
+        if music['id'] != musicid:
+            continue
+        info.title = music['title']
+        info.lyricist = music['lyricist']
+        info.composer = music['composer']
+        info.arranger = music['arranger']
+        info.publishedAt = music['publishedAt']
+        info.fillerSec = music['fillerSec']
 
     with open(data_path / r'realtime/musicDifficulties.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -305,31 +304,51 @@ async def _drawpjskinfo(musicid: int) -> Tuple[bool, str]:
         if data[i]['musicId'] == musicid:
             info.playLevel = [data[i]['playLevel'], data[i + 1]['playLevel'],
                               data[i + 2]['playLevel'], data[i + 3]['playLevel'], data[i + 4]['playLevel']]
-            info.noteCount = [data[i]['totalNoteCount'], data[i + 1]['totalNoteCount'],
-                              data[i + 2]['totalNoteCount'], data[i + 3]['totalNoteCount'], data[i + 4]['totalNoteCount']]
             try:
-                info.playLevelAdjust = [data[i]['playLevelAdjust'], data[i + 1]['playLevelAdjust'],
-                                        data[i + 2]['playLevelAdjust'], data[i + 3]['playLevelAdjust'],
+                info.noteCount = [data[i]['noteCount'], data[i + 1]['noteCount'],
+                                  data[i + 2]['noteCount'], data[i + 3]['noteCount'], data[i + 4]['noteCount']]
+            except KeyError:
+                info.noteCount = [data[i]['totalNoteCount'], data[i + 1]['totalNoteCount'],
+                                  data[i + 2]['totalNoteCount'], data[i + 3]['totalNoteCount'],
+                                  data[i + 4]['totalNoteCount']]
+            try:
+                info.playLevelAdjust = [0, 0, 0, data[i + 3]['playLevelAdjust'],
                                         data[i + 4]['playLevelAdjust']]
-                info.fullComboAdjust = [data[i]['fullComboAdjust'], data[i + 1]['fullComboAdjust'],
-                                        data[i + 2]['fullComboAdjust'], data[i + 3]['fullComboAdjust'],
+                info.fullComboAdjust = [0, 0, 0, data[i + 3]['fullComboAdjust'],
                                         data[i + 4]['fullComboAdjust']]
-                info.fullPerfectAdjust = [data[i]['fullPerfectAdjust'], data[i + 1]['fullPerfectAdjust'],
-                                          data[i + 2]['fullPerfectAdjust'], data[i + 3]['fullPerfectAdjust'],
+                info.fullPerfectAdjust = [0, 0, 0, data[i + 3]['fullPerfectAdjust'],
                                           data[i + 4]['fullPerfectAdjust']]
             except KeyError:
                 pass
             break
     now = int(time.time() * 1000)
     leak = False
-    if now < info.publishedAt:
-        img = Image.open(data_path / r'pics/leak.png')
-        leak = True
-    else:
-        if info.playLevelAdjust[0] == 0:
-            img = Image.open(data_path / r'pics/pjskinfonew.png')
+
+    if (data_path / f'pics/pjskinfo/{musicid}.png').exists():
+        color = (255, 255, 255)
+        alpha = True
+        img = Image.open(data_path / f'pics/pjskinfo/{musicid}.png')
+        if now < info.publishedAt:
+            img2 = Image.open(data_path / 'pics/leak_alpha.png')
+            leak = True
         else:
-            img = Image.open(data_path / r'pics/pjskinfo.png')
+            if info.playLevelAdjust[4] == 0:
+                img2 = Image.open(data_path / 'pics/pjskinfonew_alpha.png')
+            else:
+                img2 = Image.open(data_path / 'pics/pjskinfo_alpha.png')
+        r, g, b, mask = img2.split()
+        img.paste(img2, (0, 0), mask)
+    else:
+        alpha = False
+        color = (67, 70, 101)
+        if now < info.publishedAt:
+            img = Image.open(data_path / 'pics/leak.png')
+            leak = True
+        else:
+            if info.playLevelAdjust[4] == 0:
+                img = Image.open(data_path / 'pics/pjskinfonew.png')
+            else:
+                img = Image.open(data_path / 'pics/pjskinfo.png')
     try:
         jacket = await pjsk_update_manager.get_asset(
             fr'startapp/music/jacket/jacket_s_{str(musicid).zfill(3)}',
@@ -339,13 +358,12 @@ async def _drawpjskinfo(musicid: int) -> Tuple[bool, str]:
         img.paste(jacket, (80, 47))
     except FileNotFoundError:
         pass
-
-    if len(info.title) < 12:
-        size = 90
-        font_style = ImageFont.truetype(str(FONT_PATH / r"KOZGOPRO-BOLD.OTF"), size)
+    font_style = ImageFont.truetype(str(FONT_PATH / r"KOZGOPRO-BOLD.OTF"), 90)
+    size = font_style.getsize(info.title)
+    if size[0] < 1150:
         highplus = 0
     else:
-        size = int(90 - (len(info.title) - 12) * 4.5)
+        size = int(90 * (1150 / size[0]))
         font_style = ImageFont.truetype(str(FONT_PATH / r"KOZGOPRO-BOLD.OTF"), size)
         text_width = font_style.getsize(info.title)
         if text_width[1] != 90:
@@ -354,7 +372,10 @@ async def _drawpjskinfo(musicid: int) -> Tuple[bool, str]:
             highplus = 0
     draw = ImageDraw.Draw(img)
     # 标题
-    draw.text((760, 100 + highplus), info.title, fill=(1, 255, 221), font=font_style)
+    if not alpha:
+        draw.text((760, 100 + highplus), info.title, fill=(1, 255, 221), font=font_style)
+    else:
+        draw.text((760, 100 + highplus), info.title, fill=(255, 255, 255), font=font_style)
     # 作词作曲编曲
     font_style = ImageFont.truetype(str(FONT_PATH / r"KOZGOPRO-BOLD.OTF"), 40)
     draw.text((930, 268), info.lyricist, fill=(255, 255, 255), font=font_style)
@@ -385,72 +406,34 @@ async def _drawpjskinfo(musicid: int) -> Tuple[bool, str]:
     for i in range(0, 5):
         text_width = font_style.getsize(str(info.noteCount[i]))
         text_coordinate = (int((132 + 138 * i) - text_width[0] / 2), int(960 - text_width[1] / 2))
-        draw.text(text_coordinate, str(info.noteCount[i]), fill=(67, 70, 101), font=font_style)
+        draw.text(text_coordinate, str(info.noteCount[i]), fill=color, font=font_style)
 
-    if info.playLevelAdjust[0] != 0:
-
-        if info.hotAdjust > 0.5:
-            hotpic = Image.open(data_path / r'pics/hot.png')
-        elif info.hotAdjust > 0:
-            hotpic = Image.open(data_path / r'pics/hot3.png')
-        elif info.hotAdjust > -1:
-            hotpic = Image.open(data_path / r'pics/hot2.png')
-        elif info.hotAdjust > -2:
-            hotpic = Image.open(data_path / r'pics/hot1.png')
-        else:
-            hotpic = Image.open(data_path / r'pics/hot0.png')
-
-        if info.hot == 0:
-            hot = '最新最热'
-            hotpic = Image.open(data_path / r'pics/new.png')
-        else:
-            hot = str(round(info.hot))
-
-        hotpic = hotpic.resize((48, 48))
-        r, g, b, mask = hotpic.split()
+    if info.playLevelAdjust[4] != 0 and not leak:
         font_style = ImageFont.truetype(str(FONT_PATH / r"SourceHanSansCN-Bold.otf"), 28)
-        text_width = font_style.getsize(str(hot))
-        text_coordinate = (int(1760 - text_width[0]), int(805 - text_width[1] / 2))
-        draw.text(text_coordinate, hot, fill=(67, 70, 101), font=font_style)
-        if info.hotAdjust > 0.5:
-            if info.hotAdjust > 2:
-                text_coordinate = (int(1720 + text_width[0] / 2), int(802 - text_width[1] / 2))
-                img.paste(hotpic, text_coordinate, mask)
-                text_coordinate = (int(1755 + text_width[0] / 2), int(802 - text_width[1] / 2))
-                img.paste(hotpic, text_coordinate, mask)
-                text_coordinate = (int(1790 + text_width[0] / 2), int(802 - text_width[1] / 2))
-                img.paste(hotpic, text_coordinate, mask)
-            elif info.hotAdjust > 1:
-                text_coordinate = (int(1745 + text_width[0] / 2), int(802 - text_width[1] / 2))
-                img.paste(hotpic, text_coordinate, mask)
-                text_coordinate = (int(1785 + text_width[0] / 2), int(802 - text_width[1] / 2))
-                img.paste(hotpic, text_coordinate, mask)
-            else:
-                text_coordinate = (int(1755 + text_width[0] / 2), int(802 - text_width[1] / 2))
-                img.paste(hotpic, text_coordinate, mask)
-        else:
-            text_coordinate = (int(1755 + text_width[0] / 2), int(802 - text_width[1] / 2))
-            img.paste(hotpic, text_coordinate, mask)
-
         for i in range(3, 5):
-            levelplus = str(round(info.playLevel[i] + info.playLevelAdjust[i], 1))
-            fclevelplus = str(round(info.playLevel[i] + info.fullComboAdjust[i], 1))
-            aplevelplus = str(round(info.playLevel[i] + info.fullPerfectAdjust[i], 1))
+            if info.playLevelAdjust[i] is not None:
+                levelplus = str(round(info.playLevel[i] + info.playLevelAdjust[i], 1))
+                fclevelplus = str(round(info.playLevel[i] + info.fullComboAdjust[i], 1))
+                aplevelplus = str(round(info.playLevel[i] + info.fullPerfectAdjust[i], 1))
+            else:
+                levelplus = f"{info.playLevel[i]}.?"
+                fclevelplus = f"{info.playLevel[i]}.?"
+                aplevelplus = f"{info.playLevel[i]}.?"
 
             text_width = font_style.getsize(str(levelplus))
             text_coordinate = (int(1363 + 116 * i - text_width[0] / 2), int(864 - text_width[1] / 2))
-            draw.text(text_coordinate, levelplus, fill=(67, 70, 101), font=font_style)
+            draw.text(text_coordinate, levelplus, fill=color, font=font_style)
 
             text_width = font_style.getsize(str(fclevelplus))
             text_coordinate = (int(1363 + 116 * i - text_width[0] / 2), int(922 - text_width[1] / 2))
-            draw.text(text_coordinate, fclevelplus, fill=(67, 70, 101), font=font_style)
+            draw.text(text_coordinate, fclevelplus, fill=color, font=font_style)
 
             text_width = font_style.getsize(str(aplevelplus))
             text_coordinate = (int(1363 + 116 * i - text_width[0] / 2), int(980 - text_width[1] / 2))
-            draw.text(text_coordinate, aplevelplus, fill=(67, 70, 101), font=font_style)
+            draw.text(text_coordinate, aplevelplus, fill=color, font=font_style)
 
         font_style = ImageFont.truetype(str(FONT_PATH / r"SourceHanSansCN-Bold.otf"), 20)
-        for i in range(0, 5):
+        for i in range(3, 5):
             if info.playLevelAdjust[i] > 1.5:
                 adjust = "++"
             elif info.playLevelAdjust[i] > 0.5:
@@ -465,7 +448,7 @@ async def _drawpjskinfo(musicid: int) -> Tuple[bool, str]:
                 text_width = font_style.getsize(str(adjust))
                 text_coordinate = (int((132 + 138 * i) - text_width[0] / 2), int(915 - text_width[1] / 2))
                 draw.text(text_coordinate, str(adjust), fill=(1, 255, 221), font=font_style)
-    vocals = _vocalimg(musicid)
+    vocals = _vocalimg(musicid, alpha)
     r, g, b, mask = vocals.split()
     if vocals.size[1] < 320:
         img.paste(vocals, (758, 710), mask)
@@ -483,8 +466,8 @@ async def info(musicid) -> Tuple[bool, str]:
     path = data_path / f'pjskinfo/pjskinfo_{musicid}.png'
     if path.exists():
         pjskinfotime = datetime.datetime.fromtimestamp(os.path.getmtime(path))
-        playdatatime = datetime.datetime.fromtimestamp(os.path.getmtime(data_path / 'realtime/musics.json'))
-        with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+        playdatatime = datetime.datetime.fromtimestamp(os.path.getmtime(data_path / 'musicDifficulties.json'))
+        with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
             musics = json.load(f)
         for i in musics:
             if i['id'] == musicid:
@@ -644,7 +627,7 @@ async def parse_bpm(music_id):
 # 获取歌曲标题
 def idtoname(musicid, musics=None):
     if musics is None:
-        with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+        with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
             musics = json.load(f)
     for i in musics:
         if i['id'] == musicid:

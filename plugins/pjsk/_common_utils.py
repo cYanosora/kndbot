@@ -18,7 +18,12 @@ except:
 
 
 # 通用api查询
-async def callapi(url: str, param: Optional[Dict] = None, query_type: str = 'unknown') -> Dict[str, Any]:
+async def callapi(
+        url: str,
+        param: Optional[Dict] = None,
+        query_type: str = 'unknown',
+        is_force_update: bool = False
+) -> Dict[str, Any]:
     if param is not None:
         q = urllib.parse.urlencode(param)
         url = url + '?' + q
@@ -56,7 +61,7 @@ async def callapi(url: str, param: Optional[Dict] = None, query_type: str = 'unk
             raise apiCallError(ONLY_TOP100_ERROR)
     # 处理逮捕、b30、profile、进度
     # 逮捕仍然实时查询
-    if '/profile' in url and query_type != 'arrest':
+    if '/profile' in url and query_type != 'arrest' and not is_force_update:
         userid = url[url.find('user/') + 5:url.find('/profile')]
         user_suite_file = suite_path / f'{userid}.json'
         if user_suite_file.exists():

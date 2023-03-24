@@ -169,7 +169,7 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
     if await PjskSongsAlias.add_alias(
         oldsid, newalias, event.user_id, group_id, datetime.datetime.now(), False
     ):
-        with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+        with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
             for musics in data:
                 if musics['id'] == oldsid:
@@ -178,7 +178,7 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
         await pjskset.finish(f"设置成功！{newalias}->{title}")
     else:
         newsid = await PjskSongsAlias.query_sid(newalias)
-        with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+        with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
             for musics in data:
                 if musics['id'] == newsid:
@@ -194,7 +194,7 @@ async def _(event: MessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
 async def _(event: MessageEvent, msg: Message = CommandArg()):
     arg = msg.extract_plain_text().strip()
     sid = await PjskSongsAlias.query_sid(arg)
-    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+    with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
         for musics in data:
             if musics['id'] == sid:
@@ -253,9 +253,9 @@ async def _(msg: Message = CommandArg()):
     except:
         await pjsknotecount.finish("请输入数字！")
     text = ''
-    with open(data_path / 'realtime/musicDifficulties.json', 'r', encoding='utf-8') as f:
+    with open(data_path / 'musicDifficulties.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
-    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+    with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
         musics = json.load(f)
     for i in data:
         if i['totalNoteCount'] == notes:
@@ -274,7 +274,7 @@ async def _(msg: Message = CommandArg()):
         await pjskbpmfind.finish("请输入数字！")
     bpm = {}
     text = ''
-    with open(data_path / 'realtime/musics.json', 'r', encoding='utf-8') as f:
+    with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
     for music in data:
         bpm[music['id']] = await parse_bpm(music['id'])[1]

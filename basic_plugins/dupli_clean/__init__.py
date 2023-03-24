@@ -20,7 +20,11 @@ async def _(bot: Bot, event: Event):
     if isinstance(event, PrivateMessageEvent):
         return
     bot_ids.remove(int(selfid))
-    if int(selfid) in bot_ids:
+    try:
+        user_id = int(event.get_user_id())
+    except:
+        user_id = 0
+    if user_id in bot_ids:
         raise IgnoredException('忽略bot互相触发的指令')
     # 使用了at指定bot，无需担心bot重复触发事件
     if hasattr(event, "raw_message"):
