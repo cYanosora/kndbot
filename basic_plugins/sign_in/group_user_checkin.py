@@ -176,7 +176,6 @@ async def group_user_recheck_in(bot: Bot, event: GroupMessageEvent, gid: int = N
     # 获得签到用户以及bot可补签的天数
     property_ = await BagUser.get_property(user_id, group_id)
 
-    sale_price = 500
     user = await SignGroupUser.ensure(user_id, group_id, for_update=True)
     botinfo = await GroupInfoUser.get_member_info(int(bot.self_id), group_id)
     present = datetime.now()
@@ -201,30 +200,20 @@ async def group_user_recheck_in(bot: Bot, event: GroupMessageEvent, gid: int = N
     # print('相隔天数：', (present.date() - botinfo.user_join_time.date()).days)
     # print('已签天数：', user.checkin_count)
     # print('漏签天数：', avail_days)
-    num = property_.get("补签卡", 0) if property_ else 0
-    if num > 0:
-        await BagUser.delete_property(user_id, group_id, "补签卡", num=num)
     if avail_days <= 0:
-        # print('无漏签，转化为金币')
-        if num > 0:
-            await BagUser.add_gold(user_id, group_id, num * sale_price)
-            reply = f"你没有漏签的天数呢" + prep_reply +\
-                    f"拥有的{num}张补签卡已经变成{num * sale_price}金币了"
-                    # image("kanade/mua.jpg")
-        else:
-            reply = f"你没有漏签的天数呢" + prep_reply
-                    # image("kanade/mua.jpg")
+        reply = f"你没有漏签的天数呢" + prep_reply
         return reply
+    num = property_.get("补签卡", 0) if property_ else 0
     if num == 0:
         return "你没有补签卡哦"
     if num > avail_days:
         # print('使用道具大于漏签天数')
         resign_days = avail_days
-        # 转化多余的补签卡为金币
-        await BagUser.add_gold(user_id, group_id, (num - avail_days) * sale_price)
     else:
         # print('使用道具小于等于漏签天数')
         resign_days = num
+    await BagUser.delete_property(user_id, group_id, "补签卡", resign_days)
+
     # 开始补签
     add_impr = []
     add_coin = []
@@ -248,11 +237,7 @@ async def group_user_recheck_in(bot: Bot, event: GroupMessageEvent, gid: int = N
         await BagUser.add_property(user_id, group_id, item)
     # 反馈文本
     left_days = avail_days - resign_days
-    resign_text = f"，你还剩{left_days}天未补签" if left_days > 0 else "，已完成所有补签"
-    if num > avail_days:
-        resign_text += f'，多余的{num - avail_days}张补签卡已转化为{(num - avail_days) * sale_price}金币了\n'
-    else:
-        resign_text += f'\n'
+    resign_text = f"，你还剩{left_days}天未补签" if left_days > 0 else "，已完成所有补签\n"
     add_item_dict = {}
     for i in add_item:
         add_item_dict[i] = add_item_dict.get(i, 0) + 1

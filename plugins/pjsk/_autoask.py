@@ -26,11 +26,23 @@ class PjskDataUpdate:
 
     async def update_music_data(self, raw: str, block: bool = False):
         try:
-            url = f'https://raw.fastgit.org/watagashi-uni/Unibot/main/masterdata/realtime/{raw}'
-            if block:
-                jsondata = requests.get(url, headers=lab_headers).content
-            else:
-                jsondata = (await AsyncHttpx.get(url, headers=lab_headers)).content
+            urls = [
+                f'https://raw.fastgit.org/watagashi-uni/Unibot/main/masterdata/realtime/{raw}',
+                f"https://raw.githubusercontent.com/watagashi-uni/Unibot/main/masterdata/realtime/{raw}"
+            ]
+            for i,url in enumerate(urls):
+                if block:
+                    resp = requests.get(url, headers=lab_headers)
+                else:
+                    resp = await AsyncHttpx.get(url, headers=lab_headers)
+                if resp.status_code == 200:
+                    break
+                elif i != len(urls) - 1:
+                    continue
+                else:
+                    logger.warning(f"{raw}下载失败，网络不太好，尝试使用备用网址下载")
+                    return
+            jsondata = resp.content
             logger.info(f'{raw}下载成功')
             filepath = self.path / 'realtime'
             if not filepath.exists():
@@ -325,7 +337,7 @@ async def check_songs_resources(block: bool = False, iswait: bool = True):
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_music_data('musicDifficulties.json', block=block)
     await asyncio.sleep(wait_time)
-    await pjsk_update_manager.update_music_data('musics.json', block=block)
+    await pjsk_update_manager.update_music_data('musics.csv', block=block)
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_jp_game_data('musicDifficulties.json', block=block)
     await asyncio.sleep(wait_time)

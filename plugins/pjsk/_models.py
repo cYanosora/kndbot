@@ -428,7 +428,10 @@ class UserProfile(object):
             self.name = data['user']['name']
             self.rank = data['user']['rank']
             count_data = data['userMusicDifficultyClearCount']
-            self.full_perfect = ['无数据' for i in range(5)]
+            try:
+                self.full_perfect = [count_data[i]['allPerfect'] for i in range(5)]
+            except:
+                self.full_perfect = ['无数据' for i in range(5)]
             self.full_combo = [count_data[i]['fullCombo'] for i in range(5)]
             self.clear = [count_data[i]['liveClear'] for i in range(5)]
             self.mvpCount = data['userMultiLiveTopScoreCount']['mvp']

@@ -28,7 +28,7 @@ usage：
         烧烤档案/个人消息/profile/pjskprofile 烧烤id        :查看对应烧烤账号的收歌情况
         烧烤档案/个人消息/profile/pjskprofile 活动排名       :查看当期活动排名对应烧烤用户的收歌情况
     注意：
-        针对自行抓包上传了数据的用户，如果想要获取账号的实时信息，请使用指令 pjskprofile2
+        实时信息的ap数已经有了，所以pjskprofile2的指令不再有用
     数据来源：
         pjsekai.moe
         unipjsk.com
@@ -49,12 +49,6 @@ pjsk_profile = on_command('烧烤档案', aliases={"profile", "pjskprofile", "�
 
 @pjsk_profile.handle()
 async def _(event: MessageEvent, msg: Message = CommandArg()):
-    # 实时信息
-    is_force = False
-    arg = msg.extract_plain_text().strip()
-    if arg == '2':
-        is_force = True
-        msg = ''
     # 参数解析
     state = await get_userid_preprocess(event, msg)
     if reply := state['error']:
@@ -64,7 +58,7 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     # 获取信息
     profile = UserProfile()
     try:
-        await profile.getprofile(userid, 'profile', is_force_update=is_force)
+        await profile.getprofile(userid, 'profile', is_force_update=True)
     except pjskError as e :
         await pjsk_profile.finish(str(e))
     except:

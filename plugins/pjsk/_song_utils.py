@@ -300,17 +300,15 @@ async def _drawpjskinfo(musicid: int) -> Tuple[bool, str]:
 
     with open(data_path / r'realtime/musicDifficulties.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
+    with open(data_path / r'musicDifficulties.json', 'r', encoding='utf-8') as f:
+        bak_data = json.load(f)
     for i in range(0, len(data)):
         if data[i]['musicId'] == musicid:
             info.playLevel = [data[i]['playLevel'], data[i + 1]['playLevel'],
                               data[i + 2]['playLevel'], data[i + 3]['playLevel'], data[i + 4]['playLevel']]
-            try:
-                info.noteCount = [data[i]['noteCount'], data[i + 1]['noteCount'],
-                                  data[i + 2]['noteCount'], data[i + 3]['noteCount'], data[i + 4]['noteCount']]
-            except KeyError:
-                info.noteCount = [data[i]['totalNoteCount'], data[i + 1]['totalNoteCount'],
-                                  data[i + 2]['totalNoteCount'], data[i + 3]['totalNoteCount'],
-                                  data[i + 4]['totalNoteCount']]
+            info.noteCount = [data[i]['totalNoteCount'], data[i + 1]['totalNoteCount'],
+                              data[i + 2]['totalNoteCount'], data[i + 3]['totalNoteCount'],
+                              data[i + 4]['totalNoteCount']]
             try:
                 info.playLevelAdjust = [0, 0, 0, data[i + 3]['playLevelAdjust'],
                                         data[i + 4]['playLevelAdjust']]
@@ -321,6 +319,14 @@ async def _drawpjskinfo(musicid: int) -> Tuple[bool, str]:
             except KeyError:
                 pass
             break
+    if sum(info.playLevel) == 0 or sum(info.noteCount) == 0:
+        for j in range(0, len(bak_data)):
+            if bak_data[j]['musicId'] == musicid:
+                info.playLevel = [bak_data[j]['playLevel'], bak_data[j + 1]['playLevel'],
+                                  bak_data[j + 2]['playLevel'], bak_data[j + 3]['playLevel'], bak_data[j + 4]['playLevel']]
+                info.noteCount = [bak_data[j]['totalNoteCount'], bak_data[j + 1]['totalNoteCount'],
+                                  bak_data[j + 2]['totalNoteCount'], bak_data[j + 3]['totalNoteCount'], bak_data[j + 4]['totalNoteCount']]
+                break
     now = int(time.time() * 1000)
     leak = False
 

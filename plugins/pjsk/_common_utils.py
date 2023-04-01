@@ -63,14 +63,22 @@ async def callapi(
     # 逮捕仍然实时查询
     if '/profile' in url and query_type != 'arrest' and not is_force_update:
         userid = url[url.find('user/') + 5:url.find('/profile')]
+        # 先尝试取本地结果
         user_suite_file = suite_path / f'{userid}.json'
         if user_suite_file.exists():
             with open(user_suite_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             return data
-        # b30、rop、难度排行，没有详细信息无法生成
-        elif query_type in ['b30', 'rop', 'rank']:
-            raise QueryBanned("无法查询到用户信息，可能是没有上传")
+        # 拿不到再访问uni提供的接口
+        else:
+            api_url = fr'https://suite.unipjsk.com/api/user/{userid}/profile'
+            resp = await AsyncHttpx.get(api_url, timeout=4)
+            if resp.status_code == 200:
+                return resp.json()
+            # 两个方式都拿不到数据，并且要查询的数据用于b30、rop、难度排行时
+            # 因为没有详细信息所以无法使用
+            elif query_type in ['b30', 'rop', 'rank']:
+                raise QueryBanned("无法查询到用户信息，可能是没有上传")
     # 处理其他api（profile、逮捕）
     try:
         data = (await AsyncHttpx.get(url, timeout=4)).json()

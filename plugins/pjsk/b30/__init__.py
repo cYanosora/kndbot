@@ -232,7 +232,7 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     for i in range(0, 30):
         highest = highest + diff[i]['aplevel+']
     highest = round(highest / 30, 2)
-    with open(data_path / r'realtime/musics.json', 'r', encoding='utf-8') as f:
+    with open(data_path / r'musics.json', 'r', encoding='utf-8') as f:
         musics = json.load(f)
     for music in data['userMusicResults']:
         playResult = music['playResult']
