@@ -82,7 +82,7 @@ module.exports = {
     repo: 'cYanosora/kndbot',
     docsRepo: 'cYanosora/kndbot',
     docsDir: 'docs',
-    docsBranch: 'master',
+    docsBranch: 'main',
     editLinks: true,
     editLinkText: '对此有疑问?帮助改进文档'
   }
