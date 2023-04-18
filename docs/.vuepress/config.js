@@ -27,10 +27,10 @@ module.exports = {
     ["sakura", {
       num: 10,  // 默认数量
       show: true, //  是否显示
-      zIndex: 1,   // 层级
+      zIndex: -1,   // 层级
       img: {
         replace: true,  // false 默认图 true 换图 需要填写httpUrl地址
-        httpUrl: '/image/cup.png'     // 绝对路径
+        httpUrl: '/docs/image/cup.png'     // 绝对路径
       }     
     }]
   ],
@@ -62,7 +62,8 @@ module.exports = {
           'common/info', 
           'common/genepic',
           'common/image', 
-          'common/other'
+          'common/other',
+          'common/webgame'
           ]
         },
         {
@@ -82,7 +83,7 @@ module.exports = {
     repo: 'cYanosora/kndbot',
     docsRepo: 'cYanosora/kndbot',
     docsDir: 'docs',
-    docsBranch: 'master',
+    docsBranch: 'main',
     editLinks: true,
     editLinkText: '对此有疑问?帮助改进文档'
   }
