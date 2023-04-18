@@ -20,7 +20,6 @@ admin_usage：
         设置群欢迎消息 欢迎你[at]
     注意:    
         可以通过[at]来确认是否艾特新成员
-        目前设置后将不能恢复至默认欢迎消息
 """.strip()
 __plugin_settings__ = {
     "admin_level": Config.get_config("admin_bot_manage", "SET_GROUP_WELCOME_MESSAGE_LEVEL"),

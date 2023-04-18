@@ -142,7 +142,12 @@ async def _init_rank_graph(
         avatarpic = BuildImage.open(io.BytesIO(avatarpic)).resize((64, 64))
         avatarpic = avatarpic.circle()
         onerank.paste(avatarpic, (99, 13), alpha=True)
-        onerank.draw_text((170, 0, 530, 90), f"{_uname_lst[i]}", max_fontsize=25, fill="#4d4d4d", halign='center', valign='center')
+        username = _uname_lst[i]
+        try:
+            onerank.draw_text((170, 0, 530, 90), f"{username}", max_fontsize=25, fill="#4d4d4d", halign='center', valign='center')
+        except:
+            username = username[:13] + '...'
+            onerank.draw_text((170, 0, 530, 90), f"{username}", max_fontsize=25, fill="#4d4d4d", halign='center', valign='center')
         _num = format(_num_lst[i], '.3f') if str(int(_num_lst[i])) != format(_num_lst[i], '.5g') else str(int(_num_lst[i]))
         onerank.draw_text((530, 0, 840, 90), _num, fontsize=40, fill="#ff55aa", halign='center', valign='center')
         rankpics.append(onerank.image)

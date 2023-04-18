@@ -28,7 +28,7 @@ down_cmd = Config.get_config("admin_bot_manage", "SHUTDOWN_BOT_CMD", ['去休息
 __plugin_name__ = "群功能开关 [Admin]"
 __plugin_type__ = "群相关"
 __plugin_version__ = 0.1
-__plugin_admin_usage__ = f"""
+__plugin_usage__ = f"""
 admin_usage：
     群内通用功能与被动功能开关
     指令：
