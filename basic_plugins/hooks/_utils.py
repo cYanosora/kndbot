@@ -23,6 +23,7 @@ oppose_cd_modules = oppose_count_modules = [
 ]
 # 以下插件私聊中可用
 ignore_module = [
+    "eatknd",  # 吃掉小奏宝
     "dialogue",  # 联系管理员
     "invite_manager",  # 邀请入群
     # 烧烤相关
