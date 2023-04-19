@@ -1,12 +1,13 @@
-from fastapi.middleware.cors import CORSMiddleware
 import nonebot
-from .eatknd import route as eatknd_route
-from .pjsk_api import route as pic_route
+from fastapi.middleware.cors import CORSMiddleware
+
+
 __plugin_name__ = '网页相关'
+nonebot.load_plugins('plugins/web')
+from .eatknd import route as eatknd_route
 
 
 app = nonebot.get_app()
-app.include_router(pic_route)
 app.include_router(eatknd_route)
 app.add_middleware(
     CORSMiddleware,
@@ -16,4 +17,3 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-nonebot.load_plugins('plugins/web')

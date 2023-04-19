@@ -63,8 +63,8 @@ symbols_dict = {
     "pjsk4": symbols_pjsk4,
 }
 
-auto_delete_voice = plugin_config.auto_delete_voice if plugin_config.auto_delete_voice is not None else True
-tts_gal = eval(plugin_config.tts_gal if plugin_config.tts_gal else '{():[""]}')
+auto_delete_voice = plugin_config.auto_delete_voice if hasattr(plugin_config, "auto_delete_voice") else True
+tts_gal = eval(plugin_config.tts_gal if hasattr(plugin_config, "tts_gal") else '{():[""]}')
 valid_names = []
 driver = get_driver()
 

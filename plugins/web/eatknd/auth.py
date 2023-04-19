@@ -1,6 +1,8 @@
 from typing import Dict, Any
-
-from jose import jwt
+try:
+    from jose import jwt
+except:
+    import jwt
 
 SECRET_KEY = "here are your key~"
 algorithm = "here are your algorithm~"
