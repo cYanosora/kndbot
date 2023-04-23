@@ -555,10 +555,11 @@ async def endgame(
                     msgs.append(f"正确答案：{cardname} - {charaname}")
                     msgs.append(MessageSegment.image(f'file:///{endfile.absolute()}'))
                 # 记录进数据库
-                if tips is None:
-                    addflag = await PjskGuessRank.add_count(qq, group_id, game_type, int(diff))
+                addflag = not await PjskGuessRank.check_today_count(qq, group_id)
+                if tips is None and addflag:
+                    await PjskGuessRank.add_count(qq, group_id, game_type, int(diff))
                 else:
-                    addflag = not await PjskGuessRank.check_today_count(qq, group_id)
+                    await PjskGuessRank.add_count(qq, group_id, game_type, int(diff), True)
                 if addflag:
                     msgs[0] = at(qq) + f"您猜对了，奖励{gold}金币！\n" + msgs[0]
                     await BagUser.add_gold(qq, group_id, gold)

@@ -61,8 +61,8 @@ class PjskGuessRank(db.Model):
 
     @classmethod
     async def add_count(
-        cls, user_qq: int, group_id: int, game_type: str, guess_diff: int
-    ) -> bool:
+        cls, user_qq: int, group_id: int, game_type: str, guess_diff: int, tips_used: bool = False
+    ):
         """
         说明：
             添加次数
@@ -79,12 +79,17 @@ class PjskGuessRank(db.Model):
         lastdate = user.last_guess_time.date()
         nowdate = datetime.datetime.now().date()
         daily_count = 1 if nowdate > lastdate else user.daily_count+1
-        await user.update(
-            total_count=total_count,
-            daily_count=daily_count,
-            last_guess_time=datetime.datetime.now()
-        ).apply()
-        return False if await cls.check_today_count(user_qq, group_id) else True
+        if tips_used:
+            await user.update(
+                daily_count=daily_count,
+                last_guess_time=datetime.datetime.now()
+            ).apply()
+        else:
+            await user.update(
+                total_count=total_count,
+                daily_count=daily_count,
+                last_guess_time=datetime.datetime.now()
+            ).apply()
 
     @classmethod
     async def _get_user_info(cls,user_qq: int, group_id: int, game_type: str):
@@ -118,11 +123,10 @@ class PjskGuessRank(db.Model):
             :param group_id: 群号
         """
         users = await cls.query.where((cls.user_qq == user_qq) & (cls.group_id == group_id)).gino.all()
-        last_date = max(user.last_guess_time.date() for user in users)
+        now_date = datetime.datetime.now().date()
+        users = list(filter(lambda x: x.last_guess_time.date() >= now_date, users))
         daily_count = sum(user.daily_count for user in users)
-        return True if(
-            last_date >= datetime.datetime.now().date() and daily_count >= 10
-        ) else False
+        return daily_count >= 10
 
 
 
