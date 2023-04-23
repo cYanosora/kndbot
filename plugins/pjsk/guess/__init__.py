@@ -24,7 +24,7 @@ from ._data_source import (
 )
 from utils.limit_utils import access_count, access_cd
 from ._function import getSongLevel, getSongAuthor, getSongSinger, getCharaUnit, getCharaInfo, getCharaBirth, \
-    getCharaFeature
+    getCharaFeature, getSongNoteCount
 from ._rule import check_rule, check_reply
 from ._utils import pre_check, aliasToMusicId, aliasToCharaId
 from .._config import BUG_ERROR
@@ -309,7 +309,7 @@ async def _(event: GroupMessageEvent, state: T_State):
     game_type = state[PJSK_GUESS]
     text = '猜曲' if game_type == GUESS_MUSIC else '猜卡面'
     if pjskguess[game_type][event.group_id]['userid'] != event.user_id:
-        await pjsk_guesstip.finish(f"您不是游戏发起者，不可以提前结束{text}", at_sender=True)
+        await pjsk_gameover.finish(f"您不是游戏发起者，不可以提前结束{text}", at_sender=True)
     else:
         await endgame(event.group_id, event.self_id, game_type, advanceover=True)
 
@@ -390,7 +390,12 @@ async def _(event: GroupMessageEvent, state: T_State):
                     content = getSongLevel(musicid) or content
                 elif _t == 1:
                     # 获得歌曲演唱者信息
-                    content = getSongSinger(musicid) or content
+                    try:
+                        content = getSongSinger(musicid) or content
+                    # 获取到的是初音未来，换个提示
+                    except KeyError:
+                        # 获得歌曲谱面物量
+                        content = getSongNoteCount(musicid) or content
                 elif _t == 2:
                     # 获得歌曲作者信息
                     content = getSongAuthor(musicid) or content

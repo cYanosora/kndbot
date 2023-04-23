@@ -1,7 +1,9 @@
 import json
 import random
+import jieba
 import jieba.posseg as pseg
 from .._config import data_path
+jieba.load_userdict(str(data_path / 'jieba_dict.txt'))
 
 
 def getSongLevel(musicid: int, diff: str = 'master') -> str:
@@ -18,6 +20,21 @@ def getSongLevel(musicid: int, diff: str = 'master') -> str:
     except StopIteration:
         return ''
     return f'此曲的难度是{level}'
+
+
+def getSongNoteCount(musicid: int, diff: str = 'master') -> str:
+    """
+    根据musicId获取歌曲对应难度的谱面物量
+    """
+    with open(data_path / 'musicDifficulties.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    target = filter(lambda x:x['musicId'] == musicid and x['musicDifficulty'] == diff, data)
+    try:
+        music = next(target)
+        count = music['totalNoteCount']
+    except StopIteration:
+        return ''
+    return f'此曲的物量是{count}'
 
 
 def getSongSinger(musicid: int) -> str:
@@ -53,6 +70,10 @@ def getSongSinger(musicid: int) -> str:
     if not charainfos:
         reply = f'此歌曲只有{ver}'
     else:
+        if ver == "V版":
+            charainfos = list(filter(lambda x: x['characterId'] != 21, charainfos))
+            if len(charainfos) == 0:
+                raise KeyError("歌手只有初音未来，提示性太低！")
         charainfo = random.choice(charainfos)
         charaname = '-'
         if charainfo['characterType'] == 'game_character':
@@ -162,7 +183,7 @@ def getCharaFeature(charaid: int) -> str:
         cuts = list(pseg.cut(profile[key]))
         res = ''
         for pair in cuts:
-            if pair.flag in ['an', 'n', 'nr', 'nr1', 'nr2', 'nrj', 'nrf', 'ns', 'nsf', 'nt', 'nz', 'nl', 'ng']:
+            if pair.flag in ['vn', 'an', 'n', 'nr', 'nr1', 'nr2', 'nrj', 'nrf', 'ns', 'nsf', 'nt', 'nz', 'nl', 'ng']:
                 res += pair.word
             else:
                 res += ' '
