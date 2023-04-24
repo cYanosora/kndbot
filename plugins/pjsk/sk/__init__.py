@@ -12,7 +12,6 @@ from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11 import Message, MessageEvent, ActionFailed
 from configs.path_config import FONT_PATH
-from utils.http_utils import AsyncHttpx
 from utils.imageutils import text2image, pic2b64
 from utils.message_builder import image
 from utils.utils import scheduler, is_number, get_message_at

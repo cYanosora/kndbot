@@ -5,11 +5,9 @@ heroImage: /image/logo.png
 heroText: KanadeBot
 heroImageStyle: {
   maxWidth: '250px',
-  width: '100%',
+  maxHeight: '250px',
   display: block,
   margin: '9rem auto 2rem',
-  background: '#fff',
-  borderRadius: '1rem',
 }
 tagline: 宵崎奏的同人bot一枚
 actionText: 使用文档
