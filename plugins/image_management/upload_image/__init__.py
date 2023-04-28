@@ -1,4 +1,5 @@
 from nonebot import on_command
+from nonebot.internal.params import ArgPlainText
 from nonebot.permission import SUPERUSER
 from nonebot.typing import T_State
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent, GroupMessageEvent, Message, GROUP, ActionFailed
@@ -25,10 +26,12 @@ usage：
         传图/上传图片 [图库] [图片]        ：注意空格
         连续传图 [图库]
     示例：
+        上传图片 美图 [图片]
         传图 美图 [图片]
+        连传 美图 [图片] * n张
     注意:
         使用"传图"指令时 如果一次消息中包含多张图片，会同时上传，如果消息分开发送，则只会上传一张图片
-        使用"连续传图"指令时 接下来的所有消息中的图片都将收集起来，必须通过发送 “stop” 告诉bot停止收集，随后开始上传
+        使用"连续传图"指令时 接下来的所有消息中的图片都将收集起来，必须必须必须通过发送 “stop” 告诉bot停止收集，随后开始上传
         ==============================================================================
         无法直接上传图至pjsk同人图库，pjsk同人图库中的图需要master审核分类
         但你可以先传到公开图库中，master自己会不定期将未收录的pjsk同人图收录归类
@@ -63,7 +66,7 @@ async def _(bot: Bot, event: MessageEvent, arg: Message = CommandArg()):
     target_gall = args[0]
     target_imgs = args[1:]
     if target_gall not in Config.get_config("image_management", "IMAGE_DIR_LIST"):
-        await record_img.finish("不存在此图库")
+        await record_img.finish("不存在此图库，请重新触发指令！")
     result = await record_local_images(target_gall, [int(i) for i in target_imgs if i.isdigit()])
     await record_img.finish(result)
 
@@ -80,9 +83,8 @@ async def _():
 async def _(event: MessageEvent, state: T_State, arg: Message = CommandArg()):
     args = arg.extract_plain_text().strip()
     img_list = get_message_img(event.json())
-    if args:
-        if args in Config.get_config("image_management", "IMAGE_DIR_LIST"):
-            state["path"] = args
+    if args and args in Config.get_config("image_management", "IMAGE_DIR_LIST"):
+        state["path"] = args
     if img_list:
         state["img_list"] = arg
 
@@ -96,15 +98,18 @@ async def _(event: MessageEvent, state: T_State, arg: Message = CommandArg()):
 async def _(
     bot: Bot,
     event: MessageEvent,
-    state: T_State,
-    path: str = ArgStr("path"),
+    path: str = ArgPlainText("path"),
     img_list: Message = Arg("img_list"),
 ):
-    if path not in Config.get_config("image_management", "IMAGE_DIR_LIST"):
-        await upload_img.reject_arg("path", "没有此图库！再输入一次吧！")
-    if not get_message_img(img_list):
-        await upload_img.reject_arg("img_list", "现在可以把图发给我惹(/▽＼)")
     img_list = get_message_img(img_list)
+    isvalid = path in Config.get_config("image_management", "IMAGE_DIR_LIST")
+    if not isvalid:
+        if not img_list:
+            await upload_img.finish("上传失败，不存在此图库！")
+        else:
+            await upload_img.finish("上传失败，在发送图片前请携带图库名！")
+    if isvalid and not img_list:
+        await upload_img.reject_arg("img_list", "现在可以把图发给我惹(/▽＼)")
     group_id = 0
     if isinstance(event, GroupMessageEvent):
         group_id = event.group_id
@@ -139,13 +144,16 @@ async def _(event: MessageEvent, state: T_State):
 async def _(
     bot: Bot,
     event: MessageEvent,
-    state: T_State,
     img_list: List[str] = Arg("img_list"),
     path: str = ArgStr("path"),
     img: Message = Arg("img"),
 ):
-    if path not in Config.get_config("image_management", "IMAGE_DIR_LIST"):
-        await continuous_upload_img.reject_arg("path", "此目录不正确，请重新输入目录！")
+    isvalid = path in Config.get_config("image_management", "IMAGE_DIR_LIST")
+    if not isvalid:
+        if len(img_list) == 0:
+            await continuous_upload_img.finish("上传失败，不存在此图库！")
+        else:
+            await continuous_upload_img.finish("上传失败，在发送图片前请携带图库名！")
     if not img.extract_plain_text() == "stop":
         img = get_message_img(img)
         if img:
