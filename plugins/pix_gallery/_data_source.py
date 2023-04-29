@@ -11,7 +11,6 @@ from services.log import logger
 from manager import Config
 from configs.path_config import TEMP_PATH
 import aiofiles
-import platform
 import asyncio
 import math
 
@@ -19,10 +18,6 @@ try:
     import ujson as json
 except ModuleNotFoundError:
     import json
-
-if str(platform.system()).lower() == "windows":
-    policy = asyncio.WindowsSelectorEventLoopPolicy()
-    asyncio.set_event_loop_policy(policy)
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6;"

@@ -6,12 +6,6 @@ from utils.http_utils import AsyncHttpx
 from typing import Optional
 from services.log import logger
 from pathlib import Path
-import platform
-
-if platform.system() == "Windows":
-    import asyncio
-
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 headers = {

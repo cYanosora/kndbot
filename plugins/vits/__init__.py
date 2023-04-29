@@ -70,14 +70,14 @@ driver = get_driver()
 
 
 @driver.on_startup
-def _():
+async def _():
     logger.info("正在检查目录是否存在...")
-    asyncio.ensure_future(checkDir(base_path, voice_path))
+    await checkDir(base_path, voice_path)
     filenames = []
     [filenames.append(model[0])
      for model in tts_gal.values() if not model[0] in filenames]
     logger.info("正在检查配置文件是否存在...")
-    asyncio.ensure_future(checkFile(model_path, config_path, filenames, tts_gal, valid_names))
+    await checkFile(model_path, config_path, filenames, tts_gal, valid_names)
 
 
 voice = on_message(rule=checkRule(), permission=GROUP, block=True, priority=5)
