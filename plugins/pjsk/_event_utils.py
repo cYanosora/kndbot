@@ -110,18 +110,32 @@ async def drawevent(event):
         pos[0] += 130
     with open(data_path / 'gameCharacterUnits.json', 'r', encoding='utf-8') as f:
         gameCharacterUnits = json.load(f)
-    row = 0
-    pos = [750, 380]
+    bonuspics = []                  # 临时保存加成角色卡图
+    base_pos = (750, 380)           # 加成图粘贴的基准位置
+    max_width = 1980 - base_pos[0]  # 加成图最大宽度
+    max_height = 1210 - base_pos[1] # 加成图最大高度
+    offest_size = [0, 0]            # 每张角色各自的加成图的偏移位置
+    # 获取各角色加成图以及应该粘贴的位置
     for chara in event.bonusechara:
         bonuspic = await _charabonuspic(chara, event.bonuseattr, cards, gameCharacterUnits, event.aggregateAtorin)
         if bonuspic is not None:
-            bonuspic = bonuspic.resize((int(bonuspic.size[0] * 0.9), int(bonuspic.size[1] * 0.9)))
-            if pos[0] + bonuspic.size[0] > 1980:
-                pos = [750, 380]
-                row += 1
-            r, g, b, mask = bonuspic.split()
-            pic.paste(bonuspic, (pos[0], pos[1] + 140 * row), mask)
-            pos[0] += bonuspic.size[0] + 50
+            if offest_size[0] + bonuspic.size[0] > max_width:
+                offest_size[0] = 0
+                offest_size[1] += bonuspic.size[1] + 15
+            bonuspics.append((bonuspic, offest_size[0], offest_size[1]))
+            offest_size[0] += bonuspic.size[0] + 55
+    # 生成合适大小的角色加成图
+    final_bonuspic = Image.new("RGBA", (max_width, offest_size[1] + bonuspics[-1][0].size[1]))
+    for bonuspic, x, y in bonuspics:
+        mask = bonuspic.split()[-1]
+        final_bonuspic.paste(bonuspic, (x, y), mask)
+    # 角色加成图过大时自动缩放
+    if final_bonuspic.size[1] > max_height:
+        newsize = (int(final_bonuspic.size[0] / final_bonuspic.size[1] * max_height), max_height)
+        final_bonuspic = final_bonuspic.resize(newsize)
+    # 在背景上粘贴角色加成图
+    mask = final_bonuspic.split()[-1]
+    pic.paste(final_bonuspic, base_pos, mask)
     pic = pic.convert('RGB')
     return pic
 
