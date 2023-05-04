@@ -237,7 +237,7 @@ async def group_user_recheck_in(bot: Bot, event: GroupMessageEvent, gid: int = N
         await BagUser.add_property(user_id, group_id, item)
     # 反馈文本
     left_days = avail_days - resign_days
-    resign_text = f"，你还剩{left_days}天未补签" if left_days > 0 else "，已完成所有补签\n"
+    resign_text = f"，你还剩{left_days}天未补签\n" if left_days > 0 else "，已完成所有补签\n"
     add_item_dict = {}
     for i in add_item:
         add_item_dict[i] = add_item_dict.get(i, 0) + 1

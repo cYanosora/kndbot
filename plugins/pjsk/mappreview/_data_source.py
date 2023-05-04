@@ -315,7 +315,8 @@ async def moe2img(musicid, difficulty, withSkill=False):
     cairosvg.svg2png(
         url=svg_path,
         write_to=png_path,
-        scale=1.3
+        scale=1.3,
+        unsafe=True
     )
     # png转jpg
     Image.open(png_path).save(file_name / f"{difficulty}{fix}.jpg", quality=60)

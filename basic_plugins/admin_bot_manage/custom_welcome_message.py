@@ -28,7 +28,7 @@ __plugin_settings__ = {
 
 custom_welcome = on_command(
     "设置群欢迎消息",
-    aliases={"设置进群欢迎消息"},
+    aliases={"设置进群欢迎消息", "自定义群欢迎消息", "自定义进群欢迎消息"},
     permission=GROUP,
     priority=3,
     block=True,
