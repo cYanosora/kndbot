@@ -19,7 +19,7 @@ _flmt_b = FreqLimiter(Config.get_config("hook", "CHECK_NOTICE_INFO_CD"))
 
 # 以下插件触发时默认不计数
 oppose_cd_modules = oppose_count_modules = [
-    "petpet", "send_image", "miragetank", "pix", "pixiv_rank_search", "youthstudy", 'guess'
+    "petpet", "send_image", "miragetank", "pix", "pixiv_rank_search", "youthstudy", 'guess', 'gpt'
 ]
 # 以下插件私聊中可用
 ignore_module = [
