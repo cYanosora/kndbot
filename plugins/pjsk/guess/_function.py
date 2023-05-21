@@ -70,7 +70,7 @@ def getSongSinger(musicid: int) -> str:
     if not charainfos:
         reply = f'此歌曲只有{ver}'
     else:
-        if ver == "V版":
+        if ver in ["V版", "原曲版"]:
             charainfos = list(filter(lambda x: x['characterId'] != 21, charainfos))
             if len(charainfos) == 0:
                 raise KeyError("歌手只有初音未来，提示性太低！")
@@ -82,7 +82,7 @@ def getSongSinger(musicid: int) -> str:
             for gamechara in gameCharacters:
                 if gamechara['id'] == charainfo['characterId']:
                     charaname = gamechara.get('firstName', '') + gamechara.get('givenName', '')
-        elif charainfo['characterType'] == 'game_character':
+        elif charainfo['characterType'] == 'outside_character':
             charaname = {
                 1: "GUMI", 2: "IA", 3: "flower",
                 4: "VY2V3", 5: "音街ウナ", 6: "歌爱ユキ",
@@ -90,6 +90,8 @@ def getSongSinger(musicid: int) -> str:
                 10: "神威がくぽ", 11: "星界", 12: "東北きりたん",
                 13: "ゲキヤク"
             }.get(charainfo['characterId'], '-')
+        if charaname == '-':
+            raise KeyError("没有找到歌手信息")
         if len(charainfos) == 1:
             reply = f'{charaname}是此曲{ver}的歌手'
         else:

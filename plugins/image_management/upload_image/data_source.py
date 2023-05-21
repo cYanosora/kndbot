@@ -87,7 +87,6 @@ async def upload_image_to_local(
                 compare_md5_ = get_md5(path=path / i)
                 if md5_ == compare_md5_:
                     repeat = True
-                    save_file.unlink()
                     break
             if repeat:
                 repeat_list.append(img_url)

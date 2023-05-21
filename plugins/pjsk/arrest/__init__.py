@@ -57,8 +57,10 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     except:
         await pjsk_assest.finish(BUG_ERROR)
     text = f"{profile.name} - {userid}\n" if not isprivate else f"{profile.name}\n"
-    text += f"expert进度:FC {profile.full_combo[3]}/{profile.clear[3]}\n" \
-            f"master进度:FC {profile.full_combo[4]}/{profile.clear[4]}"
+    text += f"expert进度:FC {profile.full_combo[3]}/{profile.clear[3]}" \
+            f" AP{profile.full_perfect[3]}/{profile.clear[3]}\n" \
+            f"master进度:FC {profile.full_combo[4]}/{profile.clear[4]}" \
+            f" AP{profile.full_perfect[4]}/{profile.clear[4]}\n"
     ap33plus = profile.masterscore[33][0] + profile.masterscore[34][0] + profile.masterscore[35][0] + \
                profile.masterscore[36][0] + profile.masterscore[37][0]
     fc33plus = profile.masterscore[33][1] + profile.masterscore[34][1] + profile.masterscore[35][1] + \

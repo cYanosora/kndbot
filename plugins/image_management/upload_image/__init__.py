@@ -128,11 +128,12 @@ async def _(
 
 
 @continuous_upload_img.handle()
-async def _(event: MessageEvent, state: T_State):
-    path = get_message_img(event.json())
+async def _(event: MessageEvent, state: T_State, arg: Message = CommandArg()):
+    path = arg.extract_plain_text().strip()
+    imgs = get_message_img(event.json())
     if path in Config.get_config("image_management", "IMAGE_DIR_LIST"):
         state["path"] = path
-    state["img_list"] = []
+    state["img_list"] = imgs
 
 
 @continuous_upload_img.got(
@@ -159,7 +160,9 @@ async def _(
         if img:
             for i in img:
                 img_list.append(i)
-        await continuous_upload_img.reject_arg("img", "再来一张！【发送‘stop’为停止】")
+            await continuous_upload_img.reject_arg("img", "再来一张！【发送‘stop’为停止】")
+        else:
+            await continuous_upload_img.reject_arg("img", "请发送图片！【发送‘stop’为停止】")
     group_id = 0
     if isinstance(event, GroupMessageEvent):
         group_id = event.group_id
