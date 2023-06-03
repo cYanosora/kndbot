@@ -70,7 +70,7 @@ def getSongSinger(musicid: int) -> str:
     if not charainfos:
         reply = f'此歌曲只有{ver}'
     else:
-        if ver in ["V版", "原曲版"]:
+        if ver in ["V版", "原曲版", "SEKAI版"]:
             charainfos = list(filter(lambda x: x['characterId'] != 21, charainfos))
             if len(charainfos) == 0:
                 raise KeyError("歌手只有初音未来，提示性太低！")

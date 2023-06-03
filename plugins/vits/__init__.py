@@ -1,5 +1,4 @@
 import string
-import asyncio
 import traceback
 from scipy.io.wavfile import write
 from nonebot import on_message

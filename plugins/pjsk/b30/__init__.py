@@ -277,24 +277,23 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
               font=font_style)
     # rank阴影
     rankimg = Image.new("RGBA", (120, 55), (100, 110, 180, 0))
-    draw = ImageDraw.Draw(rankimg)
+    rank_draw = ImageDraw.Draw(rankimg)
     font_style = ImageFont.truetype(str(FONT_PATH / r"SourceHanSansCN-Bold.otf"), 35)
     text_width = font_style.getsize(str(rank))
-    draw.text((int(60 - text_width[0] / 2), int(20 - text_width[1] / 2)), str(rank), fill=(61, 74, 162, 210),
+    rank_draw.text((int(60 - text_width[0] / 2), int(20 - text_width[1] / 2)), str(rank), fill=(61, 74, 162, 210),
               font=font_style, stroke_width=2, stroke_fill=(61, 74, 162, 210))
     rankimg = rankimg.filter(ImageFilter.GaussianBlur(1.2))
-    draw = ImageDraw.Draw(rankimg)
-    draw.text((int(60 - text_width[0] / 2), int(20 - text_width[1] / 2)), str(rank), fill=(255, 255, 255),
+    rank_draw = ImageDraw.Draw(rankimg)
+    rank_draw.text((int(60 - text_width[0] / 2), int(20 - text_width[1] / 2)), str(rank), fill=(255, 255, 255),
               font=font_style)
     r, g, b, mask = rankimg.split()
     pic.paste(rankimg, (565, 142), mask)
     # 上传时间
     if not profile.isNewData:
         font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 25)
-        mtime = (suite_path / f'{userid}.json').stat().st_mtime
-        updatetime = time.localtime(mtime)
+        updatetime = time.localtime(profile.updatedAt // 1000)
         draw.text(
-            (68, 20), '数据上传时间：' + time.strftime("%Y-%m-%d %H:%M:%S", updatetime),
+            (68, 20), '数据更新于：' + time.strftime("%Y-%m-%d %H:%M:%S", updatetime),
             fill=(100, 100, 100), font=font_style
         )
     pic = pic.convert("RGB")

@@ -5,7 +5,8 @@ from configs.path_config import IMAGE_PATH
 from utils.limit_utils import access_count, access_cd
 from utils.message_builder import image, custom_forward_msg, custom_friend_forward_msg
 from services.log import logger
-from nonebot.adapters.onebot.v11 import MessageEvent, GroupMessageEvent, GROUP, Bot, NetworkError
+from nonebot.adapters.onebot.v11 import MessageEvent, GroupMessageEvent, GROUP, Bot, NetworkError, Message, \
+    MessageSegment
 from utils.utils import cn2py
 from manager import Config
 from manager import withdraw_message_manager, plugins2count_manager
@@ -138,9 +139,6 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
             elif int(index) < 0:
                 img_ids[img_ids.index(index)] = 1
         img_ids = set(img_ids)
-        # 记录功能使用次数、cd
-        access_count(matcher.plugin_name, event, len(img_ids))
-        access_cd(matcher.plugin_name, event, len(img_ids))
         # 筛选文件名和后缀名
         all_ids_suffixs = map(lambda x: os.path.splitext(x), os.listdir(path))
         all_ids_suffixs = list(filter(lambda x: x[0].isdigit() and int(x[0]) in img_ids, all_ids_suffixs))
@@ -161,11 +159,13 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
                     f"是否收录：{record_flag}"
                 )
                 prefix = f"id：{index}(已收录至pjsk同人图库)\n" if record_flag else f"id：{index}\n"
-                msg_id = await send_img.send(
-                    prefix + result
+                msg = Message(
+                    MessageSegment.text(prefix) + result
                     if Config.get_config("image_management", "SHOW_ID")
-                    else "" + result
+                    else result
                 )
+                msg += MessageSegment.text("\n受手表协议端限制，无法频繁发图，设定只允许发送单张图片")
+                msg_id = await send_img.send(msg)
                 withdraw_message_manager.withdraw_message(
                     event,
                     msg_id,
@@ -220,6 +220,9 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
                 msg_id,
                 Config.get_config("image_management", "WITHDRAW_IMAGE_MESSAGE"),
             )
+        # 记录功能使用次数、cd
+        access_count(matcher.plugin_name, event, len(img_ids))
+        access_cd(matcher.plugin_name, event, 1)
         await send_img.finish()
     # 排除是特殊词汇的图库
     else:
@@ -259,7 +262,9 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent, state: T_State
             try:
                 logger.info(f"USER {event.user_id} 调用pjsk搜图功能，图片路径:{path}")
                 if len(result) == 1:
-                    msg_id = await send_img.finish(result[0])
+                    msg = Message(result[0])
+                    msg += MessageSegment.text("\n受手表协议端限制，无法频繁发图，设定只允许发送单张图片")
+                    msg_id = await send_img.finish(msg)
                     withdraw_message_manager.withdraw_message(
                         event,
                         msg_id,

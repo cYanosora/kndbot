@@ -373,6 +373,7 @@ class UserProfile(object):
         self.expertscore = {}
         self.musicResult = {}
         self.isNewData = False
+        self.updatedAt = 0
         for i in range(26, 38):
             self.masterscore[i] = [0, 0, 0, 0]
         for i in range(21, 32):
@@ -393,16 +394,12 @@ class UserProfile(object):
             )
 
         # 有totalPower字段说明是日服新数据
-        try:
-            data['totalPower']
+        if data.get('totalPower'):
             self.isNewData = True
-            print('新数据')
-        except:
-            print('suite数据')
-            pass
 
         # 基本信息
         self.userid = userid
+        self.updatedAt = data.get("updatedAt", 0) or data.get("now", 0)
         try:
             self.twitterId = data['userProfile']['twitterId']
         except:

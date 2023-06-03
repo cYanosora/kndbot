@@ -2,7 +2,6 @@ import random
 import re
 import time
 from typing import Dict, Optional, List, Union
-
 import requests
 import yaml
 from PIL import ImageDraw, Image, ImageFont
@@ -118,9 +117,13 @@ async def _(matcher: Matcher, event: MessageEvent, msg: Message = CommandArg()):
             await pjsk_sk.finish("你这ID有问题啊", at_sender=True)
             return
     # 输入的参数是多个排名
-    else:
+    elif len(ranks) <= 8:
         param = {'targetRank': ranks}
         isprivate = True
+    # 输入的排名数量过多
+    else:
+        await matcher.finish("少查一点吧", at_sender=True)
+        return
     await send_msg(matcher, param, isprivate, event_data)
 
 
@@ -133,7 +136,7 @@ async def send_msg(
     global event_id
     if event_data is None:
         event_data = currentevent()
-    event_id = event_data["id"] if int(event_data["id"]) > event_id else event_id
+    event_id = max(event_data["id"], event_id)
     url_list = [i + '/user/{user_id}/event/' + str(event_id) + '/ranking' for i in api_base_url_list]
     # 单排名图片
     is_simple = any(isinstance(i, List) for i in param.values())
@@ -370,37 +373,59 @@ async def _():
 
 async def pjsk_cheer_pred_update():
     global event_id
+    with open(data_path / 'cheerfulCarnivalTeams.json', 'r', encoding='utf-8') as f:
+        Teams = json.load(f)
+    with open(data_path / 'translate.yaml', encoding='utf-8') as f:
+        trans = yaml.load(f, Loader=yaml.FullLoader)
+    Teams.reverse()
     resp_text = ""
-    try:
-        resp = requests.get(cheer_pred_url)
-        data = resp.json()
-        if data['eventId'] != event_id:
-            return None
-        with open(data_path / 'cheerfulCarnivalTeams.json', 'r', encoding='utf-8') as f:
-            Teams = json.load(f)
-        with open(data_path / 'translate.yaml', encoding='utf-8') as f:
-            trans = yaml.load(f, Loader=yaml.FullLoader)
-        Teams.reverse()
-        for TeamId in data["members"]:
-            TeamRates = data['predictRates'].get(TeamId)
-            TeamName = data["names"].get(TeamId)
-            memberCount = data["members"][TeamId]
+    for i in range(2):
+        # 从33dev取5v5数据
+        if i == 1:
             try:
-                translate = f"({trans['cheerful_carnival_teams'][int(TeamId)]})"
-            except KeyError:
-                translate = ''
-            if not TeamName:
-                for i in Teams:
-                    if i['id'] == int(TeamId):
-                        TeamName = i['teamName']
-                        break
-            resp_text += f"{TeamName}{translate} {memberCount}人"
-            resp_text += f' 预测胜率: {TeamRates*100:.3f}%\n' if TeamRates is not None else '\n'
-        return resp_text[:-1]
-    except Exception as e:
-        logger.warning(f"pjsk查询5v5人数失败！Error:{e}")
+                data = requests.get(cheer_pred_url).json()
+                if data['eventId'] != event_id: continue
+                for TeamId in data["members"]:
+                    TeamRates = data['predictRates'].get(TeamId)
+                    TeamName = data["names"].get(TeamId)
+                    memberCount = data["members"][TeamId]
+                    try:
+                        translate = f"({trans['cheerful_carnival_teams'][int(TeamId)]})"
+                    except KeyError:
+                        translate = ''
+                    if not TeamName:
+                        for i in Teams:
+                            if i['id'] == int(TeamId):
+                                TeamName = i['teamName']
+                                break
+                    resp_text += f"{TeamName}{translate} {memberCount}人"
+                    resp_text += f' 预测胜率: {TeamRates*100:.3f}%\n' if TeamRates is not None else '\n'
+                break
+            except: continue
+        # 从uni取5v5数据
+        else:
+            try:
+                url = random.choice(api_base_url_list) + f'cheerful-carnival-team-count/{event_id}'
+                data = requests.get(url).json()
+                if not data: continue
+                for Team in data["cheerfulCarnivalTeamMemberCounts"]:
+                    TeamId = Team["cheerfulCarnivalTeamId"]
+                    memberCount = Team["memberCount"]
+                    try:
+                        translate = f"({trans['cheerful_carnival_teams'][int(TeamId)]})"
+                    except KeyError:
+                        translate = ''
+                    try:
+                        TeamName = next(filter(lambda x: x['id'] == int(TeamId), Teams))
+                    except:
+                        TeamName = ''
+                    resp_text += f"{TeamName}{translate} {memberCount}人\n"
+                break
+            except: continue
+    if not resp_text:
+        logger.warning(f"pjsk查询5v5人数失败！")
         return None
-
+    return resp_text
 
 # 自动更新预测线
 @scheduler.scheduled_job(
@@ -419,7 +444,9 @@ async def _():
                 "time": tmp_json["data"]["ts"]/1000,
                 "id": tmp_json["data"]["eventId"]
             }
-        logger.info("pjsk更新预测线成功！")
+            logger.info("pjsk更新预测线成功！")
+        else:
+            logger.warning(f"pjsk更新预测线失败！")
     except Exception as e:
         logger.warning(f"pjsk更新预测线失败！Error:{e}")
 
@@ -434,7 +461,7 @@ async def _():
     global event_id
     try:
         tmp_id = (await getEventId(current_event_url_bak))['eventId']
-        event_id = int(tmp_id) if int(tmp_id) > int(event_id) else event_id
+        event_id = max(int(tmp_id), event_id)
         logger.info(f"pjsk更新活动号成功，当前活动号: {event_id}！")
     except Exception as e:
         logger.warning(f"pjsk更新活动号失败！Error:{e}")
@@ -449,9 +476,8 @@ async def _():
     global event_id
     try:
         tmp_id = (await getEventId(current_event_url_bak))['eventId']
-        event_id = int(tmp_id) if int(tmp_id) > int(event_id) else event_id
-        url_list = [i + '/user/{user_id}/event/' + str(tmp_id) + '/ranking' for i in api_base_url_list]
-        url = random.choice(url_list) + '?rankingViewType=top100'
+        event_id = max(int(tmp_id), event_id)
+        url = random.choice(api_base_url_list) + '/user/{user_id}/event/' + str(event_id) + '/ranking?rankingViewType=top100'
         ranking = await callapi(url)
         with open(data_path / 'sktop100.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(ranking, sort_keys=True, indent=4))

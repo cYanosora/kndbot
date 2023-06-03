@@ -31,7 +31,7 @@ def checkRule() -> T_RuleChecker:
             'mnr', 'hrk', 'airi', 'szk',
             'khn', 'an', 'akt', 'toya',
             'tks', 'emu', 'nene', 'rui',
-            'knd', 'mfy', 'ena', 'mzk'
+            'knd', 'mfy', 'mfy1', 'ena', 'mzk'
         ]
         # 使用烧烤图库
         if name not in name_ls and search_flag:

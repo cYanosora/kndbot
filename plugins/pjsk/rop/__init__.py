@@ -151,12 +151,12 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
         draw.text(text_coordinate, str(profile.masterscore[i + levelmin + 5][3]), fill=(108, 237, 226), font=font_style)
     chart = jinduChart(profile.masterscore)
     img.paste(chart, (15, 732), chart.split()[-1])
+    # 上传时间
     if not profile.isNewData:
         font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 25)
-        mtime = (suite_path / f'{userid}.json').stat().st_mtime
-        updatetime = time.localtime(mtime)
+        updatetime = time.localtime(profile.updatedAt // 1000)
         draw.text(
-            (68, 10), '数据上传时间：' + time.strftime("%Y-%m-%d %H:%M:%S", updatetime),
+            (68, 10), '数据更新于：' + time.strftime("%Y-%m-%d %H:%M:%S", updatetime),
             fill=(100, 100, 100), font=font_style
         )
     # 发送图片
