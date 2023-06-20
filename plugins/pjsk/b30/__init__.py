@@ -194,17 +194,17 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     for i in userProfileHonors:
         try:
             if i['seq'] == 1:
-                honorpic = await generatehonor(i, True)
+                honorpic = await generatehonor(i, True, profile.userHonorMissions)
                 honorpic = honorpic.resize((226, 48))
                 r, g, b, mask = honorpic.split()
                 pic.paste(honorpic, (59, 226), mask)
             elif i['seq'] == 2:
-                honorpic = await generatehonor(i, False)
+                honorpic = await generatehonor(i, False, profile.userHonorMissions)
                 honorpic = honorpic.resize((107, 48))
                 r, g, b, mask = honorpic.split()
                 pic.paste(honorpic, (290, 226), mask)
             elif i['seq'] == 3:
-                honorpic = await generatehonor(i, False)
+                honorpic = await generatehonor(i, False, profile.userHonorMissions)
                 honorpic = honorpic.resize((107, 48))
                 r, g, b, mask = honorpic.split()
                 pic.paste(honorpic, (403, 226), mask)
@@ -262,6 +262,8 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
         rank = rank + diff[i]['rank']
         try:
             single = await b30single(diff[i], musics)
+        except IndexError:
+            break
         except AttributeError:
             await pjsk_b30.finish(BUG_ERROR)
             return

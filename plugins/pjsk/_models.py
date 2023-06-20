@@ -366,6 +366,7 @@ class UserProfile(object):
         self.mvpCount = 0
         self.superStarCount = 0
         self.userProfileHonors = {}
+        self.userHonorMissions = []
         self.characterRank = {}
         self.characterId = 0
         self.highScore = 0
@@ -394,20 +395,12 @@ class UserProfile(object):
             )
 
         # 有totalPower字段说明是日服新数据
-        if data.get('totalPower'):
-            self.isNewData = True
-
+        self.isNewData = 'totalPower' in data.keys()
         # 基本信息
         self.userid = userid
         self.updatedAt = data.get("updatedAt", 0) or data.get("now", 0)
-        try:
-            self.twitterId = data['userProfile']['twitterId']
-        except:
-            pass
-        try:
-            self.word = data['userProfile']['word']
-        except:
-            pass
+        self.twitterId = data.get('userProfile', {}).get('twitterId', "")
+        self.word = data.get('userProfile', {}).get('word', "")
 
         # 挑战最高分
         try:
@@ -420,10 +413,12 @@ class UserProfile(object):
                         self.characterId = i['characterId']
                         self.highScore = i['highScore']
         except:
+            # 可能存在没打过挑战live，对应字段不存在的情况
             pass
-        self.characterRank = data['userCharacters']
-        self.userProfileHonors = data['userProfileHonors']
 
+        self.characterRank = data.get('userCharacters')
+        self.userProfileHonors = data.get('userProfileHonors')
+        self.userHonorMissions = data.get('userHonorMissions', [])
         # 打歌数据
         if self.isNewData:
             self.name = data['user']['name']

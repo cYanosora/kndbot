@@ -1,11 +1,11 @@
-import random
 import re
 import time
 import yaml
 from typing import List, Dict
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from nonebot.adapters.onebot.v11 import MessageEvent, Message
 from nonebot.params import CommandArg
+from configs.path_config import FONT_PATH
 from utils.http_utils import AsyncHttpx
 from utils.utils import get_message_at
 from ._autoask import pjsk_update_manager
@@ -178,13 +178,17 @@ async def getEventId(url: str):
 
 
 # 生成牌子信息
-async def generatehonor(honor, ismain=True):
+async def generatehonor(honor, ismain=True, userHonorMissions=None):
+    userHonorMissions = userHonorMissions if userHonorMissions else []
     pic = None
     star = False
     backgroundAssetbundleName = ''
     assetbundleName = ''
     honorRarity = 0
     honorType = ''
+    honor['profileHonorType'] = honor.get('profileHonorType', 'normal')
+    is_live_master = False
+
     if honor['profileHonorType'] == 'normal':
         # 普通牌子
         with open(data_path / r'honors.json', 'r', encoding='utf-8') as f:
@@ -193,23 +197,34 @@ async def generatehonor(honor, ismain=True):
             honorGroups = json.load(f)
         for i in honors:
             if i['id'] == honor['honorId']:
-                assetbundleName = i['assetbundleName']
-                honorRarity = i['honorRarity']
                 try:
-                    star = True
-                except IndexError:
-                    pass
-                for j in honorGroups:
-                    if j['id'] == i['groupId']:
-                        try:
-                            backgroundAssetbundleName = j['backgroundAssetbundleName']
-                        except KeyError:
-                            backgroundAssetbundleName = ''
-                        honorType = j['honorType']
-                        break
-        filename = 'honor'
-        mainname = 'rank_main.png'
-        subname = 'rank_sub.png'
+                    assetbundleName = i['assetbundleName']
+                    honorRarity = i['honorRarity']
+                    try:
+                        star = True
+                    except IndexError:
+                        pass
+                    for j in honorGroups:
+                        if j['id'] == i['groupId']:
+                            try:
+                                backgroundAssetbundleName = j['backgroundAssetbundleName']
+                            except KeyError:
+                                backgroundAssetbundleName = ''
+                            honorType = j['honorType']
+                            break
+                    filename = 'honor'
+                    mainname = 'rank_main.png'
+                    subname = 'rank_sub.png'
+                except KeyError:
+                    honorMissionType = i['honorMissionType']
+                    for level in i['levels']:
+                        if honor['honorLevel'] == level['level']:
+                            assetbundleName = level['assetbundleName']
+                            honorRarity = level['honorRarity']
+                    filename = 'honor'
+                    mainname = 'scroll.png'
+                    subname = 'scroll.png'
+                    is_live_master = True
         if honorType == 'rank_match':
             filename = 'rank_live/honor'
             mainname = 'main.png'
@@ -243,7 +258,36 @@ async def generatehonor(honor, ismain=True):
                     pic.paste(frame, (0, 0), mask)
                 if rankpic is not None:
                     r, g, b, mask = rankpic.split()
-                    pic.paste(rankpic, (190, 0), mask)
+                    if is_live_master:
+                        pic.paste(rankpic, (218, 3), mask)
+                        for i in userHonorMissions:
+                            if honorMissionType == i['honorMissionType']:
+                                progress = i['progress']
+                        draw = ImageDraw.Draw(pic)
+                        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 20)
+                        text_width = font_style.getsize(str(progress))
+                        text_coordinate = (int(270 - text_width[0] / 2), int(58 - text_width[1] / 2))
+                        draw.text(text_coordinate, str(progress), fill=(255, 255, 255), font=font_style)
+
+                        star_count = (progress // 10) % 10 + 1
+                        stars_pos = [
+                            (223, 68), (216, 56), (208, 42), (216, 27), (223, 13),
+                            (295, 68), (304, 56), (311, 42), (303, 27), (295, 13)
+                        ]
+
+                        with_star = Image.open(data_path / 'pics/live_master_honor_star_1.png')
+                        with_star_alpha = with_star.split()[3]
+                        without_star = Image.open(data_path / 'pics/live_master_honor_star_2.png')
+                        without_star_alpha = without_star.split()[3]
+
+                        for i in range(10):
+                            if star_count <= i:
+                                star_pic, star_alpha = without_star, without_star_alpha
+                            else:
+                                star_pic, star_alpha = with_star, with_star_alpha
+                            pic.paste(star_pic, (stars_pos[i][0], stars_pos[i][1] - 8), star_alpha)
+                    else:
+                        pic.paste(rankpic, (190, 0), mask)
             else:
                 pic = await pjsk_update_manager.get_asset(
                     rf'startapp/{filename}/{backgroundAssetbundleName}', rf'degree_main.png'
@@ -259,8 +303,8 @@ async def generatehonor(honor, ismain=True):
                 r, g, b, mask = rankpic.split()
                 pic.paste(rankpic, (190, 0), mask)
             if honorType == 'character' or honorType == 'achievement':
+                honorlevel = honor['honorLevel']
                 if star is True:
-                    honorlevel = honor['honorLevel']
                     if honorlevel > 10:
                         honorlevel = honorlevel - 10
                     if honorlevel < 5:
@@ -305,7 +349,18 @@ async def generatehonor(honor, ismain=True):
                     pic.paste(frame, (0, 0), mask)
                 if rankpic is not None:
                     r, g, b, mask = rankpic.split()
-                    pic.paste(rankpic, (34, 42), mask)
+                    if is_live_master:
+                        pic.paste(rankpic, (40, 3), mask)
+                        for i in userHonorMissions:
+                            if honorMissionType == i['honorMissionType']:
+                                progress = i['progress']
+                        draw = ImageDraw.Draw(pic)
+                        font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 20)
+                        text_width = font_style.getsize(str(progress))
+                        text_coordinate = (int(90 - text_width[0] / 2), int(58 - text_width[1] / 2))
+                        draw.text(text_coordinate, str(progress), fill=(255, 255, 255), font=font_style)
+                    else:
+                        pic.paste(rankpic, (34, 42), mask)
             else:
                 pic = await pjsk_update_manager.get_asset(
                     rf'startapp/{filename}/{backgroundAssetbundleName}', rf'degree_sub.png'

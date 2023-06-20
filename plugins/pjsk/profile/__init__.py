@@ -172,17 +172,17 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     for i in profile.userProfileHonors:
         try:
             if i['seq'] == 1:
-                honorpic = await generatehonor(i, True)
+                honorpic = await generatehonor(i, True, profile.userHonorMissions)
                 honorpic = honorpic.resize((266, 56))
                 r, g, b, mask = honorpic.split()
                 img.paste(honorpic, (104, 228), mask)
             elif i['seq'] == 2:
-                honorpic = await generatehonor(i, False)
+                honorpic = await generatehonor(i, False, profile.userHonorMissions)
                 honorpic = honorpic.resize((126, 56))
                 r, g, b, mask = honorpic.split()
                 img.paste(honorpic, (375, 228), mask)
             elif i['seq'] == 3:
-                honorpic = await generatehonor(i, False)
+                honorpic = await generatehonor(i, False, profile.userHonorMissions)
                 honorpic = honorpic.resize((126, 56))
                 r, g, b, mask = honorpic.split()
                 img.paste(honorpic, (508, 228), mask)

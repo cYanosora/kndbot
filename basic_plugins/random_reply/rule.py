@@ -68,7 +68,7 @@ def retry_rule() -> T_RuleChecker:
     async def check_args(event: GroupMessageEvent) -> bool:
         retry_info = retry_manager.get(event.user_id, event.group_id)
         if retry_info:
-            if retry_info["time"] + 30 < time.time():
+            if retry_info["time"] + 60 < time.time():
                 retry_manager.remove(event.user_id, event.group_id)
                 return False
             return True
