@@ -1,4 +1,6 @@
 from datetime import datetime
+from nonebot.adapters.onebot.v11 import Bot
+from nonebot import get_bots
 from manager import Config
 from services.db_context import db
 from typing import List, Optional
@@ -193,3 +195,9 @@ class GroupInfoUser(db.Model):
 
         return user.uid if user and user.uid else None
 
+    @classmethod
+    async def get_group_bots(cls, group_id: int) -> List[Bot]:
+        group_members = await GroupInfoUser.get_group_member_id_list(group_id)
+        return list(
+            filter(lambda x: int(x.self_id) in group_members, get_bots().values())
+        )

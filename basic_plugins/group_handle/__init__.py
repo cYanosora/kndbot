@@ -12,7 +12,6 @@ from nonebot.adapters.onebot.v11 import (
     GroupBanNoticeEvent,
 )
 from nonebot.adapters.onebot.v11.exception import ActionFailed
-
 from services.db_context import db
 from services.log import logger
 from models.level_user import LevelUser
@@ -99,11 +98,14 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
                 )
         # 正常加入群聊
         elif event.group_id not in group_manager["group_manager"].keys():
-            # 默认群功能开关
-            data = plugins2settings_manager.get_data()
-            for plugin in data.keys():
-                if not data[plugin]["default_status"]:
-                    group_manager.block_plugin(plugin, event.group_id)
+            # 没有其它bot在群内
+            other_bots = list(filter(lambda x:int(x.self_id) != bot.self_id, await GroupInfoUser.get_group_bots(event.group_id)))
+            if len(other_bots) == 0: 
+                # 默认群功能开关
+                data = plugins2settings_manager.get_data()
+                for plugin in data.keys():
+                    if not data[plugin]["default_status"]:
+                        group_manager.block_plugin(plugin, event.group_id)
             # 即刻更新成员信息列表
             _group_user_list = await bot.get_group_member_list(group_id=event.group_id)
             for user_info in _group_user_list:
@@ -162,7 +164,10 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
             logger.info(f"用户{user_info['user_id']} 所属{user_info['group_id']} 更新成功")
         else:
             logger.warning(f"用户{user_info['user_id']} 所属{user_info['group_id']} 更新失败")
-
+        # 其它bot入群
+        other_bots = list(filter(lambda x:int(x.self_id) != bot.self_id, await GroupInfoUser.get_group_bots(event.group_id)))
+        if len(other_bots) > 0:
+            await group_increase_handle.finish()
         # 群欢迎消息
         if _welc_flmt.check(event.group_id):
             _welc_flmt.start_cd(event.group_id)
@@ -215,11 +220,14 @@ async def _(bot: Bot, event: GroupDecreaseNoticeEvent):
             ).user_name
         except AttributeError:
             operator_name = "None"
-        coffee = int(list(bot.config.superusers)[0])
+        # 若群内无其它bot
+        left_bots = list(filter(lambda x:int(x.self_id) != bot.self_id, await GroupInfoUser.get_group_bots(event.group_id)))
+        if left_bots == 0:
+            await GroupInfo.delete_group_info(group_id)
+            group_manager.delete_group(event.group_id)
         group = await GroupInfo.get_group_info(group_id)
         group_name = group.group_name if group else ""
-        await GroupInfo.delete_group_info(group_id)
-        group_manager.delete_group(event.group_id)
+        coffee = int(list(bot.config.superusers)[0])
         await bot.send_private_msg(
             user_id=coffee,
             message=f"****呜..一份踢出报告****\n"
@@ -230,6 +238,14 @@ async def _(bot: Bot, event: GroupDecreaseNoticeEvent):
         return
     # bot主动退群
     if event.user_id == int(bot.self_id):
+        #其它bot一起退群
+        left_bots = list(filter(lambda x:int(x.self_id) != bot.self_id, await GroupInfoUser.get_group_bots(event.group_id)))
+        for each_bot in left_bots:
+            try:
+                await each_bot.set_group_leave(group_id=int(group_id))
+                logger.info(f"bot{each_bot.self_id} 退出群聊 {group_id} 成功")
+            except Exception as e:
+                logger.info(f"bot{each_bot.self_id} 退出群聊 {group_id} 失败 e:{e}") 
         await GroupInfo.delete_group_info(event.group_id)
         group_manager.delete_group(event.group_id)
         return
