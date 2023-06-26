@@ -198,6 +198,7 @@ async def generatehonor(honor, ismain=True, userHonorMissions=None):
         for i in honors:
             if i['id'] == honor['honorId']:
                 try:
+                    honorMissionType = ''
                     assetbundleName = i['assetbundleName']
                     honorRarity = i['honorRarity']
                     try:
@@ -225,6 +226,9 @@ async def generatehonor(honor, ismain=True, userHonorMissions=None):
                     mainname = 'scroll.png'
                     subname = 'scroll.png'
                     is_live_master = True
+                break
+        else:
+            raise AttributeError("找不到对应honor资源")
         if honorType == 'rank_match':
             filename = 'rank_live/honor'
             mainname = 'main.png'
@@ -263,6 +267,9 @@ async def generatehonor(honor, ismain=True, userHonorMissions=None):
                         for i in userHonorMissions:
                             if honorMissionType == i['honorMissionType']:
                                 progress = i['progress']
+                                break
+                        else:
+                            raise UnboundLocalError("未找到玩家对应的progress")
                         draw = ImageDraw.Draw(pic)
                         font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 20)
                         text_width = font_style.getsize(str(progress))
@@ -338,7 +345,7 @@ async def generatehonor(honor, ismain=True, userHonorMissions=None):
                 )
                 try:
                     rankpic = await pjsk_update_manager.get_asset(
-                        f'/startapp/{filename}/{assetbundleName}', subname
+                        f'startapp/{filename}/{assetbundleName}', subname
                     )
                 except:
                     pass
@@ -354,6 +361,9 @@ async def generatehonor(honor, ismain=True, userHonorMissions=None):
                         for i in userHonorMissions:
                             if honorMissionType == i['honorMissionType']:
                                 progress = i['progress']
+                                break
+                        else:
+                            raise UnboundLocalError("未找到玩家对应的progress")
                         draw = ImageDraw.Draw(pic)
                         font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Bold.otf"), 20)
                         text_width = font_style.getsize(str(progress))

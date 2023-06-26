@@ -487,11 +487,12 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
     try:
         pic = await init_rank(
             f"{text}{_type}排行榜", users, ranks, event.group_id,
-            total_count=total_count, limit_count=50, save_key=f"g{event.group_id}_{total_count}_pjskguess"
+            total_count=total_count, limit_count=50, save_key=f"g{event.group_id}_{total_count}_{text}{_type}_pjskguess"
         )
-        await pjsk_guessrank.finish(image(b64=pic.pic2bs4()))
     except:
         await pjsk_guessrank.finish(BUG_ERROR)
+    else:
+        await pjsk_guessrank.finish(image(b64=pic.pic2bs4()))
 
 
 async def endgame(

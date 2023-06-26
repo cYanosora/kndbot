@@ -212,6 +212,8 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
             if error_flag:
                 await pjsk_b30.send(NOT_IMAGE_ERROR)
                 error_flag = False
+        except UnboundLocalError:
+            continue
     # 获取b30歌曲
     with open(data_path / r'realtime/musicDifficulties.json', 'r', encoding='utf-8') as f:
         diff = json.load(f)
@@ -275,7 +277,7 @@ async def _(event: MessageEvent, msg: Message = CommandArg()):
     font_style = ImageFont.truetype(str(FONT_PATH / "SourceHanSansCN-Medium.otf"), 16)
     draw.text((50, 1722), f'注：33+FC权重减1，其他减1.5，非官方算法，仅供参考娱乐，当前理论值为{highest}', fill='#00CCBB',
               font=font_style)
-    draw.text((50, 1752), '定数来源：https://profile.pjsekai.moe/  ※定数每次统计时可能会改变', fill='#00CCBB',
+    draw.text((50, 1752), '※定数非官方 仅供参考娱乐 请勿当真', fill='#00CCBB',
               font=font_style)
     # rank阴影
     rankimg = Image.new("RGBA", (120, 55), (100, 110, 180, 0))

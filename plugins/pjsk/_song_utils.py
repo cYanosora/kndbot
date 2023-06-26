@@ -472,7 +472,7 @@ async def info(musicid) -> Tuple[bool, str]:
     path = data_path / f'pjskinfo/pjskinfo_{musicid}.png'
     if path.exists():
         pjskinfotime = datetime.datetime.fromtimestamp(os.path.getmtime(path))
-        playdatatime = datetime.datetime.fromtimestamp(os.path.getmtime(data_path / 'musicDifficulties.json'))
+        playdatatime = datetime.datetime.fromtimestamp(os.path.getmtime(data_path / 'realtime/musicDifficulties.json'))
         with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
             musics = json.load(f)
         for i in musics:
