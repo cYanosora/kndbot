@@ -32,6 +32,11 @@ class PjskUnibotQQManager:
             self._data['unibot'].append(user_qq)
             self._save_data()
 
+    def pop(self, user_qq: int):
+        if user_qq in self._data['unibot']:
+            self._data['unibot'].remove(user_qq)
+            self._save_data()
+
 
 unibot = PjskUnibotQQManager(RESOURCE_PATH / 'masterdata' / 'unibot.json')
 

@@ -1,13 +1,15 @@
 import time
 from nonebot import on_message, on_command, get_bots
-from nonebot.adapters.onebot.v11 import GROUP, GroupMessageEvent, Bot
+from nonebot.adapters.onebot.v11 import GROUP, GroupMessageEvent, Bot, Message
 from nonebot.exception import IgnoredException
 from nonebot.matcher import Matcher
+from nonebot.params import CommandArg, Command
 from nonebot.message import run_preprocessor
 from nonebot.permission import SUPERUSER
 from services import logger
 from utils.imageutils import text2image, pic2b64
 from utils.message_builder import image
+from typing import Tuple
 from utils.utils import scheduler
 from manager import group_manager
 from models.group_member_info import GroupInfoUser
@@ -64,8 +66,8 @@ async def _(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
             )
 
 bot_record = on_message(rule=check_rule(), permission=GROUP, priority=1, block=False)
-
 bot_check = on_command("查询uni分布式", permission=SUPERUSER, priority=1, block=True)
+bot_modify = on_command("添加uni分布式", aliases={"删除uni分布式"}, permission=SUPERUSER, priority=1, block=True)
 
 
 @bot_record.handle()
@@ -106,6 +108,20 @@ async def check():
     if _c >= 10:
         reply = image(b64=pic2b64(text2image(reply)))
     await bot_check.finish(reply)
+
+
+@bot_modify.handle()
+async def add(msg: Message = CommandArg(), cmd: Tuple[str] = Command()):
+    qq = msg.extract_plain_text().strip()
+    if qq.isdigit():
+        if cmd[0].startswith('添加'):
+            unibot.set(int(qq))
+            await bot_modify.finish("添加成功")
+        else:
+            unibot.pop(int(qq))
+            await bot_modify.finish("删除成功")
+    else:
+        await bot_modify.finish("请输入QQ账号")
 
 
 # # 定时检查unibot分布式
