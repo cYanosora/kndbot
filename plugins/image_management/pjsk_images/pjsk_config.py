@@ -12,7 +12,8 @@ pjsk_info_dict = {
     "vs": ["miku", "rin", "len", "luka", "meiko", "kaito"],
     "cp": [
         "knhn", "ickn", "mfem", "mzan", "other", "tkskty",
-        "enak", "szsh", "ruimz", "tksk", "mfsz", "enar", "anhr", "skty", "nety"
+        "enak", "szsh", "ruimz", "tksk", "mfsz", "enar",
+        "anhr", "skty", "nety", "动物组", "企鹅组"
     ]
 }
 
@@ -34,7 +35,7 @@ pjsk_info_mapping = {
     "vs":"虚拟歌手","miku":"初音未来","rin":"镜音铃","len":"镜音连","luka":"巡音流歌","meiko":"MEIKO","kaito":"KAITO",
     "other":"杂图","enak":"东云姐弟","tksk":"天马兄妹","szsh":"日野森姐妹", "mzan": "瑞杏", "enar": "闺蜜组",
     "ruimz": "天台组","mfem":"真冬凤","tkskty":"钢琴", "knhn": "奏穗", "ickn": "头发组", "mfsz": "弓道组",
-    "anhr": "安遥", "nety": "冬宁", "skty": "冬咲",
+    "anhr": "安遥", "nety": "冬宁", "skty": "冬咲", "动物组": "小动物组", "企鹅组": "shrk",
     "knen": "奏绘", "knmf": "宵朝", "mzkn": "奏瑞", "mfen": "朝绘", "mfmz": "朝瑞", "mzen": "绘瑞",
     "anak": "彰杏", "akkh": "彰豆", "akty": "彰冬", "ankh": "杏豆", "anty": "冬杏", "tykh": "冬豆",
     "armn": "爱实", "hrar": "遥爱", "hrmn": "遥实", "hrsz": "遥雫", "szar": "爱雫", "szmn": "雫实",
@@ -55,5 +56,5 @@ cpmap = {
     "nemu": "emu×nene", "ruiem": "emu×rui", "ruine": "nene×rui", "ruitk": "tks×rui", "tkem": "tks×emu", "tkne": "tks×nene",
     "knhn": "hnm×knd", "mfem": "emu×mfy", "tkskty": "saki×toya×tks", "enak": "akt×ena", "szsh": "shiho×szk",
     "ruimz": "rui×mzk", "tksk": "saki×tks", "ickn": "ick×knd", "mzan": "an×mzk", "mfsz":"szk×mfy", "enar": "airi×ena",
-    "anhr": "hrk×an", "skty": "saki×toya", "nety": "toya×nene"
+    "anhr": "hrk×an", "skty": "saki×toya", "nety": "toya×nene", "动物组": "shiho×khn×mnr", "企鹅组": "shiho×hrk",
 }

@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import Tuple, Any
 from nonebot.permission import SUPERUSER
+from configs.path_config import RESOURCE_PATH
 from manager import Config
 from services.log import logger
 from nonebot import on_regex, on_command
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, GROUP
 from nonebot.params import RegexGroup
-from utils.imageutils import Text2Image, BuildImage as IMG
+from utils.imageutils import Text2Image, BuildImage as IMG, union, pic2b64
 from utils.message_builder import image
 from .pjsk_alias_init import init_default_pjsk_alias
 from .pjsk_db_source import PjskAlias
@@ -157,10 +158,10 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
             await pjsk_alias_info.finish("还没有角色/组合叫这个的哦", at_sender=True)
             return
     x = "角色" if alias in [j for i in pjsk_info_dict.keys() for j in pjsk_info_dict[i]] else "组合"
-    glalias_str = f"{x}{cpmap.get(alias) or map.get(alias)}的全局称呼：{alias}，" + "，".join(glresult) if glresult else None
-    gralias_str = f"群内称呼：" + '，'.join(grresult) if grresult else None
+    glalias_str = f"{x}{cpmap.get(alias) or map.get(alias)}的全局称呼：\n{alias}，" + "，".join(glresult) if glresult else None
+    gralias_str = f"\n群内称呼：\n" + '，'.join(grresult) if grresult else None
     reply = glalias_str if glalias_str else ""
-    reply += '\n' + gralias_str if gralias_str else ""
+    reply += gralias_str if gralias_str else ""
     await pjsk_alias_info.finish(reply)
 
 
@@ -181,28 +182,40 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
 
     reply_img_list = []
     w = h = 0
+    pjsk_chara2id = {
+        'ick': 1, 'saki': 2, 'hnm': 3, 'shiho': 4,
+        'mnr': 5, 'hrk': 6, 'airi': 7, 'szk': 8,
+        'khn': 9, 'an': 10, 'akt': 11, 'toya': 12,
+        'tks': 13, 'emu':14, 'nene': 15, 'rui': 16,
+        'knd': 17, 'mfy': 18, 'ena': 19, 'mzk': 20,
+        'miku': 21, 'rin': 22, 'len': 23, 'luka': 24, 'meiko': 25, 'kaito': 26
+    }
     for cp in cps:
         grresult = await PjskAlias.query_alias(cp, group_id=event.group_id)
         glresult = await PjskAlias.query_alias(cp)
-        glalias_str = f"{cpmap.get(cp)}的称呼：{cp}，" + "，".join(glresult) if glresult else None
-        gralias_str = ('，' + '，'.join(grresult)) if grresult else None
-        reply = glalias_str if glalias_str else ""
-        reply += gralias_str if gralias_str else ""
-        textimg = Text2Image.from_text(
-            reply,
-            fontsize=20,
-            fontname="SourceHanSansCN-Regular.otf",
-        ).to_image()
-        reply_img_list.append(textimg)
-        w = textimg.width if textimg.width > w else w
-        h += textimg.height
+        if cpname := cpmap.get(cp):
+            cpids = [pjsk_chara2id.get(x, 0) for x in cpname.split('×')]
+            cpimg = union(
+                [IMG.open(RESOURCE_PATH / "masterdata" / "chara" / f"chr_ts_{i}.png").resize((30, 30)).image
+                for i in cpids],
+                interval=2, type='col'
+            )
+            reply = f"的称呼：{cp}" + ("，" + "，".join(glresult) if glresult else "")
+            reply += ('，' + '，'.join(grresult)) if grresult else ""
+            textimg = Text2Image.from_text(
+                reply,
+                fontsize=20,
+                fontname="SourceHanSansCN-Regular.otf",
+            ).to_image()
+            reply_img_list.append(union(
+                [cpimg, textimg],
+                interval=3, type='col', bk_color='white'
+            ))
+            w = textimg.width if textimg.width > w else w
+            h += textimg.height
     pad = 10
-    bk = IMG.new("RGBA", (w + 2 * pad, h + 2 * pad + len(reply_img_list) * pad), "white")
-    current_w = current_h = 0
-    for reply in reply_img_list:
-        bk.paste(reply, (current_w + pad, current_h + pad), True)
-        current_h += reply.height + pad
-    await pjsk_cp_info.finish(image(b64=bk.pic2bs4()))
+    bk = union(reply_img_list, interval=pad, padding=(pad,pad,pad,pad), align_type='left', type='row', bk_color='white')
+    await pjsk_cp_info.finish(image(b64=pic2b64(bk)))
 
 
 @pjsk_alias_initial.handle()
