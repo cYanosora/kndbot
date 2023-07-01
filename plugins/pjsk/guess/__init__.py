@@ -3,6 +3,7 @@ import math
 import random
 import re
 import time
+from pathlib import Path
 from typing import Any, Tuple, Optional
 from apscheduler.triggers.date import DateTrigger
 from nonebot import on_regex, on_command, on_message, get_bot
@@ -16,15 +17,18 @@ from utils.data_utils import init_rank
 from utils.imageutils import text2image, pic2b64
 from utils.utils import scheduler
 from utils.message_builder import at, image
+from utils.limit_utils import access_count, access_cd
 from ._config import pjskguess, GUESS_MUSIC, GUESS_CARD, PJSK_GUESS, max_tips_count, guess_time, PJSK_ANSWER, \
     max_guess_count
 from ._data_source import (
-    getRandomChart, getRandomJacket, getRandomMusic, getRandomSE,
-    cutJacket, cutMusic, cutSE, cutCard, getRandomCard, cutChart, getMusic, getJacket, getCard
+    getRandomChart, getRandomJacket, getRandomMusic, getRandomSE, getRandomLyrics,
+    cutJacket, cutMusic, cutSE, cutCard, getRandomCard, cutChart, getMusic, getJacket,
+    getCard, cutLyrics
 )
-from utils.limit_utils import access_count, access_cd
-from ._function import getSongLevel, getSongAuthor, getSongSinger, getCharaUnit, getCharaInfo, getCharaBirth, \
-    getCharaFeature, getSongNoteCount
+from ._function import (
+    getSongLevel, getSongAuthor, getSongSinger, getCharaUnit, getCharaInfo,
+    getCharaBirth, getCharaFeature, getSongNoteCount, getSongLyrics
+)
 from ._rule import check_rule, check_reply
 from ._utils import pre_check, aliasToMusicId, aliasToCharaId
 from .._config import BUG_ERROR
@@ -43,8 +47,8 @@ usage：
     若群内已有unibot请勿开启此bot该功能
     由于功能容易刷屏，仅在特定群开放
     指令：
-        pjsk [类型] 猜曲                ：[类型]有普通、阴间、非人类、听歌、倒放、谱面几种类型，默认为普通   
-        pjsk猜曲 [数字]                 ：[数字]对应上方的[类型]，范围从1~6，默认为1   
+        pjsk [类型] 猜曲                ：[类型]有普通、阴间、非人类、听歌、倒放、谱面、歌词几种类型，默认为普通   
+        pjsk猜曲 [数字]                 ：[数字]对应上方的[类型]，范围从1~7，默认为1   
         
         pjsk猜谱面                      ：效果与 'pjsk谱面猜曲' 或 'pjsk猜曲6' 相同
         
@@ -87,7 +91,7 @@ pjsk_guesscard = on_regex(
 
 # pjsk猜曲目
 pjsk_guessmusic = on_regex(
-    r'^(?:pjsk|sekai) *(正常|阴间|非人类|听歌|倒放|谱面)? *猜曲 *(\d*)$',
+    r'^(?:pjsk|sekai) *(正常|阴间|非人类|听歌|倒放|谱面|歌词)? *猜曲 *(\d*)$',
     flags=re.I, permission=GROUP, priority=5, block=True
 )
 
@@ -100,7 +104,7 @@ pjsk_guessmap = on_regex(
 pjsk_guessreply = on_message(rule=check_reply(), permission=GROUP, priority=4, block=True)
 
 pjsk_guessrank = on_regex(
-    r'^(?:pjsk|sekai) *(?:(正常|阴间|非人类|听歌|倒放|谱面)?(猜曲|猜卡面|猜谱面)) *排[行名]榜? *(\d*)',
+    r'^(?:pjsk|sekai) *(?:(正常|阴间|非人类|听歌|倒放|谱面|歌词)?(猜曲|猜卡面|猜谱面)) *排[行名]榜? *(\d*)',
     flags=re.I, permission=GROUP, priority=4, block=True
 )
 
@@ -114,7 +118,7 @@ async def _(matcher: Matcher, event: GroupMessageEvent, state: T_State):
     global pjskguess
     answer = state[PJSK_ANSWER]
     if not answer:
-        matcher.open_propagation()
+        matcher.block = False
     game_type = state[PJSK_GUESS]
     # 判断玩家回答次数是否超标
     if max_guess_count <= pjskguess[game_type][event.group_id]['gameusers'].get(event.user_id, 0):
@@ -247,8 +251,17 @@ async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup())
         musicid, musicname = await getRandomChart()
         file, endfile = cutChart(musicid, event.group_id)
         guessDiff = 6
-        text = '谱面识曲'
+        text = '谱面'
         msgs.append(MessageSegment.image(f"file:///{file.absolute()}"))
+    elif reg_group[0] == '歌词' or reg_group[1] == '7':
+        musicid, musicname, asset = getRandomLyrics()
+        if musicid == 0:
+            await pjsk_guessmusic.finish(BUG_ERROR)
+        lyrics, endfile = cutLyrics(musicid, asset, event.group_id)
+        file = None
+        guessDiff = 7
+        text = '歌词'
+        msgs.append(MessageSegment.text(lyrics))
     else:
         await pjsk_guessmusic.finish(BUG_ERROR)
         return
@@ -422,9 +435,13 @@ async def _(event: GroupMessageEvent, state: T_State):
                 tipfile = cutMusic(asset, event.group_id, cutlen, reverse, is_tip=True)
                 content = [MessageSegment.record(f"file:///{tipfile.absolute()}"), "这里是另一段音频裁剪"]
                 alltips.append(content)
-            else:
+            elif diff == 6:
                 tipfile = cutChart(musicid, event.group_id, is_tip=True)
                 content = [MessageSegment.image(f"file:///{tipfile.absolute()}"), "这里是另外随机两段谱面截图"]
+                alltips.append(content)
+            else:
+                tipfile = getSongLyrics(musicid)
+                content = [tipfile+"\n以上是另外随机两段歌词"]
                 alltips.append(content)
             pjskguess[game_type][event.group_id]['tipfile'] = tipfile
 
@@ -448,27 +465,17 @@ async def _(event: GroupMessageEvent, state: T_State):
 @pjsk_guessrank.handle()
 async def _(event: GroupMessageEvent, reg_group: Tuple[Any, ...] = RegexGroup()):
     game_type = GUESS_CARD if reg_group[1] == '猜卡面' else GUESS_MUSIC
+    diff_dict = {
+        '正常': 1, '阴间': 2, '非人类': 3,
+        '听歌': 4, '倒放': 5, '谱面': 6,
+        '歌词': 7
+    }
     if not reg_group[0]:
         guess_diff = None
         text = '合计'
-    elif reg_group[0] == '正常':
-        guess_diff = 1
-        text = '正常'
-    elif reg_group[0] == '阴间':
-        guess_diff = 2
-        text = '阴间'
-    elif reg_group[0] == '非人类':
-        guess_diff = 3
-        text = '非人类'
-    elif reg_group[0] == '听歌':
-        guess_diff = 4
-        text = '听歌'
-    elif reg_group[0] == '倒放':
-        guess_diff = 5
-        text = '倒放'
-    elif reg_group[0] == '谱面':
-        guess_diff = 6
-        text = '谱面'
+    elif diff_dict.get(reg_group[0]):
+        guess_diff = diff_dict[reg_group[0]]
+        text = reg_group[0]
     else:
         await pjsk_guessrank.finish(BUG_ERROR)
         return
@@ -506,6 +513,16 @@ async def endgame(
     event: Optional[GroupMessageEvent] = None
 ):
     global pjskguess
+    rewards = {
+        GUESS_CARD: {
+            'basic':[10,30,50],
+            'extra':[3,5,10]
+        },
+        GUESS_MUSIC:{
+            'basic':[10,30,50,30,45,60,60],
+            'extra':[3,5,10,5,10,15,15]
+        }
+    }
     try:
         # 判断游戏是否进行中
         if pjskguess[game_type][group_id].get('isgoing', False):
@@ -525,16 +542,7 @@ async def endgame(
                 # 针对猜曲
                 if game_type == GUESS_MUSIC:
                     musicname = pjskguess[game_type][group_id]['musicname']
-                    # 结算金币 按难度决定基础奖励
-                    rdgold = random.randint(0, {1: 3, 2: 5, 3: 10, 4: 5, 5: 10, 6: 15}.get(diff))
-                    gold = {1: 10, 2: 30, 3: 50, 4: 30, 5: 45, 6: 60}.get(diff) + rdgold
-                    # 游戏中使用了提示功能，奖励每次扣除25%
-                    gold = math.ceil(gold - tipcount * gold // 4)
-                    # 游戏发起者以外的人回答正确，0.9倍率
-                    if user_qq and user_qq != pjskguess[game_type][group_id]['userid']:
-                        qq = user_qq
-                        gold = math.ceil(0.9 * gold)
-                    if diff in [1, 2, 3, 6]:
+                    if diff in [1, 2, 3, 6, 7]:
                         msgs.append(f"正确答案：{musicname}")
                         msgs.append(MessageSegment.image(f'file:///{endfile.absolute()}'))
                     else:
@@ -544,17 +552,17 @@ async def endgame(
                 else:
                     cardname = pjskguess[game_type][group_id]['cardname']
                     charaname = pjskguess[game_type][group_id]['charaname']
-                    # 结算金币 按难度决定基础奖励
-                    rdgold = random.randint(0, {1: 3, 2: 5, 3: 10}.get(diff))
-                    gold = {1: 10, 2: 30, 3: 50}.get(diff) + rdgold
-                    # 游戏中使用了提示功能，奖励每次扣除25%
-                    gold = math.ceil(gold - tipcount * gold // 4)
-                    # 游戏发起者以外的人回答正确，0.9倍率
-                    if user_qq and user_qq != pjskguess[game_type][group_id]['userid']:
-                        qq = user_qq
-                        gold = math.ceil(0.9 * gold)
                     msgs.append(f"正确答案：{cardname} - {charaname}")
                     msgs.append(MessageSegment.image(f'file:///{endfile.absolute()}'))
+                # 结算金币 按难度决定基础奖励
+                rdgold = random.randint(0, rewards[game_type]['extra'][diff - 1])
+                gold = rewards[game_type]['basic'][diff - 1] + rdgold
+                # 游戏中使用了提示功能，奖励每次扣除25%
+                gold = math.ceil(gold - tipcount * gold // 4)
+                # 游戏发起者以外的人回答正确，0.9倍率
+                if user_qq and user_qq != pjskguess[game_type][group_id]['userid']:
+                    qq = user_qq
+                    gold = math.ceil(0.9 * gold)
                 # 记录进数据库
                 addflag = not await PjskGuessRank.check_today_count(qq, group_id)
                 if tips is None and addflag:
@@ -587,7 +595,7 @@ async def endgame(
                 # 针对猜曲
                 if game_type == GUESS_MUSIC:
                     musicname = pjskguess[game_type][group_id]['musicname']
-                    if pjskguess[game_type][group_id]['diff'] in [1, 2, 3, 6]:
+                    if pjskguess[game_type][group_id]['diff'] in [1, 2, 3, 6, 7]:
                         msgs.append(f"{_over}，正确答案：{musicname}")
                         msgs.append(MessageSegment.image(f'file:///{endfile.absolute()}'))
                     else:
@@ -606,11 +614,11 @@ async def endgame(
                     await bot.send_msg(message_type='group', group_id=group_id, message=msg)
             except:
                 pass
-            if file and file.exists():
+            if isinstance(file, Path) and file.exists():
                 file.unlink()
-            if endfile and endfile.exists():
+            if isinstance(endfile, Path) and endfile.exists():
                 endfile.unlink()
-            if tipfile and tipfile.exists():
+            if isinstance(tipfile, Path) and tipfile.exists():
                 tipfile.unlink()
             if not(plugin_name is None or event is None):
                 access_count(plugin_name, event)

@@ -6,19 +6,14 @@ from PIL import Image, ImageDraw
 from typing import Tuple, Optional, Union
 from pathlib import Path
 from mutagen.mp3 import MP3
-from nonebot import get_bot
-from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 from pydub import AudioSegment
 from configs.path_config import TEMP_PATH
-# from utils.imageutils import pic2b64
-# from utils.message_builder import image
-from utils.message_builder import at
+from utils.imageutils import text2image
 from ._utils import defaultVocal
-from .._models import PjskGuessRank
 from .._song_utils import getPlayLevel
 from .._autoask import pjsk_update_manager
 from .._config import data_path
-from ._config import SEdir, max_tips_count, GUESS_MUSIC, GUESS_CARD
+from ._config import SEdir
 from nonebot import require
 require('mappreview')
 from ..mappreview._data_source import moe2img
@@ -179,10 +174,9 @@ async def getRandomCard() -> Tuple[int, int, str, str, str, str]:
     return cardid, charaid, assetbundleName, charaname, prefix, cardRarityType
 
 
-async def getRandomMusic(musicid: int = 0) -> Tuple[int, str, str]:
+async def getRandomMusic() -> Tuple[int, str, str]:
     """
     获取随机曲目mp3
-    :param musicid: 提供musicid时，获取指定曲目mp3
     :returns: 元组形式(曲目id, 曲目名称, 曲目mp3 asset名称)
     """
     with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
@@ -202,6 +196,27 @@ async def getRandomMusic(musicid: int = 0) -> Tuple[int, str, str]:
     if not (data_path / path / file).exists():
         await pjsk_update_manager.get_asset(path, file)
     return musicid, musicname, asset
+
+
+def getRandomLyrics() -> Tuple[int, str, str]:
+    """
+    获取具有歌词文件的随机曲目
+    :returns: 元组形式(曲目id, 曲目名称, 曲绘asset)
+    """
+    with open(data_path / 'musics.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    while True:
+        item = random.choice(data)
+        musicid = item.get('id')
+        lyrics_path = data_path / 'lyrics'
+        if not lyrics_path.glob('*'):
+            break
+        lyrics_path = lyrics_path / f'{musicid}.txt'
+        if lyrics_path.exists():
+            musicname = item['title']
+            asset = item['assetbundleName']
+            return musicid, musicname, asset
+    return 0, "", ""
 
 
 def update_se(musicid: int):
@@ -396,6 +411,46 @@ def cutMusic(
         music.export(TEMP_PATH / f"music_{qunnum}_end.mp3")
         cut.export(TEMP_PATH / f"music_{qunnum}.mp3", format="mp3")
         return TEMP_PATH / f"music_{qunnum}.mp3", TEMP_PATH / f"music_{qunnum}_end.mp3"
+
+
+def cutLyrics(musicid:int, asset: str, qunnum: int) -> Tuple[str, Path]:
+    """
+    裁切歌词
+    """
+    lyrics_path = data_path / 'lyrics' / f'{musicid}.txt'
+    with open(lyrics_path, 'r', encoding='utf-8') as f:
+        lines = [line.strip() for line in f if line.strip()]
+    line_num = random.randint(0, len(lines) - 2)
+    _start_index = max(line_num - 6, 0)
+    end_lines = lines[_start_index: line_num+6]
+    img = text2image('\n'.join(end_lines), fontsize=25)
+    img = img.convert('RGB')
+    draw = ImageDraw.Draw(img)
+    line_width = 3
+    x10, x11 = 10, 25*len(lines[line_num]) + 10
+    x20, x21 = 10, 25*len(lines[line_num+1]) + 10
+    y10 = y11 = (img.height-20)*(line_num+1 if _start_index == 0 else 7)//len(end_lines) + 10
+    y20 = y21 = (img.height-20)*(line_num+2 if _start_index == 0 else 8)//len(end_lines) + 10
+    draw.line(
+        [
+            (x10 - line_width, y10 - line_width), (x11 + line_width, y11 - line_width),
+        ],
+        fill='red', width=line_width
+    )
+    draw.line(
+        [
+            (x20 - line_width, y20 - line_width), (x21 + line_width, y21 - line_width),
+        ],
+        fill='red', width=line_width
+    )
+    jacket = Image.open(data_path / f'startapp/music/jacket/{asset}/{asset}.png').resize((370, 370))
+    max_w = max(jacket.width, img.width)
+    size = (max_w + 20, jacket.height+img.height + 30)
+    bk = Image.new("RGB",size=size, color='white')
+    bk.paste(jacket, (10 + (max_w-jacket.width)//2, 10))
+    bk.paste(img, (10 + (max_w-img.width)//2, 20 + jacket.height))
+    bk.save(TEMP_PATH / f"music_{qunnum}_end.jpg", quality=50)
+    return '\n'.join(lines[line_num:line_num+2]), TEMP_PATH / f"music_{qunnum}_end.jpg"
 
 
 def cutSE(

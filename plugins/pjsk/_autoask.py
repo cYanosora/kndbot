@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import hashlib
+import os
 import time
 import requests
 import yaml
@@ -23,6 +24,37 @@ class PjskDataUpdate:
             self.path = path
         if not self.path.exists():
             self.path.mkdir(parents=True, exist_ok=True)
+
+    async def update_music_lyrics(self, block: bool = False):
+        try:
+            root_url = 'https://api.github.com/repos/watagashi-uni/Unibot/contents/moesus/lyrics'
+            if block:
+                resp0 = requests.get(root_url, headers=lab_headers)
+            else:
+                resp0 = await AsyncHttpx.get(root_url, headers=lab_headers)
+        except Exception as e:
+            logger.info(f'访问歌词目录文件夹失败, 错误原因:{e}')
+            return
+        else:
+            lyrics_files = os.listdir(data_path / 'lyrics')
+            for each in resp0.json():
+                raw = each['name']
+                if raw.endswith('.txt') and raw not in lyrics_files:
+                    url = rf"https://raw.fastgit.org/watagashi-uni/Unibot/main/moesus/lyrics/{raw}"
+                    try:
+                        if block:
+                            resp = requests.get(url, headers=lab_headers)
+                        else:
+                            resp = await AsyncHttpx.get(url, headers=lab_headers)
+                    except Exception as e:
+                        logger.warning(f"歌词文件{raw}下载失败，错误原因:{e}")
+                        continue
+                    if resp.status_code == 200:
+                        save_path = data_path / 'lyrics' / raw
+                        save_path.write_bytes(resp.content)
+                    else:
+                        logger.warning(f"歌词文件{raw}下载失败，网络不太好，尝试使用备用网址下载")
+                        continue
 
     async def update_music_data(self, raw: str, block: bool = False):
         try:
@@ -304,7 +336,7 @@ async def check_profile_resources(block: bool = False, iswait: bool = True):
     start_date=datetime.datetime.now().date() + datetime.timedelta(hours=14, minutes=2)
 )
 async def check_pjskinfo_resources(block: bool = False, iswait: bool = True):
-    logger.info("开始自动更新pjsk游戏数据！（谱面）", block=block)
+    logger.info("开始自动更新pjsk游戏数据！（谱面&歌词）", block=block)
     st = time.time()
     if iswait:
         wait_time = 5
@@ -314,6 +346,8 @@ async def check_pjskinfo_resources(block: bool = False, iswait: bool = True):
     await pjsk_update_manager.update_jp_game_data('musicVocals.json', block=block)
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_jp_game_data('outsideCharacters.json', block=block)
+    await asyncio.sleep(wait_time)
+    await pjsk_update_manager.update_music_lyrics(block=block)
     spread_time = time.time() - st
     logger.info(f"pjsk游戏数据更新完毕,耗时{spread_time - wait_time}秒, 额外等待时间{wait_time}秒！")
 

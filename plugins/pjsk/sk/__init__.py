@@ -399,7 +399,7 @@ async def pjsk_cheer_pred_update():
                                 TeamName = i['teamName']
                                 break
                     resp_text += f"{TeamName}{translate} {memberCount}人"
-                    resp_text += f' 预测胜率: {TeamRates*100:.3f}%\n' if TeamRates is not None else '\n'
+                    resp_text += f'\n预测胜率: {TeamRates*100:.3f}%\n' if TeamRates is not None else '\n'
                 break
             except: continue
         # 从uni取5v5数据

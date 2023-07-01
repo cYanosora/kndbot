@@ -116,6 +116,19 @@ def getSongAuthor(musicid: int) -> str:
         return f'此曲的{key}是{authors[key]}'
 
 
+def getSongLyrics(musicid: int):
+    """
+    从歌词文件中获取连续的两行，忽略空行。
+    """
+    lyrics_path = data_path / 'lyrics' / f'{musicid}.txt'
+    with open(lyrics_path, 'r', encoding='utf-8') as f:
+        lines = [line.strip() for line in f if line.strip()]
+        if len(lines) < 2:
+            return None
+        line_num = random.randint(0, len(lines) - 2)
+        return '\n'.join(lines[line_num:line_num+2])
+
+
 def getCharaUnit(charaid: int) -> str:
     with open(data_path / 'gameCharacterUnits.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
