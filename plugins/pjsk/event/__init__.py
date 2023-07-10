@@ -178,7 +178,7 @@ async def event_argparse(args: List = None):
         alias = arg
         if alias not in chara_dict.keys():
             alias = await PjskAlias.query_name(arg)
-        if alias:
+        if alias and chara_dict.get(alias):
             event_charas_id.append(chara_dict[alias])
         # 参数仍无法识别
         else:

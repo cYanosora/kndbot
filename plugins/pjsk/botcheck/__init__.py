@@ -25,6 +25,8 @@ __plugin_usage__ = f"""
 usage：
     检测群内是否有uni分布式的存在，防止同功能bot重复响应指令，且自动开关烧烤相关功能
     查询uni分布式            ：显示bot加的哪些群内含有uni分布式
+    添加uni分布式 [qq]       ：手动添加unibot账号
+    删除uni分布式 [qq]       ：手动删除unibot账号
 """.strip()
 __plugin_settings = {
     "cmd": ["uni分布式检测", "查询uni分布式"]

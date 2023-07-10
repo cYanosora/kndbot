@@ -34,7 +34,7 @@ Config.add_plugin_config(
     "invite_manager", "quit_message", f"请获得master的白名单后再拉{NICKNAME}入群！告辞！", help_="强制拉群后进群回复的内容.."
 )
 Config.add_plugin_config(
-    "invite_manager", "welcome_message", [f"欢迎新人，这里是{NICKNAME}，请多关照~"], help_="有新人进群的欢迎消息"
+    "invite_manager", "welcome_message", [f"欢迎新人，这里是{NICKNAME}，发送kndhelp获取食用说明~"], help_="有新人进群的欢迎消息"
 )
 Config.add_plugin_config(
     "invite_manager", "flag", True, help_="被强制拉群后是否直接退出", default_value=True
@@ -99,7 +99,7 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
         # 正常加入群聊
         elif event.group_id not in group_manager["group_manager"].keys():
             # 没有其它bot在群内
-            other_bots = list(filter(lambda x:int(x.self_id) != bot.self_id, await GroupInfoUser.get_group_bots(event.group_id)))
+            other_bots = list(filter(lambda x:int(x.self_id) != int(bot.self_id), await GroupInfoUser.get_group_bots(event.group_id)))
             if len(other_bots) == 0: 
                 # 默认群功能开关
                 data = plugins2settings_manager.get_data()
@@ -165,7 +165,7 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
         else:
             logger.warning(f"用户{user_info['user_id']} 所属{user_info['group_id']} 更新失败")
         # 其它bot入群
-        other_bots = list(filter(lambda x:int(x.self_id) != bot.self_id, await GroupInfoUser.get_group_bots(event.group_id)))
+        other_bots = list(filter(lambda x:int(x.self_id) != int(bot.self_id), await GroupInfoUser.get_group_bots(event.group_id)))
         if len(other_bots) > 0:
             await group_increase_handle.finish()
         # 群欢迎消息
@@ -203,7 +203,7 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
                     )
                 else:
                     await group_increase_handle.send(
-                        "[[_task|group_welcome]]" + at(event.user_id) + f"欢迎新人，这里是{NICKNAME}，请多关照~"
+                        "[[_task|group_welcome]]" + at(event.user_id) + f"欢迎新人，这里是{NICKNAME}，发送kndhelp获取食用说明~"
                         + image(random.choice(os.listdir(IMAGE_PATH / "qxz")), "qxz")
                     )
 
@@ -221,7 +221,7 @@ async def _(bot: Bot, event: GroupDecreaseNoticeEvent):
         except AttributeError:
             operator_name = "None"
         # 若群内无其它bot
-        left_bots = list(filter(lambda x:int(x.self_id) != bot.self_id, await GroupInfoUser.get_group_bots(event.group_id)))
+        left_bots = list(filter(lambda x:int(x.self_id) != int(bot.self_id), await GroupInfoUser.get_group_bots(event.group_id)))
         if left_bots == 0:
             await GroupInfo.delete_group_info(group_id)
             group_manager.delete_group(event.group_id)
@@ -239,10 +239,11 @@ async def _(bot: Bot, event: GroupDecreaseNoticeEvent):
     # bot主动退群
     if event.user_id == int(bot.self_id):
         #其它bot一起退群
-        left_bots = list(filter(lambda x:int(x.self_id) != bot.self_id, await GroupInfoUser.get_group_bots(event.group_id)))
+        left_bots = list(filter(lambda x:int(x.self_id) != int(bot.self_id), await GroupInfoUser.get_group_bots(event.group_id)))
+        group_id = event.group_id
         for each_bot in left_bots:
             try:
-                await each_bot.set_group_leave(group_id=int(group_id))
+                await each_bot.set_group_leave(group_id=group_id)
                 logger.info(f"bot{each_bot.self_id} 退出群聊 {group_id} 成功")
             except Exception as e:
                 logger.info(f"bot{each_bot.self_id} 退出群聊 {group_id} 失败 e:{e}") 

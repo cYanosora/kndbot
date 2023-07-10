@@ -545,7 +545,7 @@ def ask(user: UserInfo = User(), arg: str = Arg()):
     )
     mask = BuildImage.new("RGBA", img.size)
     mask.paste(gradient, (0, img_h - gradient_h), alpha=True)
-    mask = mask.filter(ImageFilter.GaussianBlur(radius=3))
+    mask = mask.filter('GaussianBlur', 3)
     img.paste(mask, alpha=True)
 
     name = arg or user.name
