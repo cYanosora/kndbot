@@ -2,7 +2,7 @@ from typing import Any, Dict
 from nonebot.adapters.onebot.v11 import Event, Bot, PokeNotifyEvent, PrivateMessageEvent
 from nonebot.exception import IgnoredException
 from nonebot.message import event_preprocessor
-from configs.config import MAIN_BOT, SUB_BOT, AUX_BOT, EXT_BOT
+from configs.config import MAIN_BOT, SUB_BOT, AUX_BOT, EXT_BOT, FIF_BOT
 from utils.utils import get_message_at
 
 recent_event: Dict[str, Any] = {}
@@ -13,7 +13,7 @@ recent_event: Dict[str, Any] = {}
 async def _(bot: Bot, event: Event):
     global recent_event
     selfid = bot.self_id
-    bot_ids = [MAIN_BOT, SUB_BOT, AUX_BOT, EXT_BOT]
+    bot_ids = [MAIN_BOT, SUB_BOT, AUX_BOT, EXT_BOT, FIF_BOT]
     # 戳一戳事件回避
     if isinstance(event, PokeNotifyEvent) and event.target_id in bot_ids:
         return
@@ -32,7 +32,7 @@ async def _(bot: Bot, event: Event):
         if int(selfid) in ats:
             return
     try:
-        combine = event.get_session_id()
+        combine = f"{event.get_type()}_{event.get_session_id()}"
     except ValueError:
         return
     if not recent_event.get(selfid):

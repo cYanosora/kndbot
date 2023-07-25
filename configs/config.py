@@ -11,6 +11,8 @@ SUB_BOT: int = 2488024911
 AUX_BOT: int = 878536923
 # bot四号机
 EXT_BOT: int = 3630133726
+# bot五号机
+FIF_BOT: int = 2104483023
 # bot网址
 BOT_URL: str = 'kndkawaii.xyz'
 

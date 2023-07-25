@@ -11,7 +11,7 @@ from nonebot.adapters.onebot.v11 import (
     FriendAddNoticeEvent, PRIVATE_FRIEND, PrivateMessageEvent,
 )
 from services import logger
-from configs.config import NICKNAME, MAIN_BOT, SUB_BOT, AUX_BOT, EXT_BOT
+from configs.config import NICKNAME, MAIN_BOT, SUB_BOT, AUX_BOT, EXT_BOT, FIF_BOT
 from models.friend_user import FriendUser
 from models.group_info import GroupInfo
 from manager import Config
@@ -51,7 +51,7 @@ async def _(bot: Bot, event: FriendAddNoticeEvent):
                     "由于一些不可抗力因素，咱目前已经停止接受新群的邀请了~\n"
                     # "但如果需要拉群，请先发送 入群条件 获取当前的拉群注意事项\n"
                     # "了解注意事项后可以告诉master你想拉群，当开放了新bot时会主动联系你！\n"
-                    "如果需要拉群，并且是pjsk群(必须)，那么请找四号机3630133726(好友验证填 拉群)\n"
+                    "如果需要拉群，并且是pjsk群(必须)，那么请找五号机2104483023(好友验证填 拉群)\n"
                     "如需咨询咱的master请通过指令沟通👉👉发送格式：滴滴滴 这里是你想说的话"
         )
     # 二号机自动同意好友请求并回复
@@ -63,10 +63,10 @@ async def _(bot: Bot, event: FriendAddNoticeEvent):
                     "由于一些不可抗力因素，咱目前已经停止接受新群的邀请了~\n"
                     # "但如果需要拉群，请先发送 入群条件 获取当前的拉群注意事项\n"
                     # "了解注意事项后可以告诉master你想拉群，当开放了新bot时会主动联系你！\n"
-                    "如果需要拉群，并且是pjsk群(必须)，那么请找四号机3630133726(好友验证填 拉群)\n"
+                    "如果需要拉群，并且是pjsk群(必须)，那么请找五号机2104483023(好友验证填 拉群)\n"
                     "如需咨询咱的master请务必使用指令沟通👉👉发送格式：滴滴滴 这里是你想说的话"
         )
-    # 三号机验证后同意好友请求并回复
+    # 三号机自动同意好友请求并回复
     elif bot.self_id == str(AUX_BOT):
         await bot.send_private_msg(
             user_id=event.user_id,
@@ -75,13 +75,26 @@ async def _(bot: Bot, event: FriendAddNoticeEvent):
                     "由于一些不可抗力因素，咱目前已经停止接受新群的邀请了~\n"
                     # "但如果需要拉群，请先发送 入群条件 获取当前的拉群注意事项\n"
                     # "了解注意事项后可以告诉master你想拉群，当开放了新bot时会主动联系你！\n"
-                    "如果需要拉群，并且是pjsk群(必须)，那么请找四号机3630133726(好友验证填 拉群)\n"
+                    "如果需要拉群，并且是pjsk群(必须)，那么请找五号机2104483023(好友验证填 拉群)\n"
                     "如需咨询咱的master请务必使用指令沟通👉👉发送格式：滴滴滴 这里是你想说的话"
         )
+    # 四号机验证后同意好友请求并回复
     elif bot.self_id == str(EXT_BOT):
         await bot.send_private_msg(
             user_id=event.user_id,
             message="已通过你的好友申请啦，这里是奏宝四号机\n"
+                    "咱的大部分功能只能在群聊中使用哦\n"
+                    "由于一些不可抗力因素，咱目前已经停止接受新群的邀请了~\n"
+                    # "但如果需要拉群，请先发送 入群条件 获取当前的拉群注意事项\n"
+                    # "了解注意事项后可以告诉master你想拉群，当开放了新bot时会主动联系你！\n"
+                    "如果需要拉群，并且是pjsk群(必须)，那么请找五号机2104483023(好友验证填 拉群)\n"
+                    "如需咨询咱的master请务必使用指令沟通👉👉发送格式：滴滴滴 这里是你想说的话"
+        )
+    # 五号机验证后同意好友请求并回复
+    elif bot.self_id == str(FIF_BOT):
+        await bot.send_private_msg(
+            user_id=event.user_id,
+            message="已通过你的好友申请啦，这里是奏宝五号机\n"
                     "咱的大部分功能只能在群聊中使用哦\n"
                     "如果需要拉群，请先发送 入群条件 获取当前的拉群注意事项\n"
                     "如需咨询咱的master请务必使用指令沟通👉👉发送格式：滴滴滴 这里是你想说的话"
@@ -93,17 +106,19 @@ async def _(bot: Bot, event: FriendRequestEvent):
     global exists_data
     # 5分钟内不接受重复申请
     if exists_data["private"].get(f"{event.self_id}_{event.user_id}"):
-        if time.time() - exists_data["private"][f"{event.self_id}_{event.user_id}"] < 60 * 5:
+        if time.time() - exists_data["private"][f"{event.self_id}_{event.user_id}"] < 300:
             return
     exists_data["private"][f"{event.self_id}_{event.user_id}"] = time.time()
     user = await bot.get_stranger_info(user_id=event.user_id)
     nickname = user["nickname"]
     sex = user["sex"]
     age = str(user["age"])
-    comment = event.comment
+    comment = event.comment[event.comment.find('回答')+2:] if '回答' in event.comment else event.comment
     # 自动添加好友，更新好友信息
     flag = True
-    if Config.get_config("invite_manager", "AUTO_ADD_FRIEND") and bot.self_id != str(EXT_BOT):
+    if Config.get_config("invite_manager", "AUTO_ADD_FRIEND") and (
+        bot.self_id != str(EXT_BOT) and bot.self_id != str(FIF_BOT)
+    ):
         await bot.set_friend_add_request(flag=event.flag, approve=True)
         await FriendUser.add_friend_info(user["user_id"], user["nickname"])
     # 好友验证
@@ -186,7 +201,7 @@ async def _(bot: Bot, event: GroupRequestEvent):
                 f"群聊：{event.group_id}\n"
                 f"邀请日期：{str(datetime.now()).split('.')[0]}",
             )
-            if bot.self_id == str(EXT_BOT):
+            if bot.self_id == str(FIF_BOT):
                 try:
                     await bot.send_private_msg(
                         user_id=event.user_id,
@@ -250,3 +265,4 @@ async def _(bot: Bot, event: PrivateMessageEvent):
 async def _():
     global exists_data
     exists_data = {"private": {}, "group": {}}
+    logger.info("[定时任务]:群聊好友请求数据清空！")
