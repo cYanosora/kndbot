@@ -310,3 +310,4 @@ async def _(event: GroupMessageEvent, cmd: Tuple[str, ...] = Command(), arg: Mes
 )
 async def _():
     mute_manager.clear_data()
+    logger.info(f"[定时任务]:清除超时禁言数据")

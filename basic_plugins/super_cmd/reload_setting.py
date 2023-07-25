@@ -91,4 +91,4 @@ async def _():
         plugins2block_manager.reload()
         group_manager.reload()
         Config.reload()
-        logger.debug("已自动重载所有配置文件...")
+        logger.debug("[定时任务]:已自动重载所有配置文件...")

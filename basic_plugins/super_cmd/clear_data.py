@@ -61,4 +61,4 @@ def _clear_data() -> float:
 )
 async def _():
     size = await asyncio.get_event_loop().run_in_executor(None, _clear_data)
-    logger.info("自动清理临时数据完成，" + "共清理了 {:.2f}MB 的数据...".format(size / 1024 / 1024))
+    logger.info("[定时任务]:自动清理临时数据完成，" + "共清理了 {:.2f}MB 的数据...".format(size / 1024 / 1024))

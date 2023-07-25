@@ -444,11 +444,11 @@ async def _():
                 "time": tmp_json["data"]["ts"]/1000,
                 "id": tmp_json["data"]["eventId"]
             }
-            logger.info("pjsk更新预测线成功！")
+            logger.info("[定时任务]:pjsk更新预测线成功！")
         else:
-            logger.warning(f"pjsk更新预测线失败！")
+            logger.warning(f"[定时任务]:pjsk更新预测线失败！")
     except Exception as e:
-        logger.warning(f"pjsk更新预测线失败！Error:{e}")
+        logger.warning(f"[定时任务]:pjsk更新预测线失败！Error:{e}")
 
 
 # 自动更新活动号
@@ -462,15 +462,15 @@ async def _():
     try:
         tmp_id = (await getEventId(current_event_url_bak))['eventId']
         event_id = max(int(tmp_id), event_id)
-        logger.info(f"pjsk更新活动号成功，当前活动号: {event_id}！")
+        logger.info(f"[定时任务]:pjsk更新活动号成功，当前活动号: {event_id}！")
     except Exception as e:
-        logger.warning(f"pjsk更新活动号失败！Error:{e}")
+        logger.warning(f"[定时任务]:pjsk更新活动号失败！Error:{e}")
 
 
 # 自动更新前百分数
 @scheduler.scheduled_job(
     "interval",
-    minutes=30
+    minutes=25
 )
 async def _():
     global event_id
@@ -481,6 +481,6 @@ async def _():
         ranking = await callapi(url)
         with open(data_path / 'sktop100.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(ranking, sort_keys=True, indent=4))
-        logger.info(f"pjsk更新前百活动分数成功！")
+        logger.info(f"[定时任务]:pjsk更新前百活动分数成功！")
     except Exception as e:
-        logger.warning(f"pjsk更新前百活动分数失败！Error:{e}")
+        logger.warning(f"[定时任务]:pjsk更新前百活动分数失败！Error:{e}")

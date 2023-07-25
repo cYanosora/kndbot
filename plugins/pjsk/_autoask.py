@@ -238,7 +238,7 @@ pjsk_update_manager = PjskDataUpdate(data_path)
     start_date=datetime.datetime.now().date() + datetime.timedelta(hours=14, minutes=3)
 )
 async def check_event_resources(block: bool = False, iswait: bool = True):
-    logger.info("开始自动更新pjsk游戏数据！（活动）")
+    logger.info("[定时任务]:开始自动更新pjsk游戏数据！（活动）")
     st = time.time()
     if iswait:
         wait_time = 5
@@ -253,7 +253,7 @@ async def check_event_resources(block: bool = False, iswait: bool = True):
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_jp_game_data('bondsHonors.json', block=block)
     spread_time = time.time() - st
-    logger.info(f"pjsk游戏数据更新完毕,耗时{spread_time - wait_time * 3}秒, 额外等待时间{wait_time * 3}秒！")
+    logger.info(f"[定时任务]:pjsk游戏数据更新完毕,耗时{spread_time - wait_time * 3}秒, 额外等待时间{wait_time * 3}秒！")
 
 
 # 分组自动更新烧烤数据
@@ -264,7 +264,7 @@ async def check_event_resources(block: bool = False, iswait: bool = True):
     start_date=datetime.datetime.now().date() + datetime.timedelta(hours=14, minutes=4)
 )
 async def check_eventinfo_resources(block: bool = False, iswait: bool = True):
-    logger.info("开始自动更新pjsk游戏数据！（活动查询）")
+    logger.info("[定时任务]:开始自动更新pjsk游戏数据！（活动查询）")
     st = time.time()
     if iswait:
         wait_time = 5
@@ -277,7 +277,7 @@ async def check_eventinfo_resources(block: bool = False, iswait: bool = True):
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_jp_game_data('gameCharacterUnits.json', block=block)
     spread_time = time.time() - st
-    logger.info(f"pjsk游戏数据更新完毕,耗时{spread_time - wait_time * 2}秒, 额外等待时间{wait_time * 2}秒！")
+    logger.info(f"[定时任务]:pjsk游戏数据更新完毕,耗时{spread_time - wait_time * 2}秒, 额外等待时间{wait_time * 2}秒！")
 
 
 # 分组自动更新烧烤数据
@@ -288,7 +288,7 @@ async def check_eventinfo_resources(block: bool = False, iswait: bool = True):
     start_date=datetime.datetime.now().date() + datetime.timedelta(hours=14, minutes=2)
 )
 async def check_cards_resources(block: bool = False, iswait: bool = True):
-    logger.info("开始自动更新pjsk游戏数据！（卡面查询）")
+    logger.info("[定时任务]:开始自动更新pjsk游戏数据！（卡面查询）")
     st = time.time()
     if iswait:
         wait_time = 5
@@ -303,7 +303,7 @@ async def check_cards_resources(block: bool = False, iswait: bool = True):
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_jp_game_data('cards.json', block=block)
     spread_time = time.time() - st
-    logger.info(f"pjsk游戏数据更新完毕,耗时{spread_time - wait_time * 3}秒, 额外等待时间{wait_time * 3}秒！")
+    logger.info(f"[定时任务]:pjsk游戏数据更新完毕,耗时{spread_time - wait_time * 3}秒, 额外等待时间{wait_time * 3}秒！")
 
 
 # 分组自动更新烧烤数据
@@ -314,7 +314,7 @@ async def check_cards_resources(block: bool = False, iswait: bool = True):
     start_date=datetime.datetime.now().date() + datetime.timedelta(hours=14, minutes=1)
 )
 async def check_profile_resources(block: bool = False, iswait: bool = True):
-    logger.info("开始自动更新pjsk游戏数据！（档案）")
+    logger.info("[定时任务]:开始自动更新pjsk游戏数据！（档案）")
     st = time.time()
     if iswait:
         wait_time = 5
@@ -325,7 +325,7 @@ async def check_profile_resources(block: bool = False, iswait: bool = True):
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_jp_game_data('honorGroups.json', block=block)
     spread_time = time.time() - st
-    logger.info(f"pjsk游戏数据更新完毕,耗时{spread_time - wait_time}秒, 额外等待时间{wait_time}秒！")
+    logger.info(f"[定时任务]:pjsk游戏数据更新完毕,耗时{spread_time - wait_time}秒, 额外等待时间{wait_time}秒！")
 
 
 # 分组自动更新烧烤数据
@@ -336,7 +336,7 @@ async def check_profile_resources(block: bool = False, iswait: bool = True):
     start_date=datetime.datetime.now().date() + datetime.timedelta(hours=14, minutes=2)
 )
 async def check_pjskinfo_resources(block: bool = False, iswait: bool = True):
-    logger.info("开始自动更新pjsk游戏数据！（谱面&歌词）", block=block)
+    logger.info("[定时任务]:开始自动更新pjsk游戏数据！（谱面&歌词）", block=block)
     st = time.time()
     if iswait:
         wait_time = 5
@@ -349,7 +349,7 @@ async def check_pjskinfo_resources(block: bool = False, iswait: bool = True):
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_music_lyrics(block=block)
     spread_time = time.time() - st
-    logger.info(f"pjsk游戏数据更新完毕,耗时{spread_time - wait_time}秒, 额外等待时间{wait_time}秒！")
+    logger.info(f"[定时任务]:pjsk游戏数据更新完毕,耗时{spread_time - wait_time}秒, 额外等待时间{wait_time}秒！")
 
 
 # 分组自动更新烧烤数据
@@ -360,7 +360,7 @@ async def check_pjskinfo_resources(block: bool = False, iswait: bool = True):
     start_date=datetime.datetime.now().date() + datetime.timedelta(hours=14, minutes=5)
 )
 async def check_songs_resources(block: bool = False, iswait: bool = True):
-    logger.info("开始自动更新pjsk游戏数据！（歌曲）")
+    logger.info("[定时任务]:开始自动更新pjsk游戏数据！（歌曲）")
     st = time.time()
     if iswait:
         wait_time = 5
@@ -377,7 +377,7 @@ async def check_songs_resources(block: bool = False, iswait: bool = True):
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_jp_game_data('musics.json', block=block)
     spread_time = time.time() - st
-    logger.info(f"pjsk游戏数据更新完毕,耗时{spread_time - wait_time}秒, 额外等待时间{wait_time * 3}秒！")
+    logger.info(f"[定时任务]:pjsk游戏数据更新完毕,耗时{spread_time - wait_time}秒, 额外等待时间{wait_time * 3}秒！")
 
 
 # 分组自动更新烧烤数据
@@ -388,7 +388,7 @@ async def check_songs_resources(block: bool = False, iswait: bool = True):
     start_date=datetime.datetime.now().date() + datetime.timedelta(hours=14, minutes=6)
 )
 async def check_trans_resources(block: bool = False, iswait: bool = True):
-    logger.info("开始自动更新pjsk游戏数据！（翻译）")
+    logger.info("[定时任务]:开始自动更新pjsk游戏数据！（翻译）")
     st = time.time()
     if iswait:
         wait_time = 5
@@ -409,7 +409,7 @@ async def check_trans_resources(block: bool = False, iswait: bool = True):
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_translate_data('skill_desc', block=block)
     spread_time = time.time() - st
-    logger.info(f"pjsk游戏数据更新完毕,耗时{spread_time - wait_time * 3}秒, 额外等待时间{wait_time * 6}秒！")
+    logger.info(f"[定时任务]:pjsk游戏数据更新完毕,耗时{spread_time - wait_time * 3}秒, 额外等待时间{wait_time * 6}秒！")
 
 
 # 分组自动更新烧烤数据
@@ -420,7 +420,7 @@ async def check_trans_resources(block: bool = False, iswait: bool = True):
     start_date=datetime.datetime.now().date() + datetime.timedelta(hours=14, minutes=7)
 )
 async def check_event_resources(block: bool = False, iswait: bool = True):
-    logger.info("开始自动更新pjsk游戏数据！（卡面信息）")
+    logger.info("[定时任务]:开始自动更新pjsk游戏数据！（卡面信息）")
     st = time.time()
     if iswait:
         wait_time = 5
@@ -433,4 +433,4 @@ async def check_event_resources(block: bool = False, iswait: bool = True):
     await asyncio.sleep(wait_time)
     await pjsk_update_manager.update_jp_game_data('skills.json', block=block)
     spread_time = time.time() - st
-    logger.info(f"pjsk游戏数据更新完毕,耗时{spread_time - wait_time * 3}秒, 额外等待时间{wait_time * 2}秒！")
+    logger.info(f"[定时任务]:pjsk游戏数据更新完毕,耗时{spread_time - wait_time * 3}秒, 额外等待时间{wait_time * 2}秒！")

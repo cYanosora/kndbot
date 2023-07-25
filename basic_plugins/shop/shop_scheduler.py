@@ -39,8 +39,9 @@ async def _():
                 get_today_gold=0,
                 spend_today_gold=0,
             ).apply()
+        logger.info(f"[定时任务]:重置每日金币成功")
     except Exception as e:
-        logger.error(f"重置每日金币错误 e:{e}")
+        logger.error(f"[定时任务]:重置每日金币错误 e:{e}")
 
 
 # 重置商品限购次数
@@ -52,9 +53,9 @@ async def _():
 async def _():
     try:
         await GoodsInfo.reset_daily_purchase()
-        logger.info("商品每日限购次数重置成功...")
+        logger.info("[定时任务]:商品每日限购次数重置成功...")
     except Exception as e:
-        logger.error(f"商品每日限购次数重置发生错误 {type(e)}：{e}")
+        logger.error(f"[定时任务]:商品每日限购次数重置发生错误 {type(e)}：{e}")
 
 
 # 每日随机商品打折
@@ -77,7 +78,7 @@ async def _():
         good = random.choice(all_goods)
         await GoodsInfo.update_goods(good.goods_name,goods_discount=0.9)
     except Exception as e:
-        logger.error(f"每日随机折扣道具失败 e:{e}")
+        logger.error(f"[定时任务]:每日随机折扣道具失败 e:{e}")
 
 
 # 2月9日22时发放全员生日礼物
@@ -159,7 +160,7 @@ async def _():
                 logger.info(f'User{signuser.user_qq}({_t}) Group{signuser.group_id}(天数{groupinfo[1]}) 获得礼物 {gift}')
     with open(DATA_PATH / 'limit_event.json', 'w', encoding='utf-8') as f:
         json.dump(gift_data,f)
-    logger.info(f'保存数据成功')
+    logger.info(f'[定时任务]:限时活动用户数据保存数据成功')
 
 
 # 注册新被动道具
@@ -381,7 +382,7 @@ async def _():
     register_use('生日礼物1', func1, **{})
     register_use('生日礼物2', func2, **{})
     register_use('乐谱', func3, **{})
-    logger.info('生日礼物、乐谱道具的使用函数注册完毕')
+    logger.info('[定时任务]:生日礼物、乐谱道具的使用函数注册完毕')
 
 
 # 2月9日23时开放限时道具展示
@@ -393,7 +394,7 @@ async def _():
     goods = ['康乃馨', '八音盒', '合成器', '乐谱']
     for name in goods:
         await GoodsInfo.update_goods(name, is_show=True)
-    logger.info('开放纪念品道具展示成功')
+    logger.info('[定时任务]:开放纪念品道具展示成功')
 
 
 # 2月10日0时乐谱道具限时7天出售
@@ -404,7 +405,7 @@ async def _():
 async def _():
     limit_time = int(time.time()) + 7 * 86400 + 3600
     await GoodsInfo.update_goods('乐谱', is_show=True, goods_limit_time=limit_time)
-    logger.info('开放限时道具展示成功')
+    logger.info('[定时任务]:开放限时道具展示成功')
 
 
 def random_gift() -> Tuple[float, int, Dict[str, int]]:

@@ -124,7 +124,7 @@ async def _(matcher: Matcher, event: MessageEvent, msg: Message = CommandArg()):
 # 自动更新前百分数
 @scheduler.scheduled_job(
     "interval",
-    minutes=30
+    minutes=25
 )
 async def _():
     global event_id
@@ -135,6 +135,6 @@ async def _():
         ranking = await callapi(url)
         with open(data_path / 'rktop100.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(ranking, sort_keys=True, indent=4))
-        logger.info(f"pjsk更新前百排位分数成功！")
+        logger.info(f"[定时任务]:pjsk更新前百排位分数成功！")
     except Exception as e:
-        logger.warning(f"pjsk更新前百排位分数失败！Error:{e}")
+        logger.warning(f"[定时任务]:pjsk更新前百排位分数失败！Error:{e}")

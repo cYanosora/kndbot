@@ -45,9 +45,9 @@ async def _():
         for g in gl:
             try:
                 await update_member_info(bot, g)
-                logger.info(f"更新群组 g:{g} 成功")
+                logger.info(f"[定时任务]:更新群组 g:{g} 成功")
             except Exception as e:
-                logger.error(f"更新群组错误 g:{g} e:{e}")
+                logger.error(f"[定时任务]:更新群组错误 g:{g} e:{e}")
 
 
 # 快速更新未保存的群的群员信息
@@ -65,7 +65,7 @@ async def _():
             for g in gl:
                 if g not in all_group:
                     await update_member_info(bot, g)
-                    logger.info(f"快速更新未保存的群信息以及权限：{g}")
+                    logger.info(f"[定时任务]:快速更新未保存的群信息以及权限：{g}")
     except (IndexError, ConnectionDoesNotExistError, UndefinedColumnError):
         pass
 
@@ -89,9 +89,9 @@ async def _():
                 group_info["max_member_count"],
                 group_info["member_count"],
             )
-            logger.info(f"自动更新群组 {g} 信息成功")
+            logger.info(f"[定时任务]:自动更新群组 {g} 信息成功")
     except Exception as e:
-        logger.error(f"自动更新群组信息错误 e:{e}")
+        logger.error(f"[定时任务]:自动更新群组信息错误 e:{e}")
 
 
 # 定时更新好友信息
@@ -106,11 +106,11 @@ async def _():
         fl = await bot.get_friend_list()
         for f in fl:
             if await FriendUser.add_friend_info(f["user_id"], f["nickname"]):
-                logger.info(f'自动更新好友 {f["user_id"]} 信息成功')
+                logger.info(f'[定时任务]:自动更新好友 {f["user_id"]} 信息成功')
             else:
-                logger.warning(f'自动更新好友 {f["user_id"]} 信息失败')
+                logger.warning(f'[定时任务]:自动更新好友 {f["user_id"]} 信息失败')
     except Exception as e:
-        logger.error(f"自动更新群组信息错误 e:{e}")
+        logger.error(f"[定时任务]:自动更新群组信息错误 e:{e}")
 
 
 # 自动备份
@@ -136,9 +136,9 @@ async def _():
                         if _p.exists():
                             _p.unlink()
                         shutil.copy(x, _p)
-                    logger.info(f'已完成自动备份：{x}')
+                    logger.info(f'[定时任务]:已完成自动备份：{x}')
             except Exception as e:
-                logger.error(f"自动备份文件 {x} 发生错误 {type(e)}:{e}")
+                logger.error(f"[定时任务]:自动备份文件 {x} 发生错误 {type(e)}:{e}")
 
 
 # 每天定时检查群是否已有认证

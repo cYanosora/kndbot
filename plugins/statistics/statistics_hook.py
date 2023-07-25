@@ -7,6 +7,7 @@ from datetime import datetime
 from manager import plugins2settings_manager
 from utils.utils import scheduler
 from nonebot.typing import Optional
+from services import logger
 
 try:
     import ujson as json
@@ -212,4 +213,6 @@ async def _():
         json.dump(_prefix_count_dict, f, indent=4, ensure_ascii=False)
     with open(statistics_user_file, "w", encoding="utf8") as f:
         json.dump(_prefix_user_count_dict, f, indent=4, ensure_ascii=False)
+    logger.info(f"[定时任务]:功能调用次数文件更新成功！")
+        
 

@@ -213,6 +213,6 @@ async def _(event: GroupMessageEvent, arg: Message = CommandArg()):
 async def _():
     try:
         clear_sign_data_pic()
-        logger.info("清理日常签到图片数据数据完成....")
+        logger.info("[定时任务]:清理日常签到图片数据数据完成....")
     except Exception as e:
-        logger.error(f"清理日常签到图片数据数据失败..{type(e)}: {e}")
+        logger.error(f"[定时任务]:清理日常签到图片数据数据失败..{type(e)}: {e}")

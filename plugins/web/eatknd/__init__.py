@@ -66,7 +66,7 @@ async def _(event: MessageEvent):
     minute=59,
 )
 async def _():
-    logger.info(f"每日游戏排行榜金币结算开始")
+    logger.info(f"[定时任务]:每日游戏排行榜金币结算开始")
     day_cnt = await EatkndRecord.get_len('day')
     day_users = await EatkndRecord.get_list('day', num=day_cnt, is_update=True)
     for user in day_users:
@@ -76,5 +76,5 @@ async def _():
         user_all_groups = await GroupInfoUser.get_user_all_group(user.user_id)
         for group_id in user_all_groups:
             await BagUser.add_gold(user.user_id, group_id, coin)
-            logger.info(f"User {user.user_id} Group {group_id} 获取每日游戏排行榜金币 {coin}")
-    logger.info(f"每日游戏排行榜金币结算完成")
+            logger.info(f"[定时任务]:User {user.user_id} Group {group_id} 获取每日游戏排行榜金币 {coin}")
+    logger.info(f"[定时任务]:每日游戏排行榜金币结算完成")

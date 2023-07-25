@@ -193,4 +193,4 @@ async def _():
 )
 async def _():
     await update_city()
-    logger.info("已自动更新城市列表！")
+    logger.info("[定时任务]:已自动更新城市列表！")

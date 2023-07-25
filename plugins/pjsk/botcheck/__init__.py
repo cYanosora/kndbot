@@ -149,8 +149,8 @@ async def schedule_check():
     except Exception as e:
         error += f"{e}\n"
     if error:
-        logger.info(f"自动更新unibot分布式记录出错，错误信息：{error}")
+        logger.info(f"[定时任务]:自动更新unibot分布式记录出错，错误信息：{error}")
     else:
-        logger.info(f"自动更新unibot分布式记录成功")
+        logger.info(f"[定时任务]:自动更新unibot分布式记录成功")
 
 

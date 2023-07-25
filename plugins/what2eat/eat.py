@@ -59,4 +59,4 @@ async def _(bot: Bot, event: GroupMessageEvent):
 @scheduler.scheduled_job("cron", hour="6,11,17,22", minute=0)
 async def _():
     eating_manager.reset_eating()
-    logger.info("今天吃什么次数已刷新")
+    logger.info("[定时任务]:今天吃什么次数已刷新")

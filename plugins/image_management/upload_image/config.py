@@ -19,4 +19,4 @@ async def _():
     global global_record
     global_record['num'] = await get_local_record()
     global_record['date'] = datetime.datetime.strftime(datetime.datetime.now(), '%Y/%m/%d')
-    logger.info(f"更新日期、收录数成功")
+    logger.info(f"[定时任务]:更新pjsk日期、收录数成功")
