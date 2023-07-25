@@ -5,6 +5,7 @@ from configs.config import SYSTEM_PROXY
 from typing import List, Union, Optional, Type, Any
 from nonebot.adapters.onebot.v11 import Bot, Message
 from nonebot.matcher import matchers, Matcher
+from functools import wraps
 import httpx
 import nonebot
 import pytz
@@ -30,14 +31,15 @@ GDict = {
     "_shop_after_handle": {},      # 商品使用后函数
 }
 
+
 class CountLimiter:
     """
     次数检测工具，检测调用次数是否超过设定值
     """
 
     def __init__(self, max_count: int):
-        self.count = defaultdict(int)
         self.max_count = max_count
+        self.count = defaultdict(int)
 
     def isexist(self, key: Any) -> bool:
         if key in self.count.keys():
@@ -71,9 +73,28 @@ class UserBlockLimiter:
     检测用户是否正在调用命令
     """
 
-    def __init__(self):
+    def __init__(self, limit_block_time: int = 30):
+        self._hook_time = time.time()
+        self.limit_time = limit_block_time
         self.flag_data = defaultdict(bool)
         self.time = time.time()
+
+    @staticmethod
+    def __pre_hook(f):
+        """解除所有超时阻塞"""
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            cls = args[0].__class__
+            cls.clean_data(args[0])
+            return f(*args, **kwargs)
+        return decorated
+
+    def clean_data(self):
+        if time.time() - self._hook_time > 6 * 3600:
+            self._hook_time = time.time()
+            for key in self.flag_data.copy():
+                if time.time() - self.time > self.limit_time or self.flag_data[key] is False:
+                    self.flag_data.pop(key)
 
     # 阻塞
     def set_true(self, key: Any):
@@ -85,10 +106,10 @@ class UserBlockLimiter:
         self.flag_data[key] = False
 
     # 检查阻塞并尝试解除阻塞
+    @__pre_hook
     def check(self, key: Any) -> bool:
-        if time.time() - self.time > 30:
+        if time.time() - self.time > self.limit_time:
             self.set_false(key)
-            return False
         return self.flag_data[key]
 
 
@@ -102,16 +123,37 @@ class FreqLimiter:
         :param default_cd_seconds: 冷却时间范围
         :param default_count_limit: 冷却时间内最多限制次数
         """
-        self.next_time = defaultdict(float)
+        self._hook_time = time.time()
         self.default_cd = default_cd_seconds
+        self.next_time = defaultdict(float)
         self.count = CountLimiter(default_count_limit)
 
+    @staticmethod
+    def __pre_hook(f):
+        """解除所有超时阻塞"""
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            cls = args[0].__class__
+            cls.clean_data(args[0])
+            return f(*args, **kwargs)
+        return decorated
+
+    def clean_data(self):
+        if time.time() - self._hook_time > 6 * 3600:
+            self._hook_time = time.time()
+            for key in self.next_time.copy():
+                if time.time() >= self.next_time[key]:
+                    self.next_time.pop(key)
+                    self.count.clear(key)
+
+    @__pre_hook
     def check(self, key: Any) -> bool:
         return time.time() >= self.next_time[key]
 
     def remove_cd(self, key: Any):
         if key in self.next_time:
             self.next_time.pop(key)
+            self.count.clear(key)
 
     def get_cd_count(self, key):
         return self.count.get_count(key)
@@ -119,6 +161,7 @@ class FreqLimiter:
     def sub_cd_count(self, key):
         self.count.sub(key)
 
+    @__pre_hook
     def count_check(self, key: Any) -> bool:
         # 若cd冷却时段进入新cd区间 或 cd冷却时段内使用次数未耗尽
         if self.check(key) or self.count.get_count(key) < self.count.max_count:
@@ -139,37 +182,6 @@ class FreqLimiter:
 
     def left_time(self, key: Any) -> float:
         return self.next_time[key] - time.time()
-
-
-class BanCheckLimiter:
-    """
-    恶意命令触发检测
-    """
-
-    def __init__(self, default_check_time: float = 5, default_count: int = 4):
-        self.mint = defaultdict(int)
-        self.mtime = defaultdict(float)
-        self.default_check_time = default_check_time
-        self.default_count = default_count
-
-    def add(self, key: Union[str, int, float]):
-        if self.mint[key] == 1:
-            self.mtime[key] = time.time()
-        self.mint[key] += 1
-
-    def check(self, key: Union[str, int, float]) -> bool:
-        if time.time() - self.mtime[key] > self.default_check_time:
-            self.mtime[key] = time.time()
-            self.mint[key] = 0
-            return False
-        if (
-            self.mint[key] >= self.default_count
-            and time.time() - self.mtime[key] < self.default_check_time
-        ):
-            self.mtime[key] = time.time()
-            self.mint[key] = 0
-            return True
-        return False
 
 
 class DailyNumberLimiter:

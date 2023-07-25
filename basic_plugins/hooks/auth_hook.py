@@ -113,8 +113,8 @@ async def _(matcher: Matcher, bot: Bot, event: Event):
             # 群权限等级不够
             if plugins2info_dict[module]["level"] > group_manager.get_group_level(event.group_id):
                 try:
-                    if _flmt_g.check(event.user_id) and module not in ignore_module:
-                        _flmt_g.start_cd(event.user_id)
+                    if _flmt_g.check(event.group_id) and module not in ignore_module:
+                        _flmt_g.start_cd(event.group_id)
                         await bot.send_group_msg(
                             group_id=event.group_id, message="群权限不足，无法使用此功能"
                         )
@@ -165,6 +165,8 @@ async def _(matcher: Matcher, bot: Bot, event: Event):
     # 其他封禁检测(BanInfo)
     user_id = event.user_id
     group_id = event.group_id if hasattr(event, "group_id") else None
+    if str(user_id) == "80000000":
+        raise IgnoredException("匿名用户不能触发指令")  # 针对匿名用户
     if group_id and await BanInfo.is_plugin_ban(module, user_id, group_id):
         raise IgnoredException("用户于群内被禁用此插件中")  # 针对使用cd、count提示进行刷屏的封禁处理
     if await BanInfo.is_plugin_ban(module, user_id, None):

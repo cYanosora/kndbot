@@ -1,4 +1,6 @@
 import time
+
+from services import logger
 from utils.utils import scheduler
 from nonebot.adapters.onebot.v11 import Message
 from dataclasses import dataclass
@@ -100,7 +102,8 @@ retry_manager = RetryManager()
 # 定时清除超时retry名单(会话超过60s无响应)
 @scheduler.scheduled_job(
     "interval",
-    minutes=3
+    hours=3
 )
 async def _():
     retry_manager.clear_data()
+    logger.info("[定时任务]:超时互动名单清除成功！")

@@ -4,7 +4,8 @@ from nonebot import on_message
 from nonebot.adapters.onebot.v11.permission import GROUP
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, Bot
 from manager import Config
-from utils.utils import FreqLimiter
+from services import logger
+from utils.utils import scheduler, FreqLimiter
 from .data_source import _fudu_list
 
 __plugin_name__ = "复读 [Hidden]"
@@ -66,3 +67,13 @@ def messagePreprocess(message: str):
     for i in contained_images:
         message = message.replace(i, f'[{contained_images[i]}]')
     return message, raw_message
+
+
+# 每5分钟清空一次请求数据
+@scheduler.scheduled_job(
+    "interval",
+    minutes=10,
+)
+async def _():
+    _fudu_list.clean_data()
+    logger.info("[定时任务]:复读数据清除成功！")

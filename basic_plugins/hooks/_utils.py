@@ -23,6 +23,7 @@ oppose_cd_modules = oppose_count_modules = [
 ]
 # 以下插件私聊中可用
 ignore_module = [
+    'help',     # 帮助说明
     "eatknd",  # 吃掉小奏宝
     "dialogue",  # 联系管理员
     "invite_manager",  # 邀请入群
@@ -30,7 +31,7 @@ ignore_module = [
     "sk","rk","bind","ycm",
     "rop","profile","b30","arrest",
     "mappreview","pjskinfo","findcard","event",
-    "hotrank","diffrank","gacha",
+    "hotrank","diffrank","gacha","upload_file"
 ]
 
 

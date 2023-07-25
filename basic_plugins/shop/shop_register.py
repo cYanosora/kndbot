@@ -8,7 +8,7 @@ from models.bag_user import BagUser
 from models.sign_group_user import SignGroupUser
 
 driver: Driver = nonebot.get_driver()
-
+is_completed = False
 __plugin_name__ = "商品使用函数注册 [Hidden]"
 __plugin_version__ = 0.1
 
@@ -23,7 +23,10 @@ async def _():
 # 一次性注册道具使用函数
 @driver.on_bot_connect
 async def _():
-    await shop_register.load_register()
+    global is_completed
+    if not is_completed:
+        is_completed = True
+        await shop_register.load_register()
 
 
 async def init_default_shop_goods():

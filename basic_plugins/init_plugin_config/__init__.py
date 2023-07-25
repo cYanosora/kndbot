@@ -19,7 +19,7 @@ from .init_plugins_limit import (
 __plugin_name__ = "初始化插件数据 [Hidden]"
 __plugin_version__ = 0.1
 driver: Driver = nonebot.get_driver()
-
+is_completed = False
 
 @driver.on_startup
 async def _():
@@ -45,4 +45,7 @@ async def _():
 
 @driver.on_bot_connect
 async def _(bot: Bot):
-    await check_plugin_status(bot)
+    global is_completed
+    if not is_completed:
+        is_completed = True
+        await check_plugin_status(bot)

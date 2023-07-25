@@ -3,7 +3,6 @@ import os
 import random
 from datetime import datetime
 from nonebot.adapters.onebot.v11 import Message
-
 from models.bag_user import BagUser
 from models.ban_info import BanInfo
 from services import logger
@@ -13,12 +12,10 @@ from configs.path_config import IMAGE_PATH
 from .models import UserInfo
 from .utils import ReplyBank, reply_handler
 
-_noodle_fqlmt = FreqLimiter(300, 3)
-_pa_flmt = FreqLimiter(1)
 _curse_flmt = FreqLimiter(5)
+_noodle_fqlmt = FreqLimiter(300, 3)
 _poke_clmt = FreqLimiter(3, 3600)
 _zwa_fqlmt = FreqLimiter(10800, 3)
-_zwa_flmt = FreqLimiter(1)
 zwa_func_dict = {
     "morn": [6, 7, 8, 9, 10, 11],
     "aftn": [12, 13, 14, 15, 16, 17],
@@ -45,47 +42,45 @@ zwa_text_dict = {
 async def knd_zwa(user: UserInfo, *args, **kwargs):
     global zwa_text_dict
     global zwa_func_dict
-    if _zwa_flmt.check(user.group):
-        _zwa_flmt.start_cd(user.group)
-
-        # 对话装饰器，被装饰函数内只需编写单轮对话逻辑
-        @reply_handler
-        async def zwa_func(inner_user: UserInfo, cid: int):
-            t = datetime.now().hour
-            m = datetime.now().minute
-            if m >= 50:
-                t = (t + 1) % 24
-            zwa_text_dict["晚"] = "dawn" if 0 <= t <= 5 else "even"
-            # 得到对应当前时间段的理论回复类型
-            func_type = ""
-            for sw in zwa_func_dict:
-                if t in zwa_func_dict[sw]:
-                    func_type = sw
-                    if t == 1:
-                        func_type += '_nigo'
-                    elif t == zwa_func_dict[sw][0]:
-                        func_type += '_prep'
-                    break
-            # 得到用户文本所代表的实际回复类型
-            text_type = ""
-            for sw in zwa_text_dict:
-                if sw in user.text:
-                    text_type = zwa_text_dict[sw]
-                    break
-            # 判断两种回复类型是否一致
-            if not func_type.startswith(text_type):
-                if _zwa_fqlmt.count_check(inner_user.qq):
-                    if text_type != "sleep":
-                        _zwa_fqlmt.start_cd(inner_user.qq)
-                    func_type += f"_{text_type}"
-                # 多次乱打招呼，被拉黑3分钟
-                else:
-                    reply, state = await ReplyBank.get_user_mutil_reply(cid, "special", inner_user, 0.7, 1, True)
-                    await BanInfo.ban(9, 180, user_id=inner_user.qq, group_id=inner_user.group)
-                    return reply, state
-            reply, state = await ReplyBank.get_user_mutil_reply(cid, func_type, inner_user, 0.7, 1, True)
-            return reply, state
-        return await zwa_func(user, 5, True)
+    # 对话装饰器，被装饰函数内只需编写单轮对话逻辑
+    @reply_handler
+    async def zwa_func(inner_user: UserInfo, cid: int):
+        t = datetime.now().hour
+        m = datetime.now().minute
+        if m >= 50:
+            t = (t + 1) % 24
+        zwa_text_dict["晚"] = "dawn" if 0 <= t <= 5 else "even"
+        # 得到对应当前时间段的理论回复类型
+        func_type = ""
+        for sw in zwa_func_dict:
+            if t in zwa_func_dict[sw]:
+                func_type = sw
+                if t == 1:
+                    func_type += '_nigo'
+                elif t == zwa_func_dict[sw][0]:
+                    func_type += '_prep'
+                break
+        # 得到用户文本所代表的实际回复类型
+        text_type = ""
+        for sw in zwa_text_dict:
+            if sw in user.text:
+                text_type = zwa_text_dict[sw]
+                break
+        # 判断两种回复类型是否一致
+        if not func_type.startswith(text_type):
+            if _zwa_fqlmt.count_check(inner_user.qq):
+                if text_type != "sleep":
+                    _zwa_fqlmt.start_cd(inner_user.qq)
+                func_type += f"_{text_type}"
+            # 多次乱打招呼，被拉黑3分钟
+            else:
+                _zwa_fqlmt.remove_cd(inner_user.qq)
+                reply, state = await ReplyBank.get_user_mutil_reply(cid, "special", inner_user, 0.7, 1, True)
+                await BanInfo.ban(9, 180, user_id=inner_user.qq, group_id=inner_user.group)
+                return reply, state
+        reply, state = await ReplyBank.get_user_mutil_reply(cid, func_type, inner_user, 0.7, 1, True)
+        return reply, state
+    return await zwa_func(user, 5, True)
 
 
 async def curse_voice(user: UserInfo, *args, **kwargs):
@@ -101,6 +96,7 @@ async def curse_voice(user: UserInfo, *args, **kwargs):
             else:
                 reply, state = await ReplyBank.get_user_mutil_reply(cid, "bad", inner_user, 0.5, 0.2)
         else:
+            _curse_flmt.remove_cd(inner_user.qq)
             # special: 骂累了
             reply, state = await ReplyBank.get_user_mutil_reply(cid, "special", inner_user, 0.5, 0.2)
         return reply, state
@@ -111,8 +107,17 @@ async def eat_noodles(user: UserInfo, *args, **kwargs):
     @reply_handler
     # 对话装饰器，被装饰函数内只需编写单轮对话逻辑
     async def eat_func(inner_user: UserInfo, cid: int):
-        if _noodle_fqlmt.count_check(inner_user.group):
-            _noodle_fqlmt.start_cd(inner_user.group)
+        _noodle_fqlmt.start_cd(inner_user.group)
+        if not _noodle_fqlmt.count_check(inner_user.group):
+            _noodle_fqlmt.remove_cd(inner_user.group)
+            # 被多次(3次)请求吃面后的处理
+            if random.random() <= 0.5:
+                # bad：拒绝嗦面
+                rst, state = await ReplyBank.get_user_mutil_reply(cid, "bad", inner_user, 0.5, 0.2)
+            else:
+                # good：想嗦但是饱了
+                rst, state = await ReplyBank.get_user_mutil_reply(cid, "good", inner_user, 0.5, 0.2)
+        else:
             rst, state = '', 0
             if random.random() < 0.95:
                 # normal：嗦面表情
@@ -125,14 +130,6 @@ async def eat_noodles(user: UserInfo, *args, **kwargs):
             else:
                 # special： 面洒了
                 rst, state = await ReplyBank.get_user_mutil_reply(cid, "special", inner_user, 0.5, 0.2)
-        else:
-            # 被多次(3次)请求吃面后的处理
-            if random.random() <= 0.5:
-                # bad：拒绝嗦面
-                rst, state = await ReplyBank.get_user_mutil_reply(cid, "bad", inner_user, 0.5, 0.2)
-            else:
-                # good：想嗦但是饱了
-                rst, state = await ReplyBank.get_user_mutil_reply(cid, "good", inner_user, 0.5, 0.2)
         return rst, state
     return await eat_func(user, 4)
 
@@ -199,7 +196,6 @@ async def poke_event(user: UserInfo, *args, **kwargs):
     @reply_handler
     async def poke_func(inner_user: UserInfo, cid: int):
         _poke_clmt.start_cd(inner_user.qq)
-        rand = random.random()
         if not _poke_clmt.count_check(inner_user.qq):
             _poke_clmt.remove_cd(inner_user.qq)
             # 被多次(3次)骚扰后的处理
@@ -209,6 +205,7 @@ async def poke_event(user: UserInfo, *args, **kwargs):
                 reply, state = await ReplyBank.get_user_mutil_reply(cid, "ban", inner_user, 0.5, 0.5)
                 logger.info(f"USER {inner_user.qq} 戳了戳我,触发禁言 回复: {reply} \n")
                 return reply, state
+        rand = random.random()
         if 0.2 < rand <= 0.5 + float(inner_user.level) * 0.01:
             # 返回文字+几率图片
             # 带图片几率
@@ -314,9 +311,7 @@ async def birthday(user: UserInfo, *args, **kwargs):
 
 
 async def pa_reg(user: UserInfo, *args, **kwargs):
-    if _pa_flmt.check(user.qq):
-        _pa_flmt.start_cd(user.qq)
-        return Message(image("pa.jpg", "kanade"))
+    return Message(image("pa.jpg", "kanade"))
 
 
 async def jrrp(user: UserInfo, *args, **kwargs):

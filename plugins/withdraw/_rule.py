@@ -1,16 +1,15 @@
-from nonebot.adapters.onebot.v11 import GroupMessageEvent
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent
 from services import logger
 from ._models import WithdrawBase
-from nonebot import Driver, get_driver, get_bot
+from nonebot import Driver, get_driver
 
 withdraw_group_dict = {}
 driver: Driver = get_driver()
 
 
 @driver.on_bot_connect
-async def _():
+async def _(bot: Bot):
     global withdraw_group_dict
-    bot = get_bot()
     id = bot.self_id
     withdraw_group_dict[id] = []
     gl = [g["group_id"] for g in await bot.get_group_list()]

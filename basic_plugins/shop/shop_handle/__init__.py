@@ -5,7 +5,7 @@ from nonebot.adapters.onebot.v11 import MessageEvent, Message, GROUP
 from nonebot import on_command
 from utils.message_builder import image
 from nonebot.permission import SUPERUSER
-from utils.utils import is_number, scheduler
+from utils.utils import is_number
 from nonebot.params import CommandArg
 from services.log import logger
 

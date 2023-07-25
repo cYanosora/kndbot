@@ -10,7 +10,6 @@ from nonebot.matcher import Matcher
 from nonebot.typing import T_Handler, T_State
 from nonebot.adapters.onebot.v11 import Bot
 from nonebot.adapters import Bot
-
 from configs.config import NICKNAME
 from utils.limit_utils import ignore_mute
 from .data_source import commands
@@ -99,7 +98,7 @@ async def _(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
     # 新状态值为-1，视为触发其他命令，若此状态触发3次基本说明用户不想在继续对话的retry，则删除retry信息
     if user.state == -1:
         ignore_mute(f"{user.group}_{user.qq}")
-        matcher.open_propagation()
+        matcher.block = False
         # 将未成功触发对话的用户加入retry名单(不重复添加, 若存在则cnt+1)
         retry_manager.add(user.qq, user.group, cmd.id, raw_st)
         # 若此用户retry次数超标，删除此信息

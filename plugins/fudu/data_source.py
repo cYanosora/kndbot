@@ -1,3 +1,6 @@
+import time
+
+
 class Fudu:
     def __init__(self):
         self.data = {}
@@ -35,7 +38,14 @@ class Fudu:
 
     def _create(self, key):
         if self.data.get(key) is None:
-            self.data[key] = {"is_repeater": False, "data": []}
+            self.data[key] = {"time": time.time(), "is_repeater": False, "data": []}
+
+    def clean_data(self):
+        _data = self.data
+        for each in _data.copy():
+            data = self.data.get(each)
+            if data and data['time'] + 600 < time.time():
+                self.data.pop(each)
 
 
 _fudu_list = Fudu()

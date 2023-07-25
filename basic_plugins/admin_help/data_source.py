@@ -13,17 +13,19 @@ from utils.utils import get_matchers
 from manager import group_manager
 
 driver: Driver = nonebot.get_driver()
-
 random_bk_path = IMAGE_PATH / "background" / "help" / "admin_help"
-
 admin_help_image = IMAGE_PATH / 'admin_help_img.png'
+is_completed = False
 
 
 @driver.on_bot_connect
 async def init_task():
-    if not group_manager.get_task_data():
-        await group_manager.init_group_task()
-        logger.info(f'已成功加载 {len(group_manager.get_task_data())} 个被动技能.')
+    global is_completed
+    if not is_completed:
+        is_completed = True
+        if not group_manager.get_task_data():
+            await group_manager.init_group_task()
+            logger.info(f'已成功加载 {len(group_manager.get_task_data())} 个被动技能.')
 
 
 async def create_help_image():
