@@ -567,7 +567,7 @@ class MusicInfo(object):
         self.fullComboAdjust = [0, 0, 0, 0, 0]
         self.fullPerfectAdjust = [0, 0, 0, 0, 0]
         self.fillerSec = 0
-
+        self.categories = []
 
 class EventInfo(object):
 

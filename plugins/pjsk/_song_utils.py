@@ -297,6 +297,7 @@ async def _drawpjskinfo(musicid: int) -> Tuple[bool, str]:
         info.arranger = music['arranger']
         info.publishedAt = music['publishedAt']
         info.fillerSec = music['fillerSec']
+        info.categories = music['categories']
 
     with open(data_path / r'realtime/musicDifficulties.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -454,6 +455,19 @@ async def _drawpjskinfo(musicid: int) -> Tuple[bool, str]:
                 text_width = font_style.getsize(str(adjust))
                 text_coordinate = (int((132 + 138 * i) - text_width[0] / 2), int(915 - text_width[1] / 2))
                 draw.text(text_coordinate, str(adjust), fill=(1, 255, 221), font=font_style)
+    # 1824 592
+    pos = 1834
+    count = 0
+    for type in info.categories:
+        if type == 'mv':
+            type = 'mv_3d'
+        if type == 'image':
+            continue
+        type_pic = Image.open(f'pics/{type}.png')
+        type_pic = type_pic.resize((75, 75))
+        img.paste(type_pic, (pos, 592), type_pic.split()[3])
+        count += 1
+        pos -= 82
     vocals = _vocalimg(musicid, alpha)
     r, g, b, mask = vocals.split()
     if vocals.size[1] < 320:

@@ -379,53 +379,28 @@ async def pjsk_cheer_pred_update():
         trans = yaml.load(f, Loader=yaml.FullLoader)
     Teams.reverse()
     resp_text = ""
-    for i in range(2):
-        # 从33dev取5v5数据
-        if i == 1:
-            try:
-                data = requests.get(cheer_pred_url).json()
-                if data['eventId'] != event_id: continue
-                for TeamId in data["members"]:
-                    TeamRates = data['predictRates'].get(TeamId)
-                    TeamName = data["names"].get(TeamId)
-                    memberCount = data["members"][TeamId]
-                    try:
-                        translate = f"({trans['cheerful_carnival_teams'][int(TeamId)]})"
-                    except KeyError:
-                        translate = ''
-                    if not TeamName:
-                        for i in Teams:
-                            if i['id'] == int(TeamId):
-                                TeamName = i['teamName']
-                                break
-                    resp_text += f"{TeamName}{translate} {memberCount}人"
-                    resp_text += f'\n预测胜率: {TeamRates*100:.3f}%\n' if TeamRates is not None else '\n'
-                break
-            except: continue
-        # 从uni取5v5数据
-        else:
-            try:
-                url = random.choice(api_base_url_list) + f'cheerful-carnival-team-count/{event_id}'
-                data = requests.get(url).json()
-                if not data: continue
-                for Team in data["cheerfulCarnivalTeamMemberCounts"]:
-                    TeamId = Team["cheerfulCarnivalTeamId"]
-                    memberCount = Team["memberCount"]
-                    try:
-                        translate = f"({trans['cheerful_carnival_teams'][int(TeamId)]})"
-                    except KeyError:
-                        translate = ''
-                    try:
-                        TeamName = next(filter(lambda x: x['id'] == int(TeamId), Teams))
-                    except:
-                        TeamName = ''
-                    resp_text += f"{TeamName}{translate} {memberCount}人\n"
-                break
-            except: continue
-    if not resp_text:
+    # 从uni取5v5数据
+    try:
+        url = cheer_pred_url_bak + f'/{event_id}'
+        data = requests.get(url).json()
+        if data:
+            for Team in data["cheerfulCarnivalTeamMemberCounts"]:
+                TeamId = Team["cheerfulCarnivalTeamId"]
+                memberCount = Team["memberCount"]
+                try:
+                    translate = f"({trans['cheerful_carnival_teams'][int(TeamId)]})"
+                except KeyError:
+                    translate = ''
+                try:
+                    TeamName = next(filter(lambda x: x['id'] == int(TeamId), Teams))
+                except:
+                    TeamName = ''
+                resp_text += f"{TeamName}{translate} {memberCount}人\n"
+    except:
+        resp_text = "暂时没有预测"
         logger.warning(f"pjsk查询5v5人数失败！")
-        return None
     return resp_text
+
 
 # 自动更新预测线
 @scheduler.scheduled_job(

@@ -1,4 +1,4 @@
-import difflib
+import Levenshtein as lev
 from datetime import datetime
 from typing import Optional, Tuple, Dict, Any
 import requests
@@ -111,7 +111,12 @@ def timeremain(time):
 
 # 获取字符串相似度
 def string_similar(s1, s2):
-    return difflib.SequenceMatcher(None, s1, s2).quick_ratio()
+    # 使用Levenshtein库计算两个字符串之间的距离
+    distance = lev.distance(s1, s2)
+    # 计算最大可能的距离
+    max_len = max(len(s1), len(s2))
+    # 计算相似度，并返回。距离越小，相似度越高，所以我们用1减去它们的比值
+    return 1 - (distance / max_len)
 
 
 # 文字生成图片

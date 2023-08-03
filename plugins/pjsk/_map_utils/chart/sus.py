@@ -12,9 +12,17 @@ def get_denominator(x: float):
     ans, remainder = 1000, 1000
 
     for y in [
-        1, 2, 4, 8, 16, 32, 64,
-        3, 6, 12, 24, 48, 96,
-        5, 10, 20, 40, 80,
+        1,
+        2, 4, 8, 16, 32, 64, 128, 256,
+        3, 6, 12, 24, 48, 96, 192,
+        5, 10, 20, 40, 80, 160,
+        7, 14, 28, 56, 112,
+        9, 18, 36, 72, 144,
+        11, 22, 33, 44,
+        36, 60, 84, 108, 120,
+        13, 26, 39, 52,
+        15, 30, 45,
+        17, 19, 23, 25,
     ]:
         r = min((x * y) % 1, (-x * y) % 1)
         if r < remainder:
@@ -370,14 +378,15 @@ class SUS:
                     ),
                     class_='tick-line',
                 ))
-                tick_texts.append(svgwrite.text.Text(
-                    text,
-                    insert=(
-                        round(self.padding - 4),
-                        round(y - 2),
-                    ),
-                    class_='tick-text',
-                ))
+                if text != "0/1":
+                    tick_texts.append(svgwrite.text.Text(
+                        text,
+                        insert=(
+                            round(self.padding - 4),
+                            round(y - 2),
+                        ),
+                        class_='tick-text',
+                    ))
 
         for i, note in enumerate(self.score.notes):
             if isinstance(note, Slide) and note.next:

@@ -34,7 +34,7 @@ pred_url_bak = r'https://api.sekai.best/event/pred?region=jp'
 
 # 5v5人数url
 cheer_pred_url = r'https://33.dsml.hk/cheer-pred'
-cheer_pred_url_bak = base_url_bak1 + r'/cheerful-carnival-team-count'
+cheer_pred_url_bak = base_url + r'/cheerful-carnival-team-count'
 
 # 日服游戏json资源url
 json_url = r'https://gitlab.com/pjsekai/database/jp/-/raw/main'
