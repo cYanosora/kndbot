@@ -120,5 +120,4 @@ commands = [
     Command(name_generator, ("亚文化取名机", "亚名")),
     Command(beat_head, ("拍头", "怎么说话的"), arg_type="Arg"),
     Command(bubble_tea, ("奶茶",)),
-    Command(ascension, ("奶茶",)),
 ]

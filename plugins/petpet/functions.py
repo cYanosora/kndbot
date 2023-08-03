@@ -882,8 +882,7 @@ def love_you(img: BuildImage = UserImg(), arg=NoArg()):
 
 
 def symmetric(img: BuildImage = UserImg(), arg: str = Arg(["上", "下", "左", "右"])):
-        img_w, img_h = img.size
-
+    img_w, img_h = img.size
     Mode = namedtuple(
         "Mode", ["method", "frame_size", "size1", "pos1", "size2", "pos2"]
     )

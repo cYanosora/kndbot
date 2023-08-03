@@ -7,7 +7,7 @@ from io import BytesIO
 from dataclasses import dataclass
 from PIL.Image import Image as IMG
 from typing_extensions import Literal
-from typing import Callable, List, Tuple, Protocol
+from typing import Callable, List, Tuple, Protocol, Optional
 from nonebot.utils import run_sync
 from utils.imageutils import BuildImage, Text2Image
 
@@ -36,8 +36,39 @@ class Command:
 
 def save_gif(frames: List[IMG], duration: float) -> BytesIO:
     output = BytesIO()
-    imageio.mimsave(output, frames, format="gif", duration=duration)
-    return output
+    frames[0].save(
+        output,
+        format="GIF",
+        save_all=True,
+        append_images=frames[1:],
+        duration=duration * 1000,
+        loop=0,
+        disposal=2,
+        optimize=False,
+    )
+
+    # 没有超出最大大小，直接返回
+    nbytes = output.getbuffer().nbytes
+    if nbytes <= 10 * 10**6:
+        return output
+
+    # 超出最大大小，帧数超出最大帧数时，缩减帧数
+    n_frames = len(frames)
+    gif_max_frames = 100
+    if n_frames > gif_max_frames:
+        index = range(n_frames)
+        ratio = n_frames / gif_max_frames
+        index = (int(i * ratio) for i in range(gif_max_frames))
+        new_duration = duration * ratio
+        new_frames = [frames[i] for i in index]
+        return save_gif(new_frames, new_duration)
+
+    # 超出最大大小，帧数没有超出最大帧数时，缩小尺寸
+    new_frames = [
+        frame.resize((int(frame.width * 0.9), int(frame.height * 0.9)))
+        for frame in frames
+    ]
+    return save_gif(new_frames, duration)
 
 
 class Maker(Protocol):
@@ -60,38 +91,52 @@ def get_avg_duration(image: IMG) -> float:
     return total_duration / image.n_frames
 
 
+def split_gif(image: IMG) -> List[IMG]:
+    frames: List[IMG] = []
+
+    update_mode = "full"
+    for i in range(image.n_frames):
+        image.seek(i)
+        if image.tile:  # type: ignore
+            update_region = image.tile[0][1][2:]  # type: ignore
+            if update_region != image.size:
+                update_mode = "partial"
+                break
+
+    last_frame: Optional[IMG] = None
+    for i in range(image.n_frames):
+        image.seek(i)
+        frame = image.copy()
+        if update_mode == "partial" and last_frame:
+            frame = last_frame.copy().paste(frame)
+        frames.append(frame)
+    image.seek(0)
+    if image.info.__contains__("transparency"):
+        frames[0].info["transparency"] = image.info["transparency"]
+    return frames
+
+
 def make_jpg_or_gif(
-    img: BuildImage, func: Maker, gif_zoom: float = 1, gif_max_frames: int = 50, isreverse: bool = False
+    img: BuildImage, func: Maker, keep_transparency: bool = False
 ) -> BytesIO:
     """
     制作静图或者动图
     :params
-      * ``img``: 输入图片，如头像
+      * ``img``: 输入图片
       * ``func``: 图片处理函数，输入img，返回处理后的图片
-      * ``gif_zoom``: gif 图片缩放比率，避免生成的 gif 太大
-      * ``gif_max_frames``: gif 最大帧数，避免生成的 gif 太大
+      * ``keep_transparency``: 传入gif时，是否保留该gif的透明度
     """
     image = img.image
     if not getattr(image, "is_animated", False):
-        return func(img.convert("RGBA")).save_jpg()
+        return func(img).save_jpg()
     else:
-        index = [i for i in range(image.n_frames)]
-        ratio = image.n_frames / gif_max_frames
-        duration = image.info["duration"] / 1000
-        if ratio > 1:
-            index = [int(i * ratio) for i in range(gif_max_frames)]
-            duration *= ratio
-
-        frames = []
-        index = [i for i in index[::-1]] if isreverse else index
-        for i in index:
-            image.seek(i)
-            new_img = func(BuildImage(image).convert("RGBA"))
-            frames.append(
-                new_img.resize(
-                    (int(new_img.width * gif_zoom), int(new_img.height * gif_zoom))
-                ).image
-            )
+        frames = split_gif(image)
+        duration = get_avg_duration(image) / 1000
+        frames = [func(BuildImage(frame)).image for frame in frames]
+        if keep_transparency:
+            image.seek(0)
+            if image.info.__contains__("transparency"):
+                frames[0].info["transparency"] = image.info["transparency"]
         return save_gif(frames, duration)
 
 
