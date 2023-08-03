@@ -67,15 +67,16 @@ async def _(event: MessageEvent):
 def create_matchers():
     def handler(command: Command) -> T_Handler:
         async def handle(
-            matcher: Matcher, event: MessageEvent, res: Union[str, BytesIO] = Depends(command.func)
+            matcher: Matcher, event: MessageEvent, res: Union[None, str, BytesIO] = Depends(command.func)
         ):
+            if res is None:
+                await matcher.finish()
             if isinstance(res, str):
                 await matcher.finish(res)
             else:
                 access_count(matcher.plugin_name, event)
                 access_cd(matcher.plugin_name, event)
                 await matcher.finish(MessageSegment.image(res))
-
         return handle
 
     for command in commands:

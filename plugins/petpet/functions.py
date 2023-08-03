@@ -882,8 +882,7 @@ def love_you(img: BuildImage = UserImg(), arg=NoArg()):
 
 
 def symmetric(img: BuildImage = UserImg(), arg: str = Arg(["上", "下", "左", "右"])):
-    img = img.convert("RGBA").resize_width(500)
-    img_w, img_h = img.size
+        img_w, img_h = img.size
 
     Mode = namedtuple(
         "Mode", ["method", "frame_size", "size1", "pos1", "size2", "pos2"]
@@ -931,12 +930,15 @@ def symmetric(img: BuildImage = UserImg(), arg: str = Arg(["上", "下", "左", 
     elif arg == "下":
         mode = modes["bottom"]
 
-    first = img
-    second = img.transpose(mode.method)
-    frame = BuildImage.new("RGBA", mode.frame_size)
-    frame.paste(first.crop(mode.size1), mode.pos1)
-    frame.paste(second.crop(mode.size2), mode.pos2)
-    return frame.save_jpg()
+    def make(img: BuildImage) -> BuildImage:
+        first = img
+        second = img.transpose(mode.method)
+        frame = BuildImage.new("RGBA", mode.frame_size)
+        frame.paste(first.crop(mode.size1), mode.pos1)
+        frame.paste(second.crop(mode.size2), mode.pos2)
+        return frame
+
+    return make_jpg_or_gif(img, make, keep_transparency=True)
 
 
 def safe_sense(user: UserInfo = User(), arg: str = Arg()):
@@ -1461,7 +1463,9 @@ def mywife(
 ):
     ta = ta.strip() or "我"
     name = name.strip() or "老婆"
-
+    rule = r"[^\s\w]"
+    if re.search(rule,ta) or re.search(rule,name):
+        return None
     img = user.img.convert("RGBA").resize_width(400)
     img_w, img_h = img.size
     frame = BuildImage.new("RGBA", (650, img_h + 500), "white")
@@ -1561,7 +1565,7 @@ def teach(img: BuildImage = UserImg(), arg: str = Arg()):
     return make_jpg_or_gif(img, make)
 
 
-def addition(img: BuildImage = UserImg(), arg: str = Arg()):
+def addiction(img: BuildImage = UserImg(), arg: str = Arg()):
     frame = load_image("addiction/0.png")
 
     if arg:
@@ -2227,4 +2231,231 @@ def trance(img: BuildImage = UserImg(), arg: str = NoArg()):
     for i in range(int(height * 0.1), int(height * 0.1 * 2)):
         frame.paste(img, (0, i), alpha=True)
     frame = frame.crop((0, int(0.1 * height), width, height1))
+    return frame.save_jpg()
+
+
+def dinosaur(img: BuildImage = UserImg(), arg=NoArg()):
+    frame = load_image("dinosaur/0.png")
+
+    def make(img: BuildImage) -> BuildImage:
+        return frame.copy().paste(
+            img.resize((680, 578), keep_ratio=True), (294, 369), below=True
+        )
+
+    return make_jpg_or_gif(img, make)
+
+
+def scratch_head(img: BuildImage = UserImg(), arg=NoArg()):
+    img = img.convert("RGBA").square().resize((68, 68))
+    frames: List[IMG] = []
+    locs = [
+        (53, 46, 4, 5),
+        (50, 45, 7, 6),
+        (50, 42, 6, 8),
+        (50, 44, 7, 7),
+        (53, 42, 4, 8),
+        (52, 45, 7, 7),
+    ]
+    for i in range(6):
+        frame = load_image(f"scratch_head/{i}.png")
+        w, h, x, y = locs[i]
+        frame.paste(img.resize((w, h)), (x, y), below=True)
+        frames.append(frame.image)
+    return save_gif(frames, 0.1)
+
+
+def applaud(img: BuildImage = UserImg(), arg=NoArg()):
+    img = img.convert("RGBA").square().resize((110, 110))
+    frames: List[IMG] = []
+    locs = [
+        (109, 102, 27, 17),
+        (107, 105, 28, 15),
+        (110, 106, 27, 14),
+        (109, 106, 27, 14),
+        (107, 108, 29, 12),
+    ]
+    for i in range(5):
+        frame = load_image(f"applaud/{i}.png")
+        w, h, x, y = locs[i]
+        frame.paste(img.resize((w, h)), (x, y), below=True)
+        frames.append(frame.image)
+    return save_gif(frames, 0.1)
+
+
+def chase_train(img: BuildImage = UserImg(), arg=NoArg()):
+    img = img.convert("RGBA").square().resize((42, 42))
+    frames: List[IMG] = []
+    # fmt: off
+    locs = [
+        (35, 34, 128, 44), (35, 33, 132, 40), (33, 34, 133, 36), (33, 38, 135, 41),
+        (34, 34, 136, 38), (35, 35, 136, 33), (33, 34, 138, 38), (36, 35, 138, 34),
+        (38, 34, 139, 32), (40, 35, 139, 37), (36, 35, 139, 33), (39, 36, 138, 28),
+        (40, 35, 138, 33), (37, 34, 138, 31), (43, 36, 135, 27), (36, 37, 136, 32),
+        (38, 40, 135, 26), (37, 35, 133, 26), (33, 36, 132, 30), (33, 39, 132, 25),
+        (32, 36, 131, 23), (33, 36, 130, 31), (35, 39, 128, 25), (33, 35, 127, 23),
+        (34, 36, 126, 29), (34, 40, 124, 25), (39, 36, 119, 23), (35, 36, 119, 32),
+        (35, 37, 116, 27), (36, 38, 113, 23), (34, 35, 113, 32), (39, 36, 113, 23),
+        (36, 35, 114, 17), (36, 38, 111, 13), (34, 37, 114, 15), (34, 39, 111, 10),
+        (33, 39, 109, 11), (36, 35, 104, 17), (34, 36, 102, 14), (34, 35, 99, 14),
+        (35, 38, 96, 16), (35, 35, 93, 14), (36, 35, 89, 15), (36, 36, 86, 18),
+        (36, 39, 83, 14), (34, 36, 81, 16), (40, 41, 74, 17), (38, 36, 74, 15),
+        (39, 35, 70, 16), (33, 35, 69, 20), (36, 35, 66, 17), (36, 35, 62, 17),
+        (37, 36, 57, 21), (35, 39, 57, 15), (35, 36, 53, 17), (35, 38, 51, 20),
+        (37, 36, 47, 19), (37, 35, 47, 18), (40, 36, 43, 19), (38, 35, 42, 22),
+        (40, 34, 38, 20), (38, 34, 37, 21), (39, 32, 35, 24), (39, 33, 33, 22),
+        (39, 36, 32, 22), (38, 35, 32, 25), (35, 37, 31, 22), (37, 37, 31, 23),
+        (36, 31, 31, 28), (37, 34, 32, 25), (36, 37, 32, 23), (36, 33, 33, 30),
+        (35, 34, 33, 27), (38, 33, 33, 28), (37, 34, 33, 29), (36, 35, 35, 28),
+        (36, 37, 36, 27), (43, 39, 33, 30), (35, 34, 38, 31), (37, 34, 39, 30),
+        (36, 34, 40, 30), (39, 35, 41, 30), (41, 36, 41, 29), (40, 37, 44, 32),
+        (40, 37, 45, 29), (39, 38, 48, 28), (38, 33, 50, 33), (35, 38, 53, 28),
+        (37, 34, 54, 31), (38, 34, 57, 32), (41, 35, 57, 29), (35, 34, 63, 29),
+        (41, 35, 62, 29), (38, 35, 66, 28), (35, 33, 70, 29), (40, 39, 70, 28),
+        (36, 36, 74, 28), (37, 35, 77, 26), (37, 35, 79, 28), (38, 35, 81, 27),
+        (36, 35, 85, 27), (37, 36, 88, 29), (36, 34, 91, 27), (38, 39, 94, 24),
+        (39, 34, 95, 27), (37, 34, 98, 26), (36, 35, 103, 24), (37, 36, 99, 28),
+        (34, 36, 97, 34), (34, 38, 102, 38), (37, 37, 99, 40), (39, 36, 101, 47),
+        (36, 36, 106, 43), (35, 35, 109, 40), (35, 39, 112, 43), (33, 36, 116, 41),
+        (36, 36, 116, 39), (34, 37, 121, 45), (35, 41, 123, 38), (34, 37, 126, 35),
+    ]
+    # fmt: on
+    for i in range(120):
+        frame = load_image(f"chase_train/{i}.png")
+        w, h, x, y = locs[i]
+        frame.paste(img.resize((w, h)), (x, y), below=True)
+        frames.append(frame.image)
+    return save_gif(frames, 0.05)
+
+
+def kaleidoscope(img: BuildImage = UserImg(), arg: str = Arg(["圆"])):
+    def make(img: BuildImage) -> BuildImage:
+        circle_num = 10
+        img_per_circle = 4
+        init_angle = 0
+        angle_step = 360 / img_per_circle
+        radius = lambda n: n * 50 + 100
+        cx = cy = radius(circle_num)
+
+        img = img.convert("RGBA")
+        frame = BuildImage.new("RGBA", (cx * 2, cy * 2), "white")
+        for i in range(circle_num):
+            r = radius(i)
+            img_w = i * 35 + 100
+            im = img.resize_width(img_w)
+            if arg == "圆":
+                im = im.circle()
+            for j in range(img_per_circle):
+                angle = init_angle + angle_step * j
+                im_rot = im.rotate(angle - 90, expand=True)
+                x = round(cx + r * math.cos(math.radians(angle)) - im_rot.width / 2)
+                y = round(cy - r * math.sin(math.radians(angle)) - im_rot.height / 2)
+                frame.paste(im_rot, (x, y), alpha=True)
+            init_angle += angle_step / 2
+        return frame
+
+    return make_jpg_or_gif(img, make)
+
+
+def overtime(img: BuildImage = UserImg(), arg=NoArg()):
+    frame = load_image("overtime/0.png")
+    img = img.convert("RGBA").resize((250, 250), keep_ratio=True)
+    frame.paste(img.rotate(-25, expand=True), (165, 220), below=True)
+    return frame.save_jpg()
+
+
+def avatar_formula(img: BuildImage = UserImg(), arg=NoArg()):
+    frame = load_image("avatar_formula/0.png")
+    img_c = img.convert("RGBA").circle().resize((72, 72))
+    img_tp = img.convert("RGBA").circle().resize((51, 51))
+    frame.paste(img_tp, (948, 247))
+    # fmt: off
+    locs = [
+        (143, 32), (155, 148), (334, 149), (275, 266), (486, 266),
+        (258, 383), (439, 382), (343, 539), (577, 487), (296, 717),
+        (535, 717), (64, 896), (340, 896), (578, 897), (210, 1038),
+        (644, 1039), (64, 1192), (460, 1192), (698, 1192), (1036, 141),
+        (1217, 141), (1243, 263), (1140, 378), (1321, 378), (929, 531),
+        (1325, 531), (1592, 531), (1007, 687), (1390, 687), (1631, 686),
+        (1036, 840), (1209, 839), (1447, 839), (1141, 1018), (1309, 1019),
+        (1546, 1019), (1037, 1197), (1317, 1198), (1555, 1197),
+    ]
+    # fmt: on
+    for i in range(39):
+        x, y = locs[i]
+        frame.paste(img_c, (x, y))
+    return frame.save_jpg()
+
+
+def potato(img: BuildImage = UserImg(), arg=NoArg()):
+    frame = load_image("potato/0.png")
+    img = img.convert("RGBA").square().resize((458, 458))
+    frame.paste(img.rotate(-5), (531, 15), below=True)
+    return frame.save_jpg()
+
+
+def printing(img: BuildImage = UserImg(), arg=NoArg()):
+    img = img.convert("RGBA").resize(
+        (304, 174), keep_ratio=True, inside=True, bg_color="white", direction="south"
+    )
+    frames = [load_image(f"printing/{i}.png") for i in range(115)]
+    for i in range(50, 115):
+        frames[i].paste(img, (146, 164), below=True)
+    frames = [frame.image for frame in frames]
+    return save_gif(frames, 0.05)
+
+
+def name_generator(img: BuildImage = UserImg(), arg=NoArg()):
+    colors = ["#0000ff", "#ff00f7", "#00cc66"]
+    # fmt: off
+    el1 = ["废墟", "深海", "反应堆", "学园", "腐烂", "东京", "三维", "四次元", "少管所", "流星", "闪光", "南极", "消极", "幽浮", "网路", "暗狱", "离子态", "液态", "黑色", "抱抱", "暴力", "垃圾", "社会", "残暴", "残酷", "工口", "戮尸", "原味", "毛茸茸", "香香", "霹雳", "午夜", "美工刀", "爆浆", "机关枪", "无响应", "手术台", "麻风病", "虚拟", "速冻", "智能", "2000", "甜味", "华丽", "反社会", "玛利亚", "无", "梦之", "蔷薇", "无政府", "酷酷", "西伯利亚", "人造", "法外", "追杀", "通缉", "女子", "微型", "男子", "超", "毁灭", "大型", "绝望", "阴间", "死亡", "坟场", "高科技", "奇妙", "魔法", "极限", "社会主义", "无聊"]
+    el2 = ["小丑", "仿生", "纳米", "原子", "丧", "电子", "十字架", "咩咩", "赛博", "野猪", "外星", "窒息", "变态", "触手", "小众", "悲情", "飞行", "绿色", "电动", "铁锈", "碎尸", "电音", "蠕动", "酸甜", "虚构", "乱码", "碳水", "内脏", "脑浆", "血管", "全裸", "绷带", "不合格", "光滑", "标本", "酸性", "碱性", "404", "变身", "反常", "樱桃", "碳基", "矫情", "病娇", "进化", "潮湿", "砂糖", "高潮", "变异", "复合盐", "伏特加", "抑郁", "暴躁", "不爱说话", "废物", "失败", "幻想型", "社恐", "苦涩", "粘液", "浓厚", "快乐", "强制", "中二病", "恶魔", "emo", "激光", "发射", "限量版", "迷因", "堕落", "放射性"]
+    el3 = ["天使", "精灵", "女孩", "男孩", "宝贝", "小妈咪", "虫", "菇", "公主", "少女", "少年", "1号机", "子", "恐龙", "蜈蚣", "蟑螂", "食人鱼", "小飞船", "舞女", "桃子", "团子", "精", "酱", "废料", "生物", "物质", "奶茶", "搅拌机", "液", "火锅", "祭司", "体", "实验品", "试验体", "小猫咪", "样本", "颗粒", "血块", "汽水", "蛙", "软体", "机器人", "人质", "小熊", "圣母", "胶囊", "乙女", "主义者", "屑", "垢", "污渍", "废人", "毛血旺", "怪人", "肉", "河豚", "豚", "藻类", "唾沫", "咒语", "建筑", "球", "小狗", "碳", "元素", "少先队员", "博士", "糖"]
+    # fmt: on
+    color = random.choice(colors)
+    name = random.choice(el1) + random.choice(el2) + random.choice(el3)
+    frame = BuildImage.new("RGB", (900, 900), (225, 225, 225))
+    title = load_image("name_generator/title.png").resize((700, 200))
+    frame.paste(title, (100, 0), alpha=True)
+    img = img.convert("RGBA").resize((490, 490), keep_ratio=True)
+    frame.paste(img, (310, 235), alpha=True)
+    frame.draw_text(
+        (20, 450), "您的亚名是", fontsize=40, fill=(105, 105, 105), weight="bold"
+    ).draw_text(
+        (20, 620),
+        name,
+        fontsize=60,
+        fill=color,
+        weight="bold",
+        stroke_ratio=0.07,
+        stroke_fill="white",
+    )
+    return frame.save_jpg()
+
+
+def beat_head(img: BuildImage = UserImg(), arg: str = Arg()):
+    text = arg or "怎么说话呢你"
+    locs = [(160, 121, 76, 76), (172, 124, 69, 69), (208, 166, 52, 52)]
+    img = img.convert("RGBA")
+    frames: List[IMG] = []
+    for i in range(3):
+        x, y, w, h = locs[i]
+        frame = load_image(f"beat_head/{i}.png")
+        frame.paste(img.resize((w, h)), (x, y), below=True)
+        try:
+            frame.draw_text(
+                (175, 28, 316, 82),
+                text,
+                max_fontsize=50,
+                min_fontsize=10,
+                allow_wrap=True,
+            )
+        except:
+            return TEXT_TOO_LONG
+        frames.append(frame.image)
+    return save_gif(frames, 0.05)
+
+
+def bubble_tea(img: BuildImage = UserImg(), arg=NoArg()):
+    frame = load_image("bubble_tea/0.png")
+    frame.paste(img.convert("RGBA").resize((500, 500), keep_ratio=True), below=True)
     return frame.save_jpg()
